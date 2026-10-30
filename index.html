@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>벤슨 케이크 픽업 사전예약</title>
+<meta name="description" content="벤슨 케이크를 미리 예약하고 원하는 날 매장에서 픽업하세요. 사전예약 시 5,000원 할인.">
+<meta property="og:title" content="벤슨 케이크 픽업 사전예약">
+<meta property="og:description" content="미리 예약하고, 원하는 날 픽업. 사전예약 시 5,000원 할인.">
+<meta name="theme-color" content="#7EA9DB">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&family=Yellowtail&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+    --sky: #7EA9DB;
+    --sky-soft: #A6C4E8;
+    --cream: #F3E2B3;
+    --navy: #22364A;
+    --ink: #1E2B38;
+    --mute: #5E6E7F;
+    --line: #D6E0EC;
+    --field: #F5F8FC;
+    --paper: #FFFFFF;
+    --error: #C0392B;
+    --font: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+    box-sizing: border-box;
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; }
+  body {
+    font-family: var(--font);
+    color: var(--ink);
+    background: var(--sky);
+    -webkit-font-smoothing: antialiased;
+    word-break: keep-all;
+  }
+  .wrap { max-width: 480px; margin: 0 auto; }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    position: relative;
+    overflow: hidden;
+    padding: calc(env(safe-area-inset-top, 0px) + 22px) 24px 0;
+    text-align: center;
+    color: #fff;
+  }
+  .hero::after {             /* 시안의 큰 원호 */
+    content: "";
+    position: absolute;
+    left: 50%; bottom: -690px;
+    width: 1100px; height: 760px;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: var(--sky-soft);
+    z-index: 0;
+  }
+  .hero > * { position: relative; z-index: 1; }
+  .logo { display: block; text-align: left; height: 30px; margin-bottom: 14px; }
+  .logo img { height: 30px; width: auto; }
+  .logo span { font-family: "Yellowtail", cursive; font-size: 30px; line-height: 30px; color: #fff; }
+  .pill {
+    display: inline-block; margin: 0;
+    padding: 9px 28px; border-radius: 999px;
+    background: var(--cream); color: var(--navy);
+    font-size: 17px; font-weight: 800; letter-spacing: -0.02em;
+  }
+  .hand {
+    margin: 18px 0 2px;
+    font-family: "Nanum Pen Script", var(--font);
+    font-size: clamp(21px, 6.4vw, 26px); line-height: 1.2; opacity: .95;
+  }
+  .hero h1 {
+    margin: 0;
+    font-size: clamp(44px, 13.5vw, 62px);
+    line-height: 1.08; font-weight: 900; letter-spacing: -0.045em;
+  }
+  .lead { margin: 14px 0 0; font-size: 19px; font-weight: 500; letter-spacing: -0.02em; }
+  .hero-img { display: block; width: 78%; max-width: 340px; margin: 18px auto -6px; }
+  .hero-spacer { height: 84px; }
+
+  /* ---------- Form sheet ---------- */
+  .sheet {
+    position: relative; z-index: 2;
+    margin-top: -28px;
+    background: var(--paper);
+    border-radius: 28px 28px 0 0;
+    padding: 30px 22px calc(120px + env(safe-area-inset-bottom, 0px));
+    min-height: 60vh;
+  }
+  .notice {
+    margin: 0 0 26px; padding: 14px 16px;
+    border-radius: 14px; background: #EEF4FB;
+    font-size: 14px; line-height: 1.65; color: var(--navy);
+  }
+  .notice ul { margin: 0; padding-left: 18px; }
+
+  fieldset { border: 0; margin: 0 0 28px; padding: 0; }
+  legend { padding: 0; margin-bottom: 12px; font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
+  .field { margin-bottom: 14px; }
+  .field > label, .label { display: block; margin-bottom: 7px; font-size: 14px; font-weight: 600; color: var(--mute); }
+  .opt { font-weight: 500; color: #8A98A8; }
+  input[type=text], input[type=tel], input[type=date], select, textarea {
+    width: 100%; min-height: 52px;
+    padding: 13px 14px;
+    border: 1.5px solid var(--line); border-radius: 12px;
+    background: var(--field); color: var(--ink);
+    font: 500 16px/1.4 var(--font);
+    appearance: none; -webkit-appearance: none;
+  }
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2322364A' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 16px center; padding-right: 40px;
+  }
+  textarea { min-height: 84px; resize: vertical; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--navy); background: #fff; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .cake-list { display: grid; gap: 8px; }
+  .cake-opt {
+    position: relative;
+    display: flex; align-items: center; gap: 12px;
+    min-height: 58px; padding: 12px 14px;
+    border: 1.5px solid var(--line); border-radius: 12px;
+    background: var(--field); cursor: pointer;
+  }
+  .cake-opt input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+  .cake-opt .dot { flex: none; width: 20px; height: 20px; border-radius: 50%; border: 2px solid #B8C4D2; background: #fff; }
+  .cake-opt .nm { flex: 1; font-size: 16px; font-weight: 600; line-height: 1.35; }
+  .cake-opt .pr { flex: none; font-size: 15px; font-weight: 700; color: var(--navy); }
+  .cake-opt.on { border-color: var(--navy); background: #FBF4E1; }
+  .cake-opt.on .dot { border: 6px solid var(--navy); }
+  .cake-opt.focus { outline: 3px solid var(--sky); outline-offset: 2px; }
+  .qty-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; }
+  .qty-row .label { margin: 0; font-size: 15px; font-weight: 700; color: var(--ink); }
+
+  .stepper { display: flex; align-items: center; height: 52px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--field); }
+  .stepper button {
+    width: 44px; height: 100%; border: 0; background: none;
+    font: 700 22px/1 var(--font); color: var(--navy); cursor: pointer;
+  }
+  .stepper button:disabled { color: #B8C4D2; cursor: default; }
+  .stepper output { min-width: 26px; text-align: center; font-weight: 700; font-size: 17px; }
+  .hint { margin: 6px 2px 0; font-size: 13px; color: var(--mute); }
+  .err { margin: 6px 2px 0; font-size: 13px; color: var(--error); font-weight: 600; min-height: 0; }
+  .err:empty { display: none; }
+  .invalid { border-color: var(--error) !important; }
+
+  .consent { border-top: 1px solid var(--line); padding-top: 20px; }
+  .check { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .check input { width: 22px; height: 22px; margin: 0; flex: none; accent-color: var(--navy); }
+  details { margin-top: 10px; font-size: 13px; color: var(--mute); }
+  summary { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+  .terms { width: 100%; margin-top: 10px; border-collapse: collapse; }
+  .terms th, .terms td { text-align: left; vertical-align: top; padding: 8px 6px; border-top: 1px solid var(--line); line-height: 1.5; }
+  .terms th { width: 92px; font-weight: 600; color: var(--navy); }
+
+  /* ---------- Sticky CTA ---------- */
+  .cta-bar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+    background: var(--navy);
+    padding: 12px 18px calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+  .cta-bar .wrap { display: block; }
+  .btn {
+    display: block; width: 100%; min-height: 56px;
+    border: 0; border-radius: 999px;
+    background: var(--cream); color: var(--navy);
+    font: 800 18px/1 var(--font); letter-spacing: -0.02em;
+    cursor: pointer;
+  }
+  .btn:disabled { opacity: .6; cursor: wait; }
+  .btn:focus-visible, .stepper button:focus-visible, .check input:focus-visible, summary:focus-visible, .ghost:focus-visible {
+    outline: 3px solid var(--sky); outline-offset: 2px;
+  }
+  .form-error { margin: 0 0 10px; color: #FFD8D2; font-size: 14px; text-align: center; font-weight: 600; }
+  .form-error:empty { display: none; }
+
+  /* ---------- Done ---------- */
+  .done { display: none; text-align: center; }
+  .done.show { display: block; animation: rise .45s ease-out; }
+  @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  .done h2 { margin: 6px 0 8px; font-size: 26px; font-weight: 900; letter-spacing: -0.03em; }
+  .done .sub { margin: 0 0 22px; color: var(--mute); font-size: 15px; line-height: 1.6; }
+  .code-box { margin: 0 auto 22px; padding: 18px; border-radius: 18px; background: var(--cream); color: var(--navy); }
+  .code-box small { display: block; font-size: 13px; font-weight: 600; opacity: .8; }
+  .code-box strong { display: block; margin-top: 4px; font-size: 34px; font-weight: 900; letter-spacing: .08em; }
+  .summary { margin: 0 0 22px; padding: 0; list-style: none; text-align: left; border-top: 1px solid var(--line); }
+  .summary li { display: flex; justify-content: space-between; gap: 16px; padding: 12px 2px; border-bottom: 1px solid var(--line); font-size: 15px; }
+  .summary li span:first-child { color: var(--mute); flex: none; }
+  .summary li span:last-child { font-weight: 600; text-align: right; }
+  .link-box { padding: 16px; border-radius: 14px; background: #EEF4FB; text-align: left; font-size: 14px; line-height: 1.6; color: var(--navy); }
+  .link-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+  .ghost {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 48px; border-radius: 12px;
+    border: 1.5px solid var(--navy); background: #fff; color: var(--navy);
+    font: 700 15px/1 var(--font); text-decoration: none; cursor: pointer;
+  }
+  .ghost.fill { background: var(--navy); color: #fff; }
+  .recent { display: none; margin: 0 0 22px; font-size: 14px; text-align: center; }
+  .recent.show { display: block; }
+  .recent a { color: var(--navy); font-weight: 700; }
+  .setup-warning { margin: 0 0 20px; padding: 12px 14px; border-radius: 12px; background: #FFF1E6; color: #8A3B12; font-size: 14px; font-weight: 600; }
+
+  @media (prefers-reduced-motion: reduce) { .done.show { animation: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="logo" id="logo"><span>Benson</span></div>
+    <p class="pill">픽업 사전예약 혜택</p>
+    <p class="hand">세상에서 단 하나뿐인 수제 케이크</p>
+    <h1>벤슨 케이크<br>5,000원 할인</h1>
+    <p class="lead">미리 예약하고, 원하는 날 픽업</p>
+    <img class="hero-img" id="heroImg" alt="" hidden>
+    <div class="hero-spacer"></div>
+  </header>
+
+  <main class="sheet">
+    <div id="setupWarning" class="setup-warning" hidden></div>
+    <p class="recent" id="recent">이전에 신청하신 예약이 있어요. <a id="recentLink" href="#">예약 상태 보기</a></p>
+
+    <form id="form" novalidate>
+      <div class="notice">
+        <ul>
+          <li>픽업 하루 전까지 예약할 수 있어요.</li>
+          <li>매장에서 확인한 뒤 문자로 예약 확정을 알려 드려요.</li>
+          <li>결제는 픽업하실 때 매장에서 해요.</li>
+        </ul>
+      </div>
+
+      <fieldset>
+        <legend>어느 매장에서 받으시나요?</legend>
+        <div class="field">
+          <label for="store">픽업 매장</label>
+          <select id="store" name="store" required><option value="">매장을 선택해 주세요</option></select>
+          <p class="err" data-for="store"></p>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>어떤 케이크를 예약하시나요?</legend>
+        <div id="cakeSlot"></div>
+        <p class="err" data-for="cake"></p>
+        <div class="qty-row">
+          <span class="label" id="qtyLabel">수량</span>
+          <div class="stepper" role="group" aria-labelledby="qtyLabel">
+            <button type="button" id="qtyMinus" aria-label="수량 줄이기">−</button>
+            <output id="qty" aria-live="polite">1</output>
+            <button type="button" id="qtyPlus" aria-label="수량 늘리기">+</button>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>언제 받으시나요?</legend>
+        <div class="row">
+          <div class="field">
+            <label for="date">픽업 날짜</label>
+            <input type="date" id="date" name="date" required>
+          </div>
+          <div class="field">
+            <label for="time">픽업 시간</label>
+            <select id="time" name="time" required><option value="">시간 선택</option></select>
+          </div>
+        </div>
+        <p class="hint" id="dateHint">매장 운영시간 안에서 골라 주세요. 어려운 시간이면 매장에서 연락드려요.</p>
+        <p class="err" data-for="date"></p>
+        <p class="err" data-for="time"></p>
+      </fieldset>
+
+      <fieldset>
+        <legend>예약하시는 분</legend>
+        <div class="field">
+          <label for="name">이름</label>
+          <input type="text" id="name" name="name" autocomplete="name" maxlength="20" required>
+          <p class="err" data-for="name"></p>
+        </div>
+        <div class="field">
+          <label for="phone">휴대폰 번호</label>
+          <input type="tel" id="phone" name="phone" inputmode="numeric" autocomplete="tel" placeholder="010-0000-0000" maxlength="13" required>
+          <p class="hint">확정 문자를 이 번호로 보내 드려요. 픽업할 때 뒷자리 4개로 확인해요.</p>
+          <p class="err" data-for="phone"></p>
+        </div>
+        <div class="field">
+          <label for="memo">요청사항 <span class="opt">(선택)</span></label>
+          <textarea id="memo" name="memo" maxlength="200" placeholder="예: 초 2개 부탁드려요"></textarea>
+        </div>
+      </fieldset>
+
+      <div class="consent">
+        <label class="check">
+          <input type="checkbox" id="consent" required>
+          <span>[필수] 개인정보 수집·이용에 동의합니다</span>
+        </label>
+        <details>
+          <summary>내용 보기</summary>
+          <table class="terms">
+            <tr><th scope="row">수집 목적</th><td id="pPurpose"></td></tr>
+            <tr><th scope="row">수집 항목</th><td id="pItems"></td></tr>
+            <tr><th scope="row">보유 기간</th><td id="pRetention"></td></tr>
+            <tr><th scope="row">거부 권리</th><td id="pRefusal"></td></tr>
+          </table>
+        </details>
+        <p class="err" data-for="consent"></p>
+      </div>
+    </form>
+
+    <section class="done" id="done" aria-live="polite">
+      <h2>예약 신청이 접수되었어요</h2>
+      <p class="sub">매장에서 확인한 뒤 문자로 확정을 알려 드려요.<br>결제는 픽업하실 때 매장에서 해요.</p>
+      <div class="code-box"><small>예약번호</small><strong id="doneCode"></strong></div>
+      <ul class="summary" id="doneSummary"></ul>
+      <div class="link-box">
+        아래 링크에서 확정 여부를 언제든 확인할 수 있어요. 링크를 저장해 두세요.
+        <div class="link-actions">
+          <button type="button" class="ghost" id="copyLink">링크 복사</button>
+          <a class="ghost fill" id="openStatus" href="#">예약 상태 보기</a>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="cta-bar" id="ctaBar">
+  <div class="wrap">
+    <p class="form-error" id="formError" role="alert"></p>
+    <button type="submit" form="form" class="btn" id="submitBtn">사전예약 신청하기</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, doc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { firebaseConfig, META_PIXEL_ID, BRAND, STORES, CAKES, MAX_QTY, MIN_DAYS_AHEAD, MAX_DAYS_AHEAD, PICKUP_TIME, PRIVACY } from "./config.js";
+
+const $ = (id) => document.getElementById(id);
+const WEEK = ["일", "월", "화", "수", "목", "금", "토"];
+
+/* ---------- 메타 픽셀 ---------- */
+if (META_PIXEL_ID) {
+  !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+  n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+  document,'script','https://connect.facebook.net/en_US/fbevents.js');
+  window.fbq('init', META_PIXEL_ID);
+  window.fbq('track', 'PageView');
+}
+
+/* ---------- 브랜드 이미지 ---------- */
+if (BRAND.logoUrl) $("logo").innerHTML = `<img src="${BRAND.logoUrl}" alt="Benson">`;
+if (BRAND.heroImageUrl) { $("heroImg").src = BRAND.heroImageUrl; $("heroImg").alt = "벤슨 케이크"; $("heroImg").hidden = false; }
+
+/* ---------- 설정 확인 ---------- */
+const configured = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId);
+let db = null;
+if (configured) {
+  db = getFirestore(initializeApp(firebaseConfig));
+} else {
+  $("setupWarning").textContent = "config.js에 Firebase 설정이 비어 있어 신청이 저장되지 않습니다.";
+  $("setupWarning").hidden = false;
+}
+
+/* ---------- 날짜 (한국 시간 기준) ---------- */
+const kstDate = (offsetDays = 0) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" })
+    .format(new Date(Date.now() + offsetDays * 86400000));
+const prettyDate = (ymd) => {
+  const [y, m, d] = ymd.split("-").map(Number);
+  return `${m}월 ${d}일(${WEEK[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]})`;
+};
+const minDate = kstDate(MIN_DAYS_AHEAD);
+const maxDate = kstDate(MAX_DAYS_AHEAD);
+$("date").min = minDate;
+$("date").max = maxDate;
+
+/* ---------- 선택지 채우기 ---------- */
+const storeSel = $("store");
+[...STORES].sort((a, b) => a.localeCompare(b, "ko")).forEach((s) => {
+  storeSel.add(new Option(s.replace(/^벤슨\s*/, ""), s));
+});
+
+const cakeName = (c) => (typeof c === "string" ? c : c.name);
+const cakePrice = (c) => (typeof c === "string" ? null : c.price);
+if (CAKES.length) {
+  const list = document.createElement("div");
+  list.className = "cake-list"; list.id = "cake";
+  list.setAttribute("role", "radiogroup"); list.setAttribute("aria-label", "케이크");
+  CAKES.forEach((c) => {
+    const lab = document.createElement("label"); lab.className = "cake-opt";
+    const inp = document.createElement("input"); inp.type = "radio"; inp.name = "cake"; inp.value = cakeName(c);
+    const dot = document.createElement("span"); dot.className = "dot"; dot.setAttribute("aria-hidden", "true");
+    const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = cakeName(c);
+    lab.append(inp, dot, nm);
+    if (cakePrice(c)) { const pr = document.createElement("span"); pr.className = "pr"; pr.textContent = `${cakePrice(c).toLocaleString("ko-KR")}원`; lab.append(pr); }
+    inp.addEventListener("focus", () => lab.classList.add("focus"));
+    inp.addEventListener("blur", () => lab.classList.remove("focus"));
+    list.appendChild(lab);
+  });
+  list.addEventListener("change", () => {
+    list.querySelectorAll(".cake-opt").forEach((l) => l.classList.toggle("on", l.querySelector("input").checked));
+  });
+  $("cakeSlot").appendChild(list);
+} else {
+  const lab = document.createElement("label"); lab.className = "label"; lab.htmlFor = "cake"; lab.textContent = "케이크 이름";
+  const inp = document.createElement("input");
+  inp.type = "text"; inp.id = "cake"; inp.maxLength = 60; inp.required = true;
+  $("cakeSlot").append(lab, inp);
+}
+const getCake = () => CAKES.length
+  ? (document.querySelector('input[name="cake"]:checked')?.value || "")
+  : $("cake").value.trim();
+
+const toMin = (hhmm) => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + m; };
+const pad = (n) => String(n).padStart(2, "0");
+for (let t = toMin(PICKUP_TIME.start); t <= toMin(PICKUP_TIME.end); t += PICKUP_TIME.stepMin) {
+  const v = `${pad(Math.floor(t / 60))}:${pad(t % 60)}`;
+  $("time").add(new Option(v, v));
+}
+
+$("pPurpose").textContent = PRIVACY.purpose;
+$("pItems").textContent = PRIVACY.items;
+$("pRetention").textContent = PRIVACY.retention;
+$("pRefusal").textContent = PRIVACY.refusal;
+
+/* ---------- 수량 ---------- */
+let qty = 1;
+const renderQty = () => {
+  $("qty").textContent = qty;
+  $("qtyMinus").disabled = qty <= 1;
+  $("qtyPlus").disabled = qty >= MAX_QTY;
+};
+$("qtyMinus").onclick = () => { if (qty > 1) { qty--; renderQty(); } };
+$("qtyPlus").onclick = () => { if (qty < MAX_QTY) { qty++; renderQty(); } };
+renderQty();
+
+/* ---------- 전화번호 자동 하이픈 ---------- */
+const digits = (s) => s.replace(/\D/g, "");
+const formatPhone = (d) => d.length < 4 ? d : d.length < 8 ? `${d.slice(0, 3)}-${d.slice(3)}` : `${d.slice(0, 3)}-${d.slice(3, d.length - 4)}-${d.slice(-4)}`;
+$("phone").addEventListener("input", (e) => { e.target.value = formatPhone(digits(e.target.value).slice(0, 11)); });
+
+/* ---------- 이전 신청 ---------- */
+const statusUrl = (id) => new URL(`status.html?r=${encodeURIComponent(id)}`, location.href).href;
+try {
+  const last = localStorage.getItem("benson_last_reservation");
+  if (last) { $("recentLink").href = statusUrl(last); $("recent").classList.add("show"); }
+} catch (_) {}
+
+/* ---------- 검증 ---------- */
+const setErr = (key, msg) => {
+  const p = document.querySelector(`.err[data-for="${key}"]`);
+  if (p) p.textContent = msg || "";
+  const el = $(key);
+  if (el) el.classList.toggle("invalid", Boolean(msg));
+};
+function validate() {
+  const v = {
+    store: storeSel.value,
+    cake: getCake(),
+    date: $("date").value,
+    time: $("time").value,
+    name: $("name").value.trim(),
+    phone: digits($("phone").value),
+    memo: $("memo").value.trim(),
+    consent: $("consent").checked
+  };
+  const errs = {};
+  if (!v.store) errs.store = "픽업 매장을 선택해 주세요.";
+  if (!v.cake) errs.cake = CAKES.length ? "케이크를 선택해 주세요." : "케이크 이름을 적어 주세요.";
+  if (!v.date) errs.date = "픽업 날짜를 선택해 주세요.";
+  else if (v.date < minDate) errs.date = `픽업 하루 전까지 예약할 수 있어요. ${prettyDate(minDate)}부터 선택해 주세요.`;
+  else if (v.date > maxDate) errs.date = `${prettyDate(maxDate)}까지 선택할 수 있어요.`;
+  if (!v.time) errs.time = "픽업 시간을 선택해 주세요.";
+  if (!v.name) errs.name = "이름을 적어 주세요.";
+  if (!/^01[016789]\d{7,8}$/.test(v.phone)) errs.phone = "휴대폰 번호를 정확히 적어 주세요.";
+  if (!v.consent) errs.consent = "개인정보 수집·이용에 동의해야 신청할 수 있어요.";
+  ["store", "cake", "date", "time", "name", "phone", "consent"].forEach((k) => setErr(k, errs[k]));
+  return { v, ok: Object.keys(errs).length === 0, first: Object.keys(errs)[0] };
+}
+["store", "date", "time", "name", "phone", "consent"].forEach((k) =>
+  $(k).addEventListener("change", () => setErr(k, "")));
+document.addEventListener("change", (e) => { if (e.target.id === "cake" || e.target.name === "cake") setErr("cake", ""); });
+
+/* ---------- 저장 ---------- */
+const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const makeCode = () => {
+  const a = new Uint32Array(6); crypto.getRandomValues(a);
+  return [...a].map((n) => CODE_CHARS[n % CODE_CHARS.length]).join("");
+};
+const maskName = (n) => n.length <= 1 ? n : n.length === 2 ? n[0] + "*" : n[0] + "*".repeat(n.length - 2) + n.slice(-1);
+const utm = (() => {
+  const p = new URLSearchParams(location.search);
+  const g = (k) => (p.get(k) || "").slice(0, 100);
+  return { utmSource: g("utm_source"), utmMedium: g("utm_medium"), utmCampaign: g("utm_campaign"), utmContent: g("utm_content") };
+})();
+
+$("form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("formError").textContent = "";
+  const { v, ok, first } = validate();
+  if (!ok) {
+    const el = $(first);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      const target = first === "cake" && CAKES.length ? el.querySelector("input") : el;
+      if (target) target.focus({ preventScroll: true });
+    }
+    return;
+  }
+  if (!db) { $("formError").textContent = "아직 접수 준비 중이에요. 잠시 후 다시 시도해 주세요."; return; }
+
+  const btn = $("submitBtn");
+  btn.disabled = true; btn.textContent = "신청하는 중…";
+  try {
+    const ref = doc(collection(db, "reservations"));
+    const code = makeCode();
+    const now = serverTimestamp();
+    const batch = writeBatch(db);
+    batch.set(ref, {
+      code, name: v.name, phone: v.phone, phoneLast4: v.phone.slice(-4),
+      store: v.store, cake: v.cake, qty,
+      pickupDate: v.date, pickupTime: v.time,
+      memo: v.memo, consent: true,
+      ...utm,
+      status: "requested", createdAt: now, updatedAt: now
+    });
+    batch.set(doc(db, "publicStatus", ref.id), {
+      code, nameMasked: maskName(v.name),
+      store: v.store, cake: v.cake, qty,
+      pickupDate: v.date, pickupTime: v.time,
+      status: "requested", createdAt: now, updatedAt: now
+    });
+    await batch.commit();
+
+    if (window.fbq) window.fbq("track", "Lead", { content_name: "cake_preorder" });
+    try { localStorage.setItem("benson_last_reservation", ref.id); } catch (_) {}
+    showDone(ref.id, code, v);
+  } catch (err) {
+    console.error(err);
+    $("formError").textContent = "신청이 접수되지 않았어요. 인터넷 연결을 확인하고 다시 눌러 주세요.";
+    btn.disabled = false; btn.textContent = "사전예약 신청하기";
+  }
+});
+
+function showDone(id, code, v) {
+  const url = statusUrl(id);
+  $("form").hidden = true;
+  $("recent").classList.remove("show");
+  $("ctaBar").hidden = true;
+  $("doneCode").textContent = code;
+  const rows = [
+    ["픽업 매장", v.store],
+    ["픽업 일시", `${prettyDate(v.date)} ${v.time}`],
+    ["케이크", `${v.cake} ${qty}개`],
+    ["예약자", `${v.name} (${formatPhone(v.phone)})`]
+  ];
+  $("doneSummary").replaceChildren(...rows.map(([k, val]) => {
+    const li = document.createElement("li");
+    const a = document.createElement("span"); a.textContent = k;
+    const b = document.createElement("span"); b.textContent = val;
+    li.append(a, b); return li;
+  }));
+  $("openStatus").href = url;
+  $("copyLink").onclick = async () => {
+    try { await navigator.clipboard.writeText(url); }
+    catch (_) {
+      const t = document.createElement("textarea"); t.value = url; document.body.appendChild(t);
+      t.select(); document.execCommand("copy"); t.remove();
+    }
+    $("copyLink").textContent = "복사했어요";
+    setTimeout(() => { $("copyLink").textContent = "링크 복사"; }, 2000);
+  };
+  $("done").classList.add("show");
+  window.scrollTo({ top: $("done").offsetTop - 20, behavior: "smooth" });
+}
+</script>
+</body>
+</html>

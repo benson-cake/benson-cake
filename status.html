@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>벤슨 케이크 예약 확인</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#7EA9DB">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yellowtail&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+    --sky: #7EA9DB; --cream: #F3E2B3; --navy: #22364A; --ink: #1E2B38;
+    --mute: #5E6E7F; --line: #D6E0EC; --paper: #FFFFFF;
+    --ok: #2E7D5B; --warn: #B7791F; --alert: #C0392B;
+    --font: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+    box-sizing: border-box;
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; }
+  body { font-family: var(--font); color: var(--ink); background: var(--sky); -webkit-font-smoothing: antialiased; word-break: keep-all; }
+  .wrap { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+  header { padding: calc(env(safe-area-inset-top, 0px) + 22px) 24px 26px; color: #fff; }
+  .logo { height: 30px; margin-bottom: 18px; }
+  .logo img { height: 30px; }
+  .logo span { font-family: "Yellowtail", cursive; font-size: 30px; line-height: 30px; }
+  header p { margin: 0; font-size: 15px; opacity: .9; }
+  header h1 { margin: 6px 0 0; font-size: 30px; font-weight: 900; letter-spacing: -0.035em; line-height: 1.25; }
+  main { flex: 1; background: var(--paper); border-radius: 28px 28px 0 0; padding: 28px 22px calc(40px + env(safe-area-inset-bottom, 0px)); }
+
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 0 0 24px; padding: 0; list-style: none; }
+  .steps li { padding-top: 10px; border-top: 4px solid var(--line); font-size: 13px; font-weight: 600; color: #95A3B3; }
+  .steps li.on { border-color: var(--navy); color: var(--navy); }
+  .message { margin: 0 0 24px; padding: 16px; border-radius: 14px; font-size: 15px; line-height: 1.65; background: #EEF4FB; color: var(--navy); }
+  .message.ok { background: #E8F4EE; color: #1F5A41; }
+  .message.alert { background: #FCEDEB; color: #8E2B20; }
+  .message.mute { background: #F1F3F5; color: #4A5562; }
+  .code-box { margin: 0 0 22px; padding: 16px; border-radius: 16px; background: var(--cream); color: var(--navy); text-align: center; }
+  .code-box small { display: block; font-size: 13px; font-weight: 600; opacity: .8; }
+  .code-box strong { display: block; margin-top: 2px; font-size: 30px; font-weight: 900; letter-spacing: .08em; }
+  .summary { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+  .summary li { display: flex; justify-content: space-between; gap: 16px; padding: 13px 2px; border-bottom: 1px solid var(--line); font-size: 15px; }
+  .summary li span:first-child { color: var(--mute); flex: none; }
+  .summary li span:last-child { font-weight: 600; text-align: right; }
+  .foot { margin-top: 22px; font-size: 13px; color: var(--mute); line-height: 1.6; }
+  .foot a { color: var(--navy); font-weight: 700; }
+  .loading { color: var(--mute); font-size: 15px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo" id="logo"><span>Benson</span></div>
+    <p>케이크 픽업 사전예약</p>
+    <h1 id="title">예약을 불러오는 중이에요</h1>
+  </header>
+  <main>
+    <p class="loading" id="loading">잠시만 기다려 주세요.</p>
+    <div id="content" hidden>
+      <ol class="steps" id="steps">
+        <li data-step="requested">접수</li>
+        <li data-step="confirmed">확정</li>
+        <li data-step="picked_up">픽업 완료</li>
+      </ol>
+      <p class="message" id="message"></p>
+      <div class="code-box"><small>예약번호</small><strong id="code"></strong></div>
+      <ul class="summary" id="summary"></ul>
+      <p class="foot">이 화면은 매장에서 예약을 처리하면 바로 바뀌어요.<br><a href="./">새로 예약하기</a></p>
+    </div>
+  </main>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { firebaseConfig, BRAND } from "./config.js";
+
+const $ = (id) => document.getElementById(id);
+const WEEK = ["일", "월", "화", "수", "목", "금", "토"];
+if (BRAND.logoUrl) $("logo").innerHTML = `<img src="${BRAND.logoUrl}" alt="Benson">`;
+
+const prettyDate = (ymd) => {
+  const [y, m, d] = ymd.split("-").map(Number);
+  return `${m}월 ${d}일(${WEEK[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]})`;
+};
+
+const VIEW = {
+  requested:  { title: "예약을 확인하고 있어요", tone: "",      step: 1, msg: "매장에서 예약 내용을 확인하고 있어요. 확정되면 문자로 알려 드려요." },
+  reschedule: { title: "픽업 시간 조정이 필요해요", tone: "alert", step: 1, msg: "요청하신 시간에 준비가 어려워요. 매장에서 연락드려 가능한 시간을 다시 안내해 드릴게요." },
+  confirmed:  { title: "예약이 확정되었어요", tone: "ok",    step: 2, msg: "아래 일시에 매장으로 오셔서 휴대폰 번호 뒷자리 4개를 말씀해 주세요. 결제는 매장에서 해요." },
+  picked_up:  { title: "픽업이 완료되었어요", tone: "mute",  step: 3, msg: "벤슨 케이크와 함께 즐거운 시간 보내세요." },
+  cancelled:  { title: "예약이 취소되었어요", tone: "mute",  step: 0, msg: "다시 예약하시려면 아래 ‘새로 예약하기’를 눌러 주세요." },
+  no_show:    { title: "예약이 종료되었어요", tone: "mute",  step: 0, msg: "픽업 일시가 지나 예약이 종료되었어요. 다시 예약하시려면 아래 ‘새로 예약하기’를 눌러 주세요." }
+};
+
+function fail(text) {
+  $("title").textContent = "예약을 찾을 수 없어요";
+  $("loading").textContent = text;
+  $("loading").hidden = false;
+  $("content").hidden = true;
+}
+
+const id = new URLSearchParams(location.search).get("r");
+if (!id) fail("링크가 올바르지 않아요. 신청 완료 화면에서 복사한 링크로 다시 열어 주세요.");
+else if (!firebaseConfig.apiKey) fail("예약 확인 페이지가 아직 준비되지 않았어요.");
+else {
+  const db = getFirestore(initializeApp(firebaseConfig));
+  onSnapshot(doc(db, "publicStatus", id), (snap) => {
+    if (!snap.exists()) { fail("링크가 올바르지 않거나 삭제된 예약이에요. 매장으로 문의해 주세요."); return; }
+    const r = snap.data();
+    const v = VIEW[r.status] || VIEW.requested;
+    $("title").textContent = v.title;
+    $("message").textContent = v.msg;
+    $("message").className = "message " + v.tone;
+    document.querySelectorAll("#steps li").forEach((li, i) => li.classList.toggle("on", i < v.step));
+    $("steps").hidden = v.step === 0;
+    $("code").textContent = r.code;
+    const rows = [
+      ["예약자", r.nameMasked],
+      ["픽업 매장", r.store],
+      ["픽업 일시", `${prettyDate(r.pickupDate)} ${r.pickupTime}`],
+      ["케이크", `${r.cake} ${r.qty}개`]
+    ];
+    $("summary").replaceChildren(...rows.map(([k, val]) => {
+      const li = document.createElement("li");
+      const a = document.createElement("span"); a.textContent = k;
+      const b = document.createElement("span"); b.textContent = val;
+      li.append(a, b); return li;
+    }));
+    $("loading").hidden = true;
+    $("content").hidden = false;
+  }, (err) => { console.error(err); fail("예약 정보를 불러오지 못했어요. 잠시 후 새로고침해 주세요."); });
+}
+</script>
+</body>
+</html>

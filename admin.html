@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>벤슨 케이크 예약 관리</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root {
+    color-scheme: light;
+    --sky: #7EA9DB; --cream: #F3E2B3; --navy: #22364A; --ink: #1E2B38;
+    --mute: #5E6E7F; --line: #D6E0EC; --bg: #EEF3F9; --paper: #FFFFFF;
+    --warn: #B7791F; --warn-bg: #FFF4DE;
+    --alert: #C0392B; --alert-bg: #FCEDEB;
+    --ok: #2E7D5B; --ok-bg: #E6F3EC;
+    --done: #3D5A80; --done-bg: #E7EEF7;
+    --off: #6B7682; --off-bg: #EEF0F2;
+    --font: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+    box-sizing: border-box;
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; }
+  body { font-family: var(--font); color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased; word-break: keep-all; font-size: 15px; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
+
+  /* login */
+  .center { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: var(--sky); }
+  .login { width: 100%; max-width: 360px; padding: 28px 24px; border-radius: 22px; background: var(--paper); }
+  .login h1 { margin: 0 0 4px; font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+  .login p { margin: 0 0 20px; color: var(--mute); font-size: 14px; }
+  label.f { display: block; margin-bottom: 12px; font-size: 13px; font-weight: 600; color: var(--mute); }
+  label.f input, label.f select { display: block; width: 100%; margin-top: 6px; min-height: 46px; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 10px; background: #F7F9FC; font-size: 16px; }
+  .primary { width: 100%; min-height: 48px; border: 0; border-radius: 12px; background: var(--navy); color: #fff; font-weight: 700; font-size: 16px; }
+  .primary:disabled { opacity: .6; }
+  .msg-err { margin: 10px 0 0; color: var(--alert); font-size: 14px; font-weight: 600; }
+  .msg-err:empty { display: none; }
+
+  /* app */
+  .topbar { position: sticky; top: 0; z-index: 5; background: var(--navy); color: #fff; padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 12px; }
+  .topbar-in { max-width: 1080px; margin: 0 auto; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .topbar h1 { margin: 0; font-size: 17px; font-weight: 800; }
+  .who { font-size: 13px; opacity: .85; }
+  .top-actions { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+  .tbtn { min-height: 36px; padding: 0 12px; border: 1px solid rgba(255,255,255,.35); border-radius: 999px; background: transparent; color: #fff; font-size: 13px; font-weight: 600; }
+  .tbtn.on { background: var(--cream); color: var(--navy); border-color: var(--cream); }
+
+  .content { max-width: 1080px; margin: 0 auto; padding: 14px 14px 60px; }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  .filters select, .filters input { min-height: 40px; padding: 6px 10px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--paper); font-size: 14px; }
+  .filters input[type=search] { flex: 1; min-width: 150px; }
+  .chip { min-height: 40px; padding: 0 14px; border: 1.5px solid var(--line); border-radius: 999px; background: var(--paper); font-size: 14px; font-weight: 600; color: var(--mute); }
+  .chip.on { border-color: var(--navy); background: var(--navy); color: #fff; }
+
+  .tabs { display: flex; gap: 4px; overflow-x: auto; margin: 0 -14px 14px; padding: 0 14px; scrollbar-width: none; }
+  .tab { flex: none; min-height: 42px; padding: 0 14px; border: 0; border-bottom: 3px solid transparent; background: none; font-weight: 700; color: var(--mute); }
+  .tab b { margin-left: 4px; display: inline-block; min-width: 22px; padding: 1px 6px; border-radius: 999px; background: #DDE5EF; font-size: 12px; color: var(--navy); }
+  .tab.on { color: var(--navy); border-bottom-color: var(--navy); }
+  .tab.attn b { background: var(--warn); color: #fff; }
+
+  .list { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+  .empty { padding: 40px 16px; text-align: center; color: var(--mute); background: var(--paper); border-radius: 14px; }
+  .banner { margin-bottom: 12px; padding: 12px 14px; border-radius: 12px; background: var(--alert-bg); color: var(--alert); font-size: 14px; font-weight: 600; word-break: break-all; }
+
+  .card { background: var(--paper); border-radius: 14px; padding: 14px; border-left: 5px solid var(--line); }
+  .card.requested { border-left-color: var(--warn); }
+  .card.reschedule { border-left-color: var(--alert); }
+  .card.confirmed { border-left-color: var(--ok); }
+  .card.picked_up { border-left-color: var(--done); }
+  .card.cancelled, .card.no_show { border-left-color: var(--off); opacity: .85; }
+  .card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .badge { padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+  .b-requested { background: var(--warn-bg); color: var(--warn); }
+  .b-reschedule { background: var(--alert-bg); color: var(--alert); }
+  .b-confirmed { background: var(--ok-bg); color: var(--ok); }
+  .b-picked_up { background: var(--done-bg); color: var(--done); }
+  .b-cancelled, .b-no_show { background: var(--off-bg); color: var(--off); }
+  .when { font-size: 15px; font-weight: 800; text-align: right; }
+  .dday { margin-left: 4px; font-size: 12px; font-weight: 700; color: var(--alert); }
+  .dday.later { color: var(--mute); }
+  .store-name { margin: 8px 0 0; font-size: 13px; font-weight: 700; color: var(--done); }
+  .cake { margin: 8px 0 10px; font-size: 17px; font-weight: 700; }
+  .meta { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; font-size: 14px; }
+  .meta dt { color: var(--mute); }
+  .meta dd { margin: 0; font-weight: 600; }
+  .meta a { color: var(--navy); }
+  .memo, .note { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; font-size: 13px; line-height: 1.5; }
+  .memo { background: #F6F2E6; }
+  .note { background: #EEF3F9; }
+  .actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .act { min-height: 40px; padding: 0 12px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--paper); font-size: 14px; font-weight: 700; color: var(--navy); }
+  .act.main { border-color: var(--navy); background: var(--navy); color: #fff; }
+  .act.warn { border-color: var(--alert); color: var(--alert); }
+  .more { margin-top: 10px; font-size: 13px; color: var(--mute); }
+  .more summary { cursor: pointer; }
+  .more select { margin-top: 6px; min-height: 36px; border: 1.5px solid var(--line); border-radius: 8px; padding: 4px 8px; background: #fff; }
+
+  dialog { width: min(440px, calc(100vw - 24px)); border: 0; border-radius: 18px; padding: 20px; color: var(--ink); }
+  dialog::backdrop { background: rgba(20, 32, 45, .45); }
+  dialog h2 { margin: 0 0 6px; font-size: 18px; font-weight: 800; }
+  dialog .to { margin: 0 0 12px; color: var(--mute); font-size: 14px; }
+  dialog textarea { width: 100%; min-height: 200px; padding: 10px; border: 1.5px solid var(--line); border-radius: 10px; font-size: 14px; line-height: 1.55; resize: vertical; }
+  .dlg-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+  .dlg-actions .wide { grid-column: 1 / -1; }
+  .dlg-btn { display: flex; align-items: center; justify-content: center; min-height: 46px; border: 1.5px solid var(--navy); border-radius: 12px; background: #fff; color: var(--navy); font-weight: 700; text-decoration: none; font-size: 15px; }
+  .dlg-btn.main { background: var(--navy); color: #fff; }
+  .dlg-btn.plain { border-color: var(--line); color: var(--mute); }
+  .hint { margin: 8px 0 0; font-size: 12px; color: var(--mute); line-height: 1.5; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  table.staff { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 16px; }
+  table.staff th, table.staff td { padding: 6px 4px; border-bottom: 1px solid var(--line); text-align: left; }
+  .staff-wrap { max-height: 220px; overflow: auto; margin-bottom: 8px; }
+
+  .toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 50; padding: 12px 18px; border-radius: 999px; background: var(--navy); color: #fff; font-weight: 700; font-size: 14px; box-shadow: 0 6px 20px rgba(20,32,45,.25); }
+</style>
+</head>
+<body>
+
+<!-- 로그인 -->
+<section class="center" id="loginView" hidden>
+  <form class="login" id="loginForm">
+    <h1>벤슨 케이크 예약 관리</h1>
+    <p>본사·매장 계정으로 로그인하세요.</p>
+    <label class="f">이메일<input type="email" id="loginEmail" autocomplete="username" required></label>
+    <label class="f">비밀번호<input type="password" id="loginPw" autocomplete="current-password" required></label>
+    <button class="primary" id="loginBtn">로그인</button>
+    <p class="msg-err" id="loginErr"></p>
+  </form>
+</section>
+
+<!-- 권한 없음 -->
+<section class="center" id="deniedView" hidden>
+  <div class="login">
+    <h1>접근 권한이 없는 계정이에요</h1>
+    <p id="deniedText">본사 담당자에게 매장 계정 연결을 요청해 주세요.</p>
+    <button class="primary" id="deniedLogout">다른 계정으로 로그인</button>
+  </div>
+</section>
+
+<!-- 앱 -->
+<div id="appView" hidden>
+  <header class="topbar">
+    <div class="topbar-in">
+      <div>
+        <h1>케이크 사전예약 관리</h1>
+        <div class="who" id="who"></div>
+      </div>
+      <div class="top-actions">
+        <button class="tbtn" id="alertBtn">새 예약 알림 켜기</button>
+        <button class="tbtn" id="csvBtn" hidden>엑셀(CSV) 받기</button>
+        <button class="tbtn" id="acctBtn" hidden>계정 관리</button>
+        <button class="tbtn" id="logoutBtn">로그아웃</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="banner" id="banner" hidden></div>
+    <div class="filters">
+      <select id="storeFilter" hidden aria-label="매장"><option value="">전체 매장</option></select>
+      <button class="chip on" data-day="all">전체 날짜</button>
+      <button class="chip" data-day="today">오늘 픽업</button>
+      <button class="chip" data-day="tomorrow">내일 픽업</button>
+      <input type="date" id="dayPick" aria-label="픽업 날짜 선택">
+      <select id="period" aria-label="불러올 기간">
+        <option value="7">최근 7일 이후 픽업</option>
+        <option value="30">최근 30일 이후 픽업</option>
+        <option value="all">전체 기간</option>
+      </select>
+      <input type="search" id="search" placeholder="전화번호 뒷자리 검색" inputmode="search">
+    </div>
+    <nav class="tabs" id="tabs"></nav>
+    <div class="list" id="list"></div>
+  </main>
+</div>
+
+<!-- 문자 -->
+<dialog id="msgDlg">
+  <h2 id="msgTitle"></h2>
+  <p class="to" id="msgTo"></p>
+  <textarea id="msgText" aria-label="보낼 문구"></textarea>
+  <div class="dlg-actions">
+    <a class="dlg-btn main" id="msgSms" href="#">문자 앱 열기</a>
+    <button class="dlg-btn" id="msgCopy" type="button">문구 복사</button>
+    <a class="dlg-btn" id="msgTel" href="#">전화 걸기</a>
+    <button class="dlg-btn plain" type="button" data-close>닫기</button>
+  </div>
+  <p class="hint">휴대폰에서는 ‘문자 앱 열기’를 누르면 받는 사람과 문구가 채워진 채로 열려요. 전송만 누르면 됩니다. PC에서는 ‘문구 복사’를 써 주세요.</p>
+</dialog>
+
+<!-- 일시 변경 -->
+<dialog id="editDlg">
+  <h2>픽업 일시 변경</h2>
+  <p class="to" id="editTo"></p>
+  <div class="row2">
+    <label class="f">날짜<input type="date" id="editDate"></label>
+    <label class="f">시간<select id="editTime"></select></label>
+  </div>
+  <p class="msg-err" id="editErr"></p>
+  <div class="dlg-actions">
+    <button class="dlg-btn main" id="editSave" type="button">변경 저장</button>
+    <button class="dlg-btn plain" type="button" data-close>닫기</button>
+  </div>
+  <p class="hint">고객과 통화로 새 일시를 정한 뒤 저장하고, 이어서 ‘확정하고 문자 보내기’를 눌러 주세요.</p>
+</dialog>
+
+<!-- 계정 관리 (마스터) -->
+<dialog id="acctDlg">
+  <h2>계정 관리</h2>
+  <p class="to">매장 계정은 해당 매장 예약만 보고 처리할 수 있어요.</p>
+  <div class="staff-wrap"><table class="staff"><thead><tr><th>이메일</th><th>권한</th><th>매장</th></tr></thead><tbody id="staffBody"></tbody></table></div>
+  <form id="acctForm">
+    <div class="row2">
+      <label class="f">권한
+        <select id="acctRole"><option value="store">매장</option><option value="master">본사(마스터)</option></select>
+      </label>
+      <label class="f">매장<select id="acctStore"></select></label>
+    </div>
+    <label class="f">이메일(아이디)<input type="email" id="acctEmail" required></label>
+    <label class="f">비밀번호 (6자 이상)<input type="text" id="acctPw" minlength="6" required autocomplete="off"></label>
+    <p class="msg-err" id="acctErr"></p>
+    <div class="dlg-actions">
+      <button class="dlg-btn main" id="acctSave">계정 만들기</button>
+      <button class="dlg-btn plain" type="button" data-close>닫기</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" hidden></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, collection, query, where, onSnapshot, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { firebaseConfig, STORES, MESSAGES, PICKUP_TIME } from "./config.js";
+
+const $ = (id) => document.getElementById(id);
+const WEEK = ["일", "월", "화", "수", "목", "금", "토"];
+const STATUS = {
+  requested:  { label: "확인 필요" },
+  reschedule: { label: "시간 조정 중" },
+  confirmed:  { label: "확정" },
+  picked_up:  { label: "픽업 완료" },
+  no_show:    { label: "노쇼" },
+  cancelled:  { label: "취소" }
+};
+const TABS = [
+  ["requested", "확인 필요"], ["reschedule", "시간 조정 중"], ["confirmed", "확정"],
+  ["picked_up", "픽업 완료"], ["closed", "취소·노쇼"], ["all", "전체"]
+];
+
+if (!firebaseConfig.apiKey) {
+  document.body.innerHTML = '<p style="padding:24px;font-family:sans-serif">config.js에 Firebase 설정을 먼저 입력해 주세요.</p>';
+  throw new Error("Firebase config missing");
+}
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+/* ---------- 공통 유틸 ---------- */
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const kstDate = (offsetDays = 0) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" })
+    .format(new Date(Date.now() + offsetDays * 86400000));
+const pretty = (ymd) => {
+  if (!ymd) return "";
+  const [y, m, d] = ymd.split("-").map(Number);
+  return `${m}/${d}(${WEEK[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]})`;
+};
+const prettyLong = (ymd) => {
+  const [y, m, d] = ymd.split("-").map(Number);
+  return `${m}월 ${d}일(${WEEK[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]})`;
+};
+const fmtPhone = (p = "") => p.length === 11 ? `${p.slice(0, 3)}-${p.slice(3, 7)}-${p.slice(7)}` : p.length === 10 ? `${p.slice(0, 3)}-${p.slice(3, 6)}-${p.slice(6)}` : p;
+const fmtTs = (ts) => {
+  if (!ts || !ts.toDate) return "";
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+    .formatToParts(ts.toDate()).map((x) => [x.type, x.value]));
+  return `${p.month}/${p.day} ${p.hour}:${p.minute}`;
+};
+const daysBetween = (a, b) => (Date.parse(b) - Date.parse(a)) / 86400000;
+const ddayLabel = (ymd) => {
+  const n = daysBetween(kstDate(0), ymd);
+  if (n === 0) return '<span class="dday">오늘</span>';
+  if (n === 1) return '<span class="dday">내일</span>';
+  if (n > 1) return `<span class="dday later">D-${n}</span>`;
+  return '<span class="dday later">지남</span>';
+};
+const statusUrl = (id) => new URL(`status.html?r=${encodeURIComponent(id)}`, location.href).href;
+const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+const smsHref = (phone, body) => `sms:${phone}${isIOS ? "&" : "?"}body=${encodeURIComponent(body)}`;
+const fill = (tpl, r) => tpl
+  .replaceAll("{name}", r.name).replaceAll("{store}", r.store)
+  .replaceAll("{datetime}", `${prettyLong(r.pickupDate)} ${r.pickupTime}`)
+  .replaceAll("{cake}", r.cake).replaceAll("{qty}", String(r.qty))
+  .replaceAll("{code}", r.code).replaceAll("{link}", statusUrl(r.id));
+
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); }
+  catch (_) {
+    const t = document.createElement("textarea"); t.value = text; document.body.appendChild(t);
+    t.select(); document.execCommand("copy"); t.remove();
+  }
+}
+let toastTimer;
+function toast(text) {
+  $("toast").textContent = text; $("toast").hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { $("toast").hidden = true; }, 2600);
+}
+function showView(name) {
+  ["loginView", "deniedView", "appView"].forEach((v) => { $(v).hidden = v !== name; });
+}
+document.querySelectorAll("dialog [data-close]").forEach((b) => b.addEventListener("click", () => b.closest("dialog").close()));
+
+/* ---------- 상태 ---------- */
+let me = null;
+let rows = [];
+let unsub = null;
+let firstLoad = true;
+const state = { tab: "requested", day: "all", dayValue: "", q: "", store: "", period: "7" };
+
+/* ---------- 로그인 ---------- */
+$("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("loginErr").textContent = ""; $("loginBtn").disabled = true;
+  try { await signInWithEmailAndPassword(auth, $("loginEmail").value.trim(), $("loginPw").value); }
+  catch (err) {
+    console.error(err);
+    $("loginErr").textContent = err.code === "auth/too-many-requests"
+      ? "로그인 시도가 많아 잠시 막혔어요. 몇 분 뒤 다시 시도해 주세요."
+      : "이메일 또는 비밀번호가 맞지 않아요.";
+  } finally { $("loginBtn").disabled = false; }
+});
+$("logoutBtn").onclick = () => signOut(auth);
+$("deniedLogout").onclick = () => signOut(auth);
+
+onAuthStateChanged(auth, async (user) => {
+  if (unsub) { unsub(); unsub = null; }
+  rows = []; me = null;
+  if (!user) { showView("loginView"); return; }
+  try {
+    const snap = await getDoc(doc(db, "staff", user.uid));
+    const data = snap.exists() ? snap.data() : null;
+    if (!data || !(data.role === "master" || (data.role === "store" && data.store))) {
+      $("deniedText").textContent = `이 계정(${user.email})은 예약 관리 권한이 연결되지 않았어요. 본사 담당자에게 요청해 주세요.`;
+      showView("deniedView"); return;
+    }
+    me = { uid: user.uid, email: user.email, ...data };
+  } catch (err) {
+    console.error(err);
+    $("deniedText").textContent = "권한 정보를 불러오지 못했어요. Firestore 보안 규칙이 게시되었는지 확인해 주세요.";
+    showView("deniedView"); return;
+  }
+  setupApp();
+  showView("appView");
+  subscribe();
+});
+
+/* ---------- 화면 준비 ---------- */
+function setupApp() {
+  const master = me.role === "master";
+  $("who").textContent = master ? `본사 마스터 · ${me.email}` : `${me.store} · ${me.email}`;
+  $("storeFilter").hidden = !master;
+  $("csvBtn").hidden = !master;
+  $("acctBtn").hidden = !master;
+  if (master && $("storeFilter").options.length === 1) {
+    [...STORES].sort((a, b) => a.localeCompare(b, "ko")).forEach((s) => $("storeFilter").add(new Option(s, s)));
+  }
+}
+
+$("storeFilter").onchange = (e) => { state.store = e.target.value; render(); };
+$("period").onchange = (e) => { state.period = e.target.value; subscribe(); };
+$("search").oninput = (e) => { state.q = e.target.value.trim(); render(); };
+document.querySelectorAll(".chip").forEach((c) => c.addEventListener("click", () => {
+  state.day = c.dataset.day; state.dayValue = ""; $("dayPick").value = "";
+  document.querySelectorAll(".chip").forEach((x) => x.classList.toggle("on", x === c));
+  render();
+}));
+$("dayPick").onchange = (e) => {
+  state.day = e.target.value ? "date" : "all"; state.dayValue = e.target.value;
+  document.querySelectorAll(".chip").forEach((x) => x.classList.toggle("on", !e.target.value && x.dataset.day === "all"));
+  render();
+};
+
+/* ---------- 실시간 구독 ---------- */
+function subscribe() {
+  if (unsub) unsub();
+  firstLoad = true;
+  $("banner").hidden = true;
+  const cons = [];
+  if (me.role === "store") cons.push(where("store", "==", me.store));
+  if (state.period !== "all") cons.push(where("pickupDate", ">=", kstDate(-Number(state.period))));
+  unsub = onSnapshot(query(collection(db, "reservations"), ...cons), (snap) => {
+    let added = 0;
+    if (!firstLoad) snap.docChanges().forEach((ch) => { if (ch.type === "added" && !ch.doc.metadata.hasPendingWrites) added++; });
+    rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    firstLoad = false;
+    render();
+    if (added) notifyNew(added);
+  }, (err) => {
+    console.error(err);
+    $("banner").hidden = false;
+    $("banner").textContent = err.code === "failed-precondition"
+      ? "Firestore 색인이 필요해요. 설정 가이드의 ‘복합 색인 만들기’를 진행해 주세요. (" + err.message + ")"
+      : "예약 목록을 불러오지 못했어요: " + err.message;
+  });
+}
+
+/* ---------- 목록 ---------- */
+function baseFiltered() {
+  const today = kstDate(0), tomorrow = kstDate(1);
+  const q = state.q.toLowerCase();
+  return rows.filter((r) => {
+    if (me.role === "master" && state.store && r.store !== state.store) return false;
+    if (state.day === "today" && r.pickupDate !== today) return false;
+    if (state.day === "tomorrow" && r.pickupDate !== tomorrow) return false;
+    if (state.day === "date" && r.pickupDate !== state.dayValue) return false;
+    if (q && !((r.phoneLast4 || "").includes(q) || (r.phone || "").includes(q) || (r.name || "").toLowerCase().includes(q) || (r.code || "").toLowerCase().includes(q))) return false;
+    return true;
+  });
+}
+const inTab = (r, tab) => tab === "all" ? true : tab === "closed" ? (r.status === "cancelled" || r.status === "no_show") : r.status === tab;
+
+function render() {
+  const base = baseFiltered();
+  $("tabs").innerHTML = TABS.map(([key, label]) => {
+    const n = base.filter((r) => inTab(r, key)).length;
+    const attn = (key === "requested" || key === "reschedule") && n > 0;
+    return `<button class="tab${state.tab === key ? " on" : ""}${attn ? " attn" : ""}" data-tab="${key}">${label}<b>${n}</b></button>`;
+  }).join("");
+
+  const list = base.filter((r) => inTab(r, state.tab))
+    .sort((a, b) => (a.pickupDate + a.pickupTime).localeCompare(b.pickupDate + b.pickupTime));
+  $("list").innerHTML = list.length ? list.map(card).join("")
+    : `<div class="empty">${state.tab === "requested" ? "확인할 새 예약이 없어요." : "해당하는 예약이 없어요."}</div>`;
+
+  const pending = rows.filter((r) => r.status === "requested").length;
+  document.title = (pending ? `(${pending}) ` : "") + "벤슨 케이크 예약 관리";
+}
+$("tabs").addEventListener("click", (e) => {
+  const b = e.target.closest(".tab"); if (!b) return;
+  state.tab = b.dataset.tab; render();
+});
+
+function actionsFor(r) {
+  const A = (act, label, cls = "") => `<button class="act ${cls}" data-act="${act}" data-id="${esc(r.id)}">${label}</button>`;
+  switch (r.status) {
+    case "requested":  return A("confirm", "확정하고 문자 보내기", "main") + A("reschedule", "시간 조정 필요", "warn") + A("edit", "일시 변경") + A("note", "메모");
+    case "reschedule": return A("confirm", "확정하고 문자 보내기", "main") + A("edit", "일시 변경") + A("msgReschedule", "조정 문자 보기") + A("note", "메모");
+    case "confirmed":  return A("pickup", "픽업 완료", "main") + A("noshow", "노쇼", "warn") + A("msgConfirm", "확정 문자 다시 보기") + A("edit", "일시 변경") + A("note", "메모");
+    default:           return A("note", "메모");
+  }
+}
+
+function card(r) {
+  const st = STATUS[r.status] || STATUS.requested;
+  const statusOpts = Object.entries(STATUS).map(([k, v]) => `<option value="${k}"${k === r.status ? " selected" : ""}>${v.label}</option>`).join("");
+  return `<article class="card ${esc(r.status)}">
+    <div class="card-top">
+      <span class="badge b-${esc(r.status)}">${st.label}</span>
+      <span class="when">${esc(pretty(r.pickupDate))} ${esc(r.pickupTime)}${ddayLabel(r.pickupDate)}</span>
+    </div>
+    ${me.role === "master" ? `<p class="store-name">${esc(r.store)}</p>` : ""}
+    <p class="cake">${esc(r.cake)} ${Number(r.qty) || 1}개</p>
+    <dl class="meta">
+      <dt>예약자</dt><dd>${esc(r.name)}</dd>
+      <dt>연락처</dt><dd><a href="tel:${esc(r.phone)}">${esc(fmtPhone(r.phone))}</a></dd>
+      <dt>예약번호</dt><dd>${esc(r.code)}</dd>
+      <dt>신청</dt><dd>${esc(fmtTs(r.createdAt))}</dd>
+    </dl>
+    ${r.memo ? `<p class="memo">고객 요청: ${esc(r.memo)}</p>` : ""}
+    ${r.storeNote ? `<p class="note">매장 메모: ${esc(r.storeNote)}</p>` : ""}
+    <div class="actions">${actionsFor(r)}</div>
+    <details class="more"><summary>다른 상태로 변경</summary>
+      <select data-act="setStatus" data-id="${esc(r.id)}" aria-label="상태 변경">${statusOpts}</select>
+    </details>
+  </article>`;
+}
+
+/* ---------- 처리 ---------- */
+const findRow = (id) => rows.find((r) => r.id === id);
+
+async function saveStatus(r, status, extra = {}) {
+  const ts = serverTimestamp();
+  const b = writeBatch(db);
+  b.update(doc(db, "reservations", r.id), { status, updatedAt: ts, updatedBy: me.email || me.uid, ...extra });
+  const pub = { status, updatedAt: ts };
+  if (extra.pickupDate) pub.pickupDate = extra.pickupDate;
+  if (extra.pickupTime) pub.pickupTime = extra.pickupTime;
+  b.update(doc(db, "publicStatus", r.id), pub);
+  await b.commit();
+}
+
+$("list").addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-act]"); if (!btn) return;
+  const r = findRow(btn.dataset.id); if (!r) return;
+  const act = btn.dataset.act;
+  try {
+    if (act === "confirm") {
+      btn.disabled = true;
+      await saveStatus(r, "confirmed");
+      openMsg("confirmed", r);
+    } else if (act === "reschedule") {
+      btn.disabled = true;
+      await saveStatus(r, "reschedule");
+      openMsg("reschedule", r);
+    } else if (act === "msgConfirm") openMsg("confirmed", r);
+    else if (act === "msgReschedule") openMsg("reschedule", r);
+    else if (act === "pickup") {
+      await saveStatus(r, "picked_up"); toast("픽업 완료로 처리했어요");
+    } else if (act === "noshow") {
+      if (!confirm(`${r.name}님 예약을 노쇼로 처리할까요?`)) return;
+      await saveStatus(r, "no_show"); toast("노쇼로 처리했어요");
+    } else if (act === "edit") openEdit(r);
+    else if (act === "note") {
+      const v = prompt("매장 메모 (고객에게는 보이지 않아요)", r.storeNote || "");
+      if (v === null) return;
+      await updateDoc(doc(db, "reservations", r.id), { storeNote: v.slice(0, 300), updatedAt: serverTimestamp(), updatedBy: me.email || me.uid });
+      toast("메모를 저장했어요");
+    }
+  } catch (err) {
+    console.error(err);
+    toast("저장하지 못했어요. 권한이나 연결을 확인해 주세요.");
+    btn.disabled = false;
+  }
+});
+
+$("list").addEventListener("change", async (e) => {
+  const sel = e.target.closest("select[data-act=setStatus]"); if (!sel) return;
+  const r = findRow(sel.dataset.id); if (!r || sel.value === r.status) return;
+  if (!confirm(`상태를 ‘${STATUS[sel.value].label}’(으)로 바꿀까요?`)) { sel.value = r.status; return; }
+  try { await saveStatus(r, sel.value); toast(`‘${STATUS[sel.value].label}’(으)로 바꿨어요`); }
+  catch (err) { console.error(err); toast("저장하지 못했어요."); sel.value = r.status; }
+});
+
+/* ---------- 문자 ---------- */
+let msgRow = null;
+function openMsg(kind, r) {
+  msgRow = r;
+  $("msgTitle").textContent = kind === "confirmed" ? "확정 문자 보내기" : "시간 조정 문자 보내기";
+  $("msgTo").textContent = `받는 분: ${r.name} (${fmtPhone(r.phone)})`;
+  $("msgText").value = fill(MESSAGES[kind], r);
+  $("msgSms").href = smsHref(r.phone, $("msgText").value);
+  $("msgTel").href = `tel:${r.phone}`;
+  $("msgDlg").showModal();
+  $("msgText").scrollTop = 0;
+  $("msgSms").focus();
+}
+$("msgText").addEventListener("input", () => { if (msgRow) $("msgSms").href = smsHref(msgRow.phone, $("msgText").value); });
+$("msgCopy").onclick = async () => { await copyText($("msgText").value); toast("문구를 복사했어요"); };
+
+/* ---------- 일시 변경 ---------- */
+let editRow = null;
+const toMin = (hhmm) => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + m; };
+const pad = (n) => String(n).padStart(2, "0");
+for (let t = toMin(PICKUP_TIME.start); t <= toMin(PICKUP_TIME.end); t += PICKUP_TIME.stepMin) {
+  const v = `${pad(Math.floor(t / 60))}:${pad(t % 60)}`; $("editTime").add(new Option(v, v));
+}
+function openEdit(r) {
+  editRow = r;
+  $("editTo").textContent = `${r.name} (${fmtPhone(r.phone)}) · 현재 ${prettyLong(r.pickupDate)} ${r.pickupTime}`;
+  $("editDate").value = r.pickupDate;
+  $("editDate").min = kstDate(0);
+  if (![...$("editTime").options].some((o) => o.value === r.pickupTime)) $("editTime").add(new Option(r.pickupTime, r.pickupTime));
+  $("editTime").value = r.pickupTime;
+  $("editErr").textContent = "";
+  $("editDlg").showModal();
+}
+$("editSave").onclick = async () => {
+  const d = $("editDate").value, t = $("editTime").value;
+  if (!d || !t) { $("editErr").textContent = "날짜와 시간을 모두 골라 주세요."; return; }
+  try {
+    await saveStatus(editRow, editRow.status, { pickupDate: d, pickupTime: t });
+    $("editDlg").close(); toast("픽업 일시를 바꿨어요");
+  } catch (err) { console.error(err); $("editErr").textContent = "저장하지 못했어요."; }
+};
+
+/* ---------- 새 예약 알림 ---------- */
+let audioCtx = null;
+let alertsOn = false;
+$("alertBtn").onclick = async () => {
+  try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); await audioCtx.resume(); } catch (_) {}
+  if ("Notification" in window && Notification.permission === "default") { try { await Notification.requestPermission(); } catch (_) {} }
+  alertsOn = true;
+  $("alertBtn").textContent = "새 예약 알림 켜짐";
+  $("alertBtn").classList.add("on");
+  beep();
+};
+function beep() {
+  if (!audioCtx) return;
+  try {
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.frequency.value = 880; g.gain.value = 0.15;
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime + 0.25);
+  } catch (_) {}
+}
+function notifyNew(n) {
+  toast(`새 예약 ${n}건이 들어왔어요`);
+  if (!alertsOn) return;
+  beep();
+  if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
+    try { new Notification("벤슨 케이크 새 예약", { body: `확인이 필요한 예약 ${n}건` }); } catch (_) {}
+  }
+}
+
+/* ---------- CSV (마스터) ---------- */
+$("csvBtn").onclick = async () => {
+  try {
+    const snap = await getDocs(collection(db, "reservations"));
+    const head = ["예약번호", "상태", "매장", "케이크", "수량", "픽업일", "픽업시간", "이름", "연락처", "고객 요청", "매장 메모", "신청일시", "처리자", "utm_source", "utm_medium", "utm_campaign", "utm_content"];
+    const cell = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const lines = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (a.pickupDate + a.pickupTime).localeCompare(b.pickupDate + b.pickupTime))
+      .map((r) => [r.code, STATUS[r.status]?.label || r.status, r.store, r.cake, r.qty, r.pickupDate, r.pickupTime, r.name, fmtPhone(r.phone), r.memo, r.storeNote, fmtTs(r.createdAt), r.updatedBy, r.utmSource, r.utmMedium, r.utmCampaign, r.utmContent].map(cell).join(","));
+    const csv = "\uFEFF" + [head.map(cell).join(","), ...lines].join("\r\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    a.download = `벤슨_케이크예약_${kstDate(0).replaceAll("-", "")}.csv`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  } catch (err) { console.error(err); toast("내려받지 못했어요."); }
+};
+
+/* ---------- 계정 관리 (마스터) ---------- */
+let secondaryAuth = null;
+const getSecondaryAuth = () => secondaryAuth || (secondaryAuth = getAuth(initializeApp(firebaseConfig, "secondary")));
+
+[...STORES].sort((a, b) => a.localeCompare(b, "ko")).forEach((s) => $("acctStore").add(new Option(s, s)));
+$("acctRole").onchange = () => { $("acctStore").disabled = $("acctRole").value !== "store"; };
+
+async function loadStaff() {
+  const snap = await getDocs(collection(db, "staff"));
+  const list = snap.docs.map((d) => d.data()).sort((a, b) => (a.role + (a.store || "")).localeCompare(b.role + (b.store || ""), "ko"));
+  $("staffBody").innerHTML = list.map((s) => `<tr><td>${esc(s.email)}</td><td>${s.role === "master" ? "본사" : "매장"}</td><td>${esc(s.store || "-")}</td></tr>`).join("")
+    || '<tr><td colspan="3">등록된 계정이 없어요.</td></tr>';
+}
+$("acctBtn").onclick = async () => {
+  $("acctErr").textContent = "";
+  $("acctDlg").showModal();
+  try { await loadStaff(); } catch (err) { console.error(err); $("staffBody").innerHTML = '<tr><td colspan="3">목록을 불러오지 못했어요.</td></tr>'; }
+};
+$("acctForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("acctErr").textContent = "";
+  const role = $("acctRole").value, store = $("acctStore").value;
+  const email = $("acctEmail").value.trim(), pw = $("acctPw").value;
+  if (pw.length < 6) { $("acctErr").textContent = "비밀번호는 6자 이상이어야 해요."; return; }
+  $("acctSave").disabled = true;
+  try {
+    const sa = getSecondaryAuth();
+    const cred = await createUserWithEmailAndPassword(sa, email, pw);
+    await setDoc(doc(db, "staff", cred.user.uid), { role, store: role === "store" ? store : "", email, createdAt: serverTimestamp(), createdBy: me.email });
+    await signOut(sa);
+    $("acctEmail").value = ""; $("acctPw").value = "";
+    toast("계정을 만들었어요");
+    await loadStaff();
+  } catch (err) {
+    console.error(err);
+    $("acctErr").textContent =
+      err.code === "auth/email-already-in-use" ? "이미 사용 중인 이메일이에요." :
+      err.code === "auth/invalid-email" ? "이메일 형식이 올바르지 않아요." :
+      err.code === "auth/weak-password" ? "비밀번호는 6자 이상이어야 해요." :
+      err.code === "auth/operation-not-allowed" ? "Firebase 콘솔에서 이메일/비밀번호 로그인을 켜 주세요." :
+      "계정을 만들지 못했어요: " + (err.message || err.code);
+  } finally { $("acctSave").disabled = false; }
+});
+</script>
+</body>
+</html>
