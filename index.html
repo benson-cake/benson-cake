@@ -195,40 +195,17 @@
     cursor: pointer;
   }
   .btn:disabled { opacity: .6; cursor: wait; }
-  .btn:focus-visible, .stepper button:focus-visible, .check input:focus-visible, summary:focus-visible, .ghost:focus-visible {
+  .btn:focus-visible, .stepper button:focus-visible, .check input:focus-visible, summary:focus-visible {
     outline: 3px solid var(--sky); outline-offset: 2px;
   }
   .form-error { margin: 0 0 10px; color: #FFD8D2; font-size: 14px; text-align: center; font-weight: 600; }
   .form-error:empty { display: none; }
 
-  /* ---------- Done ---------- */
-  .done { display: none; text-align: center; }
-  .done.show { display: block; animation: rise .45s ease-out; }
-  @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-  .done h2 { margin: 6px 0 8px; font-size: 26px; font-weight: 900; letter-spacing: -0.03em; }
-  .done .sub { margin: 0 0 22px; color: var(--mute); font-size: 15px; line-height: 1.6; }
-  .code-box { margin: 0 auto 22px; padding: 18px; border-radius: 18px; background: var(--cream); color: var(--navy); }
-  .code-box small { display: block; font-size: 13px; font-weight: 600; opacity: .8; }
-  .code-box strong { display: block; margin-top: 4px; font-size: 34px; font-weight: 900; letter-spacing: .08em; }
-  .summary { margin: 0 0 22px; padding: 0; list-style: none; text-align: left; border-top: 1px solid var(--line); }
-  .summary li { display: flex; justify-content: space-between; gap: 16px; padding: 12px 2px; border-bottom: 1px solid var(--line); font-size: 15px; }
-  .summary li span:first-child { color: var(--mute); flex: none; }
-  .summary li span:last-child { font-weight: 600; text-align: right; }
-  .link-box { padding: 16px; border-radius: 14px; background: #EEF4FB; text-align: left; font-size: 14px; line-height: 1.6; color: var(--navy); }
-  .link-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
-  .ghost {
-    display: flex; align-items: center; justify-content: center;
-    min-height: 48px; border-radius: 12px;
-    border: 1.5px solid var(--navy); background: #fff; color: var(--navy);
-    font: 700 15px/1 var(--font); text-decoration: none; cursor: pointer;
-  }
-  .ghost.fill { background: var(--navy); color: #fff; }
   .recent { display: none; margin: 0 0 22px; font-size: 14px; text-align: center; }
   .recent.show { display: block; }
   .recent a { color: var(--navy); font-weight: 700; }
   .setup-warning { margin: 0 0 20px; padding: 12px 14px; border-radius: 12px; background: #FFF1E6; color: #8A3B12; font-size: 14px; font-weight: 600; }
 
-  @media (prefers-reduced-motion: reduce) { .done.show { animation: none; } }
 </style>
 
 <!-- Meta Pixel Code (넥스트픽 전달 · 데이터세트 1686148093182564) -->
@@ -368,19 +345,6 @@ src="https://www.facebook.com/tr?id=1686148093182564&ev=PageView&noscript=1"
       </div>
     </form>
 
-    <section class="done" id="done" aria-live="polite">
-      <h2>예약 신청이 접수되었어요</h2>
-      <p class="sub">매장에서 확인한 뒤 문자로 확정을 알려 드려요.<br>결제는 픽업하실 때 매장에서 해요.</p>
-      <div class="code-box"><small>예약번호</small><strong id="doneCode"></strong></div>
-      <ul class="summary" id="doneSummary"></ul>
-      <div class="link-box">
-        아래 링크에서 확정 여부를 언제든 확인할 수 있어요. 링크를 저장해 두세요.
-        <div class="link-actions">
-          <button type="button" class="ghost" id="copyLink">링크 복사</button>
-          <a class="ghost fill" id="openStatus" href="#">예약 상태 보기</a>
-        </div>
-      </div>
-    </section>
   </main>
 </div>
 
@@ -637,11 +601,20 @@ $("form").addEventListener("submit", async (e) => {
       pickupDate: v.date, pickupTime: v.time,
       status: "requested", createdAt: now, updatedAt: now
     });
+    // 예약 신청 서버 전송 — commit이 오류 없이 끝나면 DB 저장 성공(response.success)
     await batch.commit();
 
-    if (window.fbq) window.fbq("track", "Lead", { content_name: "cake_preorder" });
+    // 메타 전환 이벤트 (넥스트픽 가이드: DB 저장 성공 시점에 1회만, 개인정보 미전송)
+    if (typeof fbq === 'function') {
+      fbq('track', 'Lead');
+    }
+
+    // 신청 완료 메시지 → 완료 페이지로 이동 (이벤트가 전송될 시간을 위해 잠깐 대기)
     try { localStorage.setItem("benson_last_reservation", ref.id); } catch (_) {}
-    showDone(ref.id, code, v);
+    btn.textContent = "신청이 완료되었습니다";
+    setTimeout(() => {
+      location.replace(new URL(`complete.html?r=${encodeURIComponent(ref.id)}`, location.href).href);
+    }, 700);
   } catch (err) {
     console.error(err);
     $("formError").textContent = "신청이 접수되지 않았어요. 인터넷 연결을 확인하고 다시 눌러 주세요.";
@@ -649,37 +622,6 @@ $("form").addEventListener("submit", async (e) => {
   }
 });
 
-function showDone(id, code, v) {
-  const url = statusUrl(id);
-  $("form").hidden = true;
-  $("recent").classList.remove("show");
-  $("ctaBar").hidden = true;
-  $("doneCode").textContent = code;
-  const rows = [
-    ["픽업 매장", v.store],
-    ["픽업 일시", `${prettyDate(v.date)} ${v.time}`],
-    ["케이크", `${v.cake} ${qty}개`],
-    ["예약자", `${v.name} (${formatPhone(v.phone)})`]
-  ];
-  $("doneSummary").replaceChildren(...rows.map(([k, val]) => {
-    const li = document.createElement("li");
-    const a = document.createElement("span"); a.textContent = k;
-    const b = document.createElement("span"); b.textContent = val;
-    li.append(a, b); return li;
-  }));
-  $("openStatus").href = url;
-  $("copyLink").onclick = async () => {
-    try { await navigator.clipboard.writeText(url); }
-    catch (_) {
-      const t = document.createElement("textarea"); t.value = url; document.body.appendChild(t);
-      t.select(); document.execCommand("copy"); t.remove();
-    }
-    $("copyLink").textContent = "복사했어요";
-    setTimeout(() => { $("copyLink").textContent = "링크 복사"; }, 2000);
-  };
-  $("done").classList.add("show");
-  window.scrollTo({ top: $("done").offsetTop - 20, behavior: "smooth" });
-}
 </script>
 </body>
 </html>
