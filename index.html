@@ -26,6 +26,7 @@
     --field: #F5F8FC;
     --paper: #FFFFFF;
     --error: #C0392B;
+    --sale: #D9473B;
     --font: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
     box-sizing: border-box;
   }
@@ -130,7 +131,20 @@
   .cake-opt input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
   .cake-opt .dot { flex: none; width: 20px; height: 20px; border-radius: 50%; border: 2px solid #B8C4D2; background: #fff; }
   .cake-opt .nm { flex: 1; font-size: 16px; font-weight: 600; line-height: 1.35; }
-  .cake-opt .pr { flex: none; font-size: 15px; font-weight: 700; color: var(--navy); }
+  .cake-opt .pr { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 1px; text-align: right; }
+  .cake-opt .pr .was { font-size: 13px; color: #8A98A8; white-space: nowrap; }
+  .cake-opt .pr .was s { text-decoration-thickness: 1.5px; }
+  .cake-opt .pr .off { margin-right: 5px; font-weight: 800; color: var(--sale); }
+  .cake-opt .pr .now { font-size: 17px; font-weight: 800; color: var(--navy); white-space: nowrap; }
+  .price-note {
+    display: flex; align-items: center; gap: 8px;
+    margin: -2px 0 12px; font-size: 14px; color: var(--mute);
+  }
+  .price-note b {
+    padding: 4px 10px; border-radius: 999px;
+    background: var(--cream); color: var(--navy); font-size: 13px; font-weight: 800;
+  }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
   .cake-opt.on { border-color: var(--navy); background: #FBF4E1; }
   .cake-opt.on .dot { border: 6px solid var(--navy); }
   .cake-opt.focus { outline: 3px solid var(--sky); outline-offset: 2px; }
@@ -150,13 +164,21 @@
   .invalid { border-color: var(--error) !important; }
 
   .consent { border-top: 1px solid var(--line); padding-top: 20px; }
-  .check { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .check { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; font-weight: 600; cursor: pointer; line-height: 1.45; }
   .check input { width: 22px; height: 22px; margin: 0; flex: none; accent-color: var(--navy); }
-  details { margin-top: 10px; font-size: 13px; color: var(--mute); }
-  summary { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
-  .terms { width: 100%; margin-top: 10px; border-collapse: collapse; }
+  .check.all { padding: 14px; border-radius: 12px; background: #EEF4FB; font-size: 16px; font-weight: 800; color: var(--navy); }
+  .consent-item { padding: 14px 2px 0; }
+  .consent-item + .consent-item { margin-top: 2px; }
+  details { margin: 8px 0 0 32px; font-size: 13px; color: var(--mute); }
+  summary { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; width: fit-content; }
+  .terms-intro { margin: 10px 0 0; line-height: 1.6; }
+  .terms-wrap { overflow-x: auto; margin-top: 10px; }
+  .terms { width: 100%; min-width: 300px; border-collapse: collapse; }
   .terms th, .terms td { text-align: left; vertical-align: top; padding: 8px 6px; border-top: 1px solid var(--line); line-height: 1.5; }
-  .terms th { width: 92px; font-weight: 600; color: var(--navy); }
+  .terms th { width: 84px; font-weight: 600; color: var(--navy); }
+  .terms-note { margin: 8px 0 0; line-height: 1.6; }
+  .outsourcing { margin: 16px 0 0; font-size: 12px; line-height: 1.6; color: var(--mute); }
+  .outsourcing a { color: var(--navy); }
 
   /* ---------- Sticky CTA ---------- */
   .cta-bar {
@@ -208,6 +230,24 @@
 
   @media (prefers-reduced-motion: reduce) { .done.show { animation: none; } }
 </style>
+
+<!-- Meta Pixel Code (넥스트픽 전달 · 데이터세트 1686148093182564) -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '1686148093182564');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=1686148093182564&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
 </head>
 <body>
 <div class="wrap">
@@ -293,21 +333,38 @@
         </div>
       </fieldset>
 
-      <div class="consent">
-        <label class="check">
-          <input type="checkbox" id="consent" required>
-          <span>[필수] 개인정보 수집·이용에 동의합니다</span>
+      <div class="consent" id="consentBox">
+        <label class="check all">
+          <input type="checkbox" id="agreeAll">
+          <span>아래 내용에 모두 동의합니다</span>
         </label>
-        <details>
-          <summary>내용 보기</summary>
-          <table class="terms">
-            <tr><th scope="row">수집 목적</th><td id="pPurpose"></td></tr>
-            <tr><th scope="row">수집 항목</th><td id="pItems"></td></tr>
-            <tr><th scope="row">보유 기간</th><td id="pRetention"></td></tr>
-            <tr><th scope="row">거부 권리</th><td id="pRefusal"></td></tr>
-          </table>
-        </details>
+
+        <div class="consent-item">
+          <label class="check">
+            <input type="checkbox" id="consent" class="agree" required>
+            <span>[필수] 개인정보 수집·이용 동의</span>
+          </label>
+          <details><summary>내용 보기</summary><div id="termsCollect"></div></details>
+        </div>
+
+        <div class="consent-item">
+          <label class="check">
+            <input type="checkbox" id="consent3p" class="agree" required>
+            <span>[필수] 개인정보 제3자 제공 동의</span>
+          </label>
+          <details><summary>내용 보기</summary><div id="termsThird"></div></details>
+        </div>
+
+        <div class="consent-item">
+          <label class="check">
+            <input type="checkbox" id="consentMkt" class="agree">
+            <span>[선택] 마케팅 정보 수신 동의</span>
+          </label>
+          <details><summary>내용 보기</summary><div id="termsMkt"></div></details>
+        </div>
+
         <p class="err" data-for="consent"></p>
+        <p class="outsourcing" id="outsourcing"></p>
       </div>
     </form>
 
@@ -337,21 +394,10 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, doc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { firebaseConfig, META_PIXEL_ID, BRAND, STORES, CAKES, MAX_QTY, MIN_DAYS_AHEAD, MAX_DAYS_AHEAD, PICKUP_TIME, PRIVACY } from "./config.js";
+import { firebaseConfig, BRAND, STORES, CAKES, MAX_QTY, MIN_DAYS_AHEAD, MAX_DAYS_AHEAD, PICKUP_TIME, PRIVACY, PREORDER_DISCOUNT } from "./config.js";
 
 const $ = (id) => document.getElementById(id);
 const WEEK = ["일", "월", "화", "수", "목", "금", "토"];
-
-/* ---------- 메타 픽셀 ---------- */
-if (META_PIXEL_ID) {
-  !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-  n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
-  n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
-  t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
-  document,'script','https://connect.facebook.net/en_US/fbevents.js');
-  window.fbq('init', META_PIXEL_ID);
-  window.fbq('track', 'PageView');
-}
 
 /* ---------- 브랜드 이미지 ---------- */
 if (BRAND.logoUrl) $("logo").innerHTML = `<img src="${BRAND.logoUrl}" alt="Benson">`;
@@ -388,6 +434,17 @@ const storeSel = $("store");
 
 const cakeName = (c) => (typeof c === "string" ? c : c.name);
 const cakePrice = (c) => (typeof c === "string" ? null : c.price);
+const won = (n) => `${n.toLocaleString("ko-KR")}원`;
+function priceTag(price) {
+  const pr = document.createElement("span"); pr.className = "pr";
+  const sale = Math.max(price - PREORDER_DISCOUNT, 0);
+  if (!PREORDER_DISCOUNT) { pr.innerHTML = `<span class="now">${won(price)}</span>`; return pr; }
+  pr.innerHTML =
+    `<span class="sr-only">정상가 ${won(price)}, 사전예약가 ${won(sale)}</span>` +
+    `<span class="was" aria-hidden="true"><span class="off">-${PREORDER_DISCOUNT.toLocaleString("ko-KR")}</span><s>${won(price)}</s></span>` +
+    `<span class="now" aria-hidden="true">${won(sale)}</span>`;
+  return pr;
+}
 if (CAKES.length) {
   const list = document.createElement("div");
   list.className = "cake-list"; list.id = "cake";
@@ -398,7 +455,7 @@ if (CAKES.length) {
     const dot = document.createElement("span"); dot.className = "dot"; dot.setAttribute("aria-hidden", "true");
     const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = cakeName(c);
     lab.append(inp, dot, nm);
-    if (cakePrice(c)) { const pr = document.createElement("span"); pr.className = "pr"; pr.textContent = `${cakePrice(c).toLocaleString("ko-KR")}원`; lab.append(pr); }
+    if (cakePrice(c)) lab.append(priceTag(cakePrice(c)));
     inp.addEventListener("focus", () => lab.classList.add("focus"));
     inp.addEventListener("blur", () => lab.classList.remove("focus"));
     list.appendChild(lab);
@@ -406,6 +463,11 @@ if (CAKES.length) {
   list.addEventListener("change", () => {
     list.querySelectorAll(".cake-opt").forEach((l) => l.classList.toggle("on", l.querySelector("input").checked));
   });
+  if (PREORDER_DISCOUNT && CAKES.some(cakePrice)) {
+    const note = document.createElement("p"); note.className = "price-note";
+    note.innerHTML = `<b>사전예약가</b><span>정상가에서 ${won(PREORDER_DISCOUNT)} 할인된 가격이에요</span>`;
+    $("cakeSlot").appendChild(note);
+  }
   $("cakeSlot").appendChild(list);
 } else {
   const lab = document.createElement("label"); lab.className = "label"; lab.htmlFor = "cake"; lab.textContent = "케이크 이름";
@@ -424,10 +486,45 @@ for (let t = toMin(PICKUP_TIME.start); t <= toMin(PICKUP_TIME.end); t += PICKUP_
   $("time").add(new Option(v, v));
 }
 
-$("pPurpose").textContent = PRIVACY.purpose;
-$("pItems").textContent = PRIVACY.items;
-$("pRetention").textContent = PRIVACY.retention;
-$("pRefusal").textContent = PRIVACY.refusal;
+/* ---------- 동의서 (config.js의 PRIVACY로 생성) ---------- */
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+function termsTable(rows) {
+  const wrap = el("div", "terms-wrap");
+  const t = el("table", "terms");
+  rows.forEach(([k, v]) => {
+    const tr = document.createElement("tr");
+    const th = el("th", null, k); th.scope = "row";
+    tr.append(th, el("td", null, v)); t.appendChild(tr);
+  });
+  wrap.appendChild(t); return wrap;
+}
+$("termsCollect").append(
+  el("p", "terms-intro", PRIVACY.intro),
+  termsTable([["수집 항목", PRIVACY.collect.items], ["수집·이용 목적", PRIVACY.collect.purpose], ["보유 기간", PRIVACY.collect.retention]]),
+  el("p", "terms-note", PRIVACY.refusalRequired)
+);
+$("termsThird").append(
+  ...PRIVACY.thirdParty.map((tp) => termsTable([["제공받는 자", tp.recipient], ["제공 목적", tp.purpose], ["제공 항목", tp.items], ["보유 기간", tp.retention]])),
+  el("p", "terms-note", PRIVACY.refusalRequired)
+);
+$("termsMkt").append(
+  termsTable([["수집 항목", PRIVACY.marketing.items], ["이용 목적", PRIVACY.marketing.purpose], ["연락 방법", PRIVACY.marketing.channels], ["보유 기간", PRIVACY.marketing.retention]]),
+  el("p", "terms-note", PRIVACY.refusalMarketing)
+);
+{
+  const o = $("outsourcing");
+  o.textContent = "개인정보 처리 위탁: " + PRIVACY.outsourcing.map((x) => `${x.vendor} – ${x.task}`).join(" / ");
+  if (PRIVACY.policyUrl) {
+    o.append(" ");
+    const a = el("a", null, "개인정보처리방침 전문 보기"); a.href = PRIVACY.policyUrl; a.target = "_blank"; a.rel = "noopener";
+    o.appendChild(a);
+  }
+}
+
+/* ---------- 전체 동의 ---------- */
+const agrees = [...document.querySelectorAll(".agree")];
+$("agreeAll").addEventListener("change", (e) => { agrees.forEach((c) => { c.checked = e.target.checked; }); setErr("consent", ""); });
+agrees.forEach((c) => c.addEventListener("change", () => { $("agreeAll").checked = agrees.every((x) => x.checked); }));
 
 /* ---------- 수량 ---------- */
 let qty = 1;
@@ -468,7 +565,9 @@ function validate() {
     name: $("name").value.trim(),
     phone: digits($("phone").value),
     memo: $("memo").value.trim(),
-    consent: $("consent").checked
+    consent: $("consent").checked,
+    consent3p: $("consent3p").checked,
+    consentMkt: $("consentMkt").checked
   };
   const errs = {};
   if (!v.store) errs.store = "픽업 매장을 선택해 주세요.";
@@ -479,12 +578,13 @@ function validate() {
   if (!v.time) errs.time = "픽업 시간을 선택해 주세요.";
   if (!v.name) errs.name = "이름을 적어 주세요.";
   if (!/^01[016789]\d{7,8}$/.test(v.phone)) errs.phone = "휴대폰 번호를 정확히 적어 주세요.";
-  if (!v.consent) errs.consent = "개인정보 수집·이용에 동의해야 신청할 수 있어요.";
+  if (!v.consent || !v.consent3p) errs.consent = "[필수] 항목 2개에 모두 동의해야 신청할 수 있어요.";
   ["store", "cake", "date", "time", "name", "phone", "consent"].forEach((k) => setErr(k, errs[k]));
   return { v, ok: Object.keys(errs).length === 0, first: Object.keys(errs)[0] };
 }
 ["store", "date", "time", "name", "phone", "consent"].forEach((k) =>
   $(k).addEventListener("change", () => setErr(k, "")));
+$("consent3p").addEventListener("change", () => setErr("consent", ""));
 document.addEventListener("change", (e) => { if (e.target.id === "cake" || e.target.name === "cake") setErr("cake", ""); });
 
 /* ---------- 저장 ---------- */
@@ -526,7 +626,8 @@ $("form").addEventListener("submit", async (e) => {
       code, name: v.name, phone: v.phone, phoneLast4: v.phone.slice(-4),
       store: v.store, cake: v.cake, qty,
       pickupDate: v.date, pickupTime: v.time,
-      memo: v.memo, consent: true,
+      memo: v.memo, consent: true, consentThirdParty: true,
+      consentMarketing: v.consentMkt, consentVersion: PRIVACY.version,
       ...utm,
       status: "requested", createdAt: now, updatedAt: now
     });

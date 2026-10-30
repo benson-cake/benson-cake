@@ -470,6 +470,7 @@ function card(r) {
       <dt>연락처</dt><dd><a href="tel:${esc(r.phone)}">${esc(fmtPhone(r.phone))}</a></dd>
       <dt>예약번호</dt><dd>${esc(r.code)}</dd>
       <dt>신청</dt><dd>${esc(fmtTs(r.createdAt))}</dd>
+      <dt>마케팅 수신</dt><dd>${r.consentMarketing ? "동의" : "미동의"}</dd>
     </dl>
     ${r.memo ? `<p class="memo">고객 요청: ${esc(r.memo)}</p>` : ""}
     ${r.storeNote ? `<p class="note">매장 메모: ${esc(r.storeNote)}</p>` : ""}
@@ -611,11 +612,11 @@ function notifyNew(n) {
 $("csvBtn").onclick = async () => {
   try {
     const snap = await getDocs(collection(db, "reservations"));
-    const head = ["예약번호", "상태", "매장", "케이크", "수량", "픽업일", "픽업시간", "이름", "연락처", "고객 요청", "매장 메모", "신청일시", "처리자", "utm_source", "utm_medium", "utm_campaign", "utm_content"];
+    const head = ["예약번호", "상태", "매장", "케이크", "수량", "픽업일", "픽업시간", "이름", "연락처", "고객 요청", "매장 메모", "신청일시", "처리자", "마케팅 수신 동의", "동의서 버전", "utm_source", "utm_medium", "utm_campaign", "utm_content"];
     const cell = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
     const lines = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
       .sort((a, b) => (a.pickupDate + a.pickupTime).localeCompare(b.pickupDate + b.pickupTime))
-      .map((r) => [r.code, STATUS[r.status]?.label || r.status, r.store, r.cake, r.qty, r.pickupDate, r.pickupTime, r.name, fmtPhone(r.phone), r.memo, r.storeNote, fmtTs(r.createdAt), r.updatedBy, r.utmSource, r.utmMedium, r.utmCampaign, r.utmContent].map(cell).join(","));
+      .map((r) => [r.code, STATUS[r.status]?.label || r.status, r.store, r.cake, r.qty, r.pickupDate, r.pickupTime, r.name, fmtPhone(r.phone), r.memo, r.storeNote, fmtTs(r.createdAt), r.updatedBy, r.consentMarketing ? "Y" : "N", r.consentVersion, r.utmSource, r.utmMedium, r.utmCampaign, r.utmContent].map(cell).join(","));
     const csv = "\uFEFF" + [head.map(cell).join(","), ...lines].join("\r\n");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
