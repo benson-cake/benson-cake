@@ -62,7 +62,7 @@ const COMPANY = "㈜베러스쿱크리머리";
 const RETENTION = "예약 처리 완료(픽업·취소) 후 1년. 단, 관계 법령에 따라 보존이 필요한 경우 해당 기간까지";
 
 export const PRIVACY = {
-  version: "2026-10-30",
+  version: "2026-10-30.2",   // 제3자 제공 항목에 ㈜베러스쿱크리머리 추가
   company: COMPANY,
   intro: `${COMPANY}는 「개인정보 보호법」에 따라 고객님의 개인정보를 수집·이용하기 전에 동의를 받고 있습니다. 아래 내용을 자세히 읽어 보신 후 동의 여부를 선택해 주세요. 개인정보는 ${COMPANY}가 수집·이용합니다.`,
 
@@ -75,6 +75,12 @@ export const PRIVACY = {
 
   // 2) 개인정보 제3자 제공 (필수)
   thirdParty: [
+    {
+      recipient: COMPANY,   // ㈜베러스쿱크리머리 (넥스트픽 요청으로 추가)
+      purpose: "케이크 사전예약 접수·확인, 예약 확정·변경 안내 및 매장 픽업 처리",
+      items: "이름, 휴대폰번호, 픽업 매장, 픽업 희망 일시, 주문 상품·수량",
+      retention: RETENTION
+    },
     {
       recipient: "㈜넥스트픽",
       purpose: "사전예약 프로모션 운영 지원 및 광고 성과 분석",   // [확인 필요] 넥스트픽의 실제 업무 범위
