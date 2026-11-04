@@ -121,21 +121,20 @@
   input:focus, select:focus, textarea:focus { outline: none; border-color: var(--navy); background: #fff; }
   .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .cake-list { display: grid; gap: 8px; }
-  .cake-opt {
-    position: relative;
-    display: flex; align-items: center; gap: 12px;
-    min-height: 58px; padding: 12px 14px;
-    border: 1.5px solid var(--line); border-radius: 12px;
-    background: var(--field); cursor: pointer;
+  .cake-row {
+    display: grid; grid-template-columns: 1fr auto; grid-template-areas: "nm nm" "pr st";
+    align-items: end; gap: 8px 12px;
+    padding: 14px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--field);
+    transition: border-color .15s, background-color .15s;
   }
-  .cake-opt input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
-  .cake-opt .dot { flex: none; width: 20px; height: 20px; border-radius: 50%; border: 2px solid #B8C4D2; background: #fff; }
-  .cake-opt .nm { flex: 1; font-size: 16px; font-weight: 600; line-height: 1.35; }
-  .cake-opt .pr { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 1px; text-align: right; }
-  .cake-opt .pr .was { font-size: 13px; color: #8A98A8; white-space: nowrap; }
-  .cake-opt .pr .was s { text-decoration-thickness: 1.5px; }
-  .cake-opt .pr .off { margin-right: 5px; font-weight: 800; color: var(--sale); }
-  .cake-opt .pr .now { font-size: 17px; font-weight: 800; color: var(--navy); white-space: nowrap; }
+  .cake-row.on { border-color: var(--navy); background: #FBF4E1; }
+  .cake-row .nm { grid-area: nm; font-size: 16px; font-weight: 700; line-height: 1.35; }
+  .cake-row .pr { grid-area: pr; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; }
+  .cake-row .stepper { grid-area: st; }
+  .pr .was { font-size: 13px; color: #8A98A8; white-space: nowrap; }
+  .pr .was s { text-decoration-thickness: 1.5px; }
+  .pr .off { margin-right: 5px; font-weight: 800; color: var(--sale); }
+  .pr .now { font-size: 17px; font-weight: 800; color: var(--navy); white-space: nowrap; }
   .price-note {
     display: flex; align-items: center; gap: 8px;
     margin: -2px 0 12px; font-size: 14px; color: var(--mute);
@@ -144,16 +143,18 @@
     padding: 4px 10px; border-radius: 999px;
     background: var(--cream); color: var(--navy); font-size: 13px; font-weight: 800;
   }
+  .order-sum {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    margin-top: 12px; padding: 14px 16px; border-radius: 12px;
+    background: var(--navy); color: #fff; font-size: 14px;
+  }
+  .order-sum b { font-size: 17px; font-weight: 800; }
+  .order-sum .total b { color: var(--cream); }
   .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-  .cake-opt.on { border-color: var(--navy); background: #FBF4E1; }
-  .cake-opt.on .dot { border: 6px solid var(--navy); }
-  .cake-opt.focus { outline: 3px solid var(--sky); outline-offset: 2px; }
-  .qty-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; }
-  .qty-row .label { margin: 0; font-size: 15px; font-weight: 700; color: var(--ink); }
 
-  .stepper { display: flex; align-items: center; height: 52px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--field); }
+  .stepper { display: flex; align-items: center; height: 44px; border: 1.5px solid var(--line); border-radius: 12px; background: #fff; }
   .stepper button {
-    width: 44px; height: 100%; border: 0; background: none;
+    width: 42px; height: 100%; border: 0; background: none;
     font: 700 22px/1 var(--font); color: var(--navy); cursor: pointer;
   }
   .stepper button:disabled { color: #B8C4D2; cursor: default; }
@@ -263,15 +264,11 @@ src="https://www.facebook.com/tr?id=1686148093182564&ev=PageView&noscript=1"
       <fieldset>
         <legend>어떤 케이크를 예약하시나요?</legend>
         <div id="cakeSlot"></div>
-        <p class="err" data-for="cake"></p>
-        <div class="qty-row">
-          <span class="label" id="qtyLabel">수량</span>
-          <div class="stepper" role="group" aria-labelledby="qtyLabel">
-            <button type="button" id="qtyMinus" aria-label="수량 줄이기">−</button>
-            <output id="qty" aria-live="polite">1</output>
-            <button type="button" id="qtyPlus" aria-label="수량 늘리기">+</button>
-          </div>
+        <div class="order-sum" id="orderSum" hidden aria-live="polite">
+          <span>선택 <b id="sumQty">0</b>개</span>
+          <span class="total" id="sumPriceWrap">사전예약가 합계 <b id="sumPrice">0원</b></span>
         </div>
+        <p class="err" data-for="cake"></p>
       </fieldset>
 
       <fieldset>
@@ -409,39 +406,55 @@ function priceTag(price) {
     `<span class="now" aria-hidden="true">${won(sale)}</span>`;
   return pr;
 }
+/* ---------- 케이크별 수량 선택 ---------- */
+const counts = new Map(CAKES.map((c) => [cakeName(c), 0]));
+const priceOf = new Map(CAKES.map((c) => [cakeName(c), cakePrice(c)]));
+const saleOf = (name) => { const p = priceOf.get(name); return p ? Math.max(p - (PREORDER_DISCOUNT || 0), 0) : null; };
+
 if (CAKES.length) {
-  const list = document.createElement("div");
-  list.className = "cake-list"; list.id = "cake";
-  list.setAttribute("role", "radiogroup"); list.setAttribute("aria-label", "케이크");
-  CAKES.forEach((c) => {
-    const lab = document.createElement("label"); lab.className = "cake-opt";
-    const inp = document.createElement("input"); inp.type = "radio"; inp.name = "cake"; inp.value = cakeName(c);
-    const dot = document.createElement("span"); dot.className = "dot"; dot.setAttribute("aria-hidden", "true");
-    const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = cakeName(c);
-    lab.append(inp, dot, nm);
-    if (cakePrice(c)) lab.append(priceTag(cakePrice(c)));
-    inp.addEventListener("focus", () => lab.classList.add("focus"));
-    inp.addEventListener("blur", () => lab.classList.remove("focus"));
-    list.appendChild(lab);
-  });
-  list.addEventListener("change", () => {
-    list.querySelectorAll(".cake-opt").forEach((l) => l.classList.toggle("on", l.querySelector("input").checked));
-  });
   if (PREORDER_DISCOUNT && CAKES.some(cakePrice)) {
     const note = document.createElement("p"); note.className = "price-note";
-    note.innerHTML = `<b>사전예약가</b><span>정상가에서 ${won(PREORDER_DISCOUNT)} 할인된 가격이에요</span>`;
+    note.innerHTML = `<b>사전예약가</b><span>1개당 ${won(PREORDER_DISCOUNT)} 할인된 가격이에요</span>`;
     $("cakeSlot").appendChild(note);
   }
+  const list = document.createElement("div");
+  list.className = "cake-list"; list.id = "cake";
+  CAKES.forEach((c) => {
+    const name = cakeName(c);
+    const row = document.createElement("div"); row.className = "cake-row";
+    const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = name;
+    row.appendChild(nm);
+    if (cakePrice(c)) row.appendChild(priceTag(cakePrice(c)));
+    const st = document.createElement("div"); st.className = "stepper"; st.setAttribute("role", "group"); st.setAttribute("aria-label", `${name} 수량`);
+    const minus = document.createElement("button"); minus.type = "button"; minus.textContent = "−"; minus.setAttribute("aria-label", `${name} 1개 빼기`);
+    const out = document.createElement("output"); out.textContent = "0"; out.setAttribute("aria-live", "polite");
+    const plus = document.createElement("button"); plus.type = "button"; plus.textContent = "+"; plus.setAttribute("aria-label", `${name} 1개 담기`);
+    st.append(minus, out, plus); row.appendChild(st);
+    const paint = () => {
+      const n = counts.get(name);
+      out.textContent = n; minus.disabled = n <= 0; plus.disabled = n >= MAX_QTY;
+      row.classList.toggle("on", n > 0);
+    };
+    minus.onclick = () => { counts.set(name, Math.max(counts.get(name) - 1, 0)); paint(); updateSum(); };
+    plus.onclick = () => { counts.set(name, Math.min(counts.get(name) + 1, MAX_QTY)); paint(); updateSum(); };
+    paint();
+    list.appendChild(row);
+  });
   $("cakeSlot").appendChild(list);
 } else {
-  const lab = document.createElement("label"); lab.className = "label"; lab.htmlFor = "cake"; lab.textContent = "케이크 이름";
-  const inp = document.createElement("input");
-  inp.type = "text"; inp.id = "cake"; inp.maxLength = 60; inp.required = true;
-  $("cakeSlot").append(lab, inp);
+  $("cakeSlot").textContent = "config.js의 CAKES에 케이크 목록을 입력해 주세요.";
 }
-const getCake = () => CAKES.length
-  ? (document.querySelector('input[name="cake"]:checked')?.value || "")
-  : $("cake").value.trim();
+const getItems = () => CAKES.map(cakeName).filter((n) => counts.get(n) > 0).map((n) => ({ name: n, qty: counts.get(n) }));
+function updateSum() {
+  const items = getItems();
+  const total = items.reduce((a, i) => a + i.qty, 0);
+  $("orderSum").hidden = total === 0;
+  $("sumQty").textContent = total;
+  const priced = items.every((i) => saleOf(i.name) != null);
+  $("sumPriceWrap").hidden = !priced;
+  if (priced) $("sumPrice").textContent = won(items.reduce((a, i) => a + saleOf(i.name) * i.qty, 0));
+  if (total > 0) setErr("cake", "");
+}
 
 const toMin = (hhmm) => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + m; };
 const pad = (n) => String(n).padStart(2, "0");
@@ -490,17 +503,6 @@ const agrees = [...document.querySelectorAll(".agree")];
 $("agreeAll").addEventListener("change", (e) => { agrees.forEach((c) => { c.checked = e.target.checked; }); setErr("consent", ""); });
 agrees.forEach((c) => c.addEventListener("change", () => { $("agreeAll").checked = agrees.every((x) => x.checked); }));
 
-/* ---------- 수량 ---------- */
-let qty = 1;
-const renderQty = () => {
-  $("qty").textContent = qty;
-  $("qtyMinus").disabled = qty <= 1;
-  $("qtyPlus").disabled = qty >= MAX_QTY;
-};
-$("qtyMinus").onclick = () => { if (qty > 1) { qty--; renderQty(); } };
-$("qtyPlus").onclick = () => { if (qty < MAX_QTY) { qty++; renderQty(); } };
-renderQty();
-
 /* ---------- 전화번호 자동 하이픈 ---------- */
 const digits = (s) => s.replace(/\D/g, "");
 const formatPhone = (d) => d.length < 4 ? d : d.length < 8 ? `${d.slice(0, 3)}-${d.slice(3)}` : `${d.slice(0, 3)}-${d.slice(3, d.length - 4)}-${d.slice(-4)}`;
@@ -523,7 +525,7 @@ const setErr = (key, msg) => {
 function validate() {
   const v = {
     store: storeSel.value,
-    cake: getCake(),
+    items: getItems(),
     date: $("date").value,
     time: $("time").value,
     name: $("name").value.trim(),
@@ -535,7 +537,7 @@ function validate() {
   };
   const errs = {};
   if (!v.store) errs.store = "픽업 매장을 선택해 주세요.";
-  if (!v.cake) errs.cake = CAKES.length ? "케이크를 선택해 주세요." : "케이크 이름을 적어 주세요.";
+  if (!v.items.length) errs.cake = "케이크를 1개 이상 담아 주세요. (+ 버튼으로 수량 선택)";
   if (!v.date) errs.date = "픽업 날짜를 선택해 주세요.";
   else if (v.date < minDate) errs.date = `픽업 하루 전까지 예약할 수 있어요. ${prettyDate(minDate)}부터 선택해 주세요.`;
   else if (v.date > maxDate) errs.date = `${prettyDate(maxDate)}까지 선택할 수 있어요.`;
@@ -549,7 +551,6 @@ function validate() {
 ["store", "date", "time", "name", "phone", "consent"].forEach((k) =>
   $(k).addEventListener("change", () => setErr(k, "")));
 $("consent3p").addEventListener("change", () => setErr("consent", ""));
-document.addEventListener("change", (e) => { if (e.target.id === "cake" || e.target.name === "cake") setErr("cake", ""); });
 
 /* ---------- 저장 ---------- */
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -572,7 +573,7 @@ $("form").addEventListener("submit", async (e) => {
     const el = $(first);
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
-      const target = first === "cake" && CAKES.length ? el.querySelector("input") : el;
+      const target = first === "cake" ? el.querySelector("button:not([disabled])") : el;
       if (target) target.focus({ preventScroll: true });
     }
     return;
@@ -585,10 +586,13 @@ $("form").addEventListener("submit", async (e) => {
     const ref = doc(collection(db, "reservations"));
     const code = makeCode();
     const now = serverTimestamp();
+    const items = v.items;
+    const qty = items.reduce((a, i) => a + i.qty, 0);
+    const cake = items.map((i) => `${i.name} ${i.qty}개`).join(", ");
     const batch = writeBatch(db);
     batch.set(ref, {
       code, name: v.name, phone: v.phone, phoneLast4: v.phone.slice(-4),
-      store: v.store, cake: v.cake, qty,
+      store: v.store, cake, qty, items,
       pickupDate: v.date, pickupTime: v.time,
       memo: v.memo, consent: true, consentThirdParty: true,
       consentMarketing: v.consentMkt, consentVersion: PRIVACY.version,
@@ -597,7 +601,7 @@ $("form").addEventListener("submit", async (e) => {
     });
     batch.set(doc(db, "publicStatus", ref.id), {
       code, nameMasked: maskName(v.name),
-      store: v.store, cake: v.cake, qty,
+      store: v.store, cake, qty, items,
       pickupDate: v.date, pickupTime: v.time,
       status: "requested", createdAt: now, updatedAt: now
     });

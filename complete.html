@@ -38,7 +38,7 @@
   .summary { margin: 0 0 22px; padding: 0; list-style: none; border-top: 1px solid var(--line); }
   .summary li { display: flex; justify-content: space-between; gap: 16px; padding: 12px 2px; border-bottom: 1px solid var(--line); font-size: 15px; }
   .summary li span:first-child { color: var(--mute); flex: none; }
-  .summary li span:last-child { font-weight: 600; text-align: right; }
+  .summary li span:last-child { font-weight: 600; text-align: right; white-space: pre-line; }
   .link-box { padding: 16px; border-radius: 14px; background: #EEF4FB; font-size: 14px; line-height: 1.6; color: var(--navy); }
   .link-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
   .ghost { display: flex; align-items: center; justify-content: center; min-height: 48px; border-radius: 12px; border: 1.5px solid var(--navy); background: #fff; color: var(--navy); font: 700 15px/1 var(--font); text-decoration: none; cursor: pointer; }
@@ -137,10 +137,12 @@ if (!id) {
       const rows = [
         ["픽업 매장", r.store],
         ["픽업 일시", `${prettyDate(r.pickupDate)} ${r.pickupTime}`],
-        ["케이크", `${r.cake} ${r.qty}개`]
+        ["케이크", Array.isArray(r.items) && r.items.length ? r.items.map((i) => `${i.name} ${i.qty}개`).join("\n") : `${r.cake} ${r.qty}개`],
+        ["총 수량", `${r.qty}개`]
       ];
-      const sp = salePrice(r.cake);
-      if (sp) rows.push(["사전예약가", `${won(sp)} (1개 기준)`]);
+      const lines = Array.isArray(r.items) && r.items.length ? r.items : [{ name: r.cake, qty: r.qty }];
+      const sums = lines.map((i) => { const sp = salePrice(i.name); return sp == null ? null : sp * i.qty; });
+      if (sums.every((x) => x != null)) rows.push(["사전예약가 합계", `${won(sums.reduce((a, b) => a + b, 0))} (현장 결제)`]);
       rows.push(["예약자", r.nameMasked]);
       $("summary").replaceChildren(...rows.map(([k, val]) => {
         const li = document.createElement("li");

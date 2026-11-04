@@ -46,7 +46,7 @@ export const CAKES = [
 // 사전예약 할인 금액 (케이크 1개당). 화면에 정상가 취소선 + 할인가로 표시됩니다. 0이면 정상가만 표시.
 export const PREORDER_DISCOUNT = 5000;
 
-export const MAX_QTY = 5;            // 한 번에 예약 가능한 최대 수량
+export const MAX_QTY = 5;            // 케이크 1종당 최대 수량 (여러 종류를 함께 담을 수 있음)
 export const MIN_DAYS_AHEAD = 1;     // 최소 1일 전 예약 → 내일부터 선택 가능
 export const MAX_DAYS_AHEAD = 30;    // 며칠 뒤까지 예약받을지 (프로모션 기간에 맞춰 조정)
 
@@ -109,14 +109,15 @@ export const PRIVACY = {
 };
 
 // 매장에서 보내는 문자 문구. {중괄호} 부분은 예약 정보로 자동으로 바뀝니다.
-// 사용 가능: {name} {store} {datetime} {cake} {qty} {code} {link}
+// 사용 가능: {name} {store} {datetime} {items}(줄바꿈 목록) {cake}(한 줄 요약) {qty}(총 수량) {code} {link}
 export const MESSAGES = {
   confirmed:
 `[벤슨] {name}님, 케이크 픽업 예약이 확정되었습니다.
 
 픽업 매장: {store}
 픽업 일시: {datetime}
-상품: {cake} {qty}개
+주문 상품 (총 {qty}개)
+{items}
 예약번호: {code}
 
 방문하셔서 휴대폰 번호 뒷자리를 말씀해 주시면 사전예약 할인가로 결제해 드립니다.

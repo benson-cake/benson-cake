@@ -45,7 +45,7 @@
   .summary { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
   .summary li { display: flex; justify-content: space-between; gap: 16px; padding: 13px 2px; border-bottom: 1px solid var(--line); font-size: 15px; }
   .summary li span:first-child { color: var(--mute); flex: none; }
-  .summary li span:last-child { font-weight: 600; text-align: right; }
+  .summary li span:last-child { font-weight: 600; text-align: right; white-space: pre-line; }
   .foot { margin-top: 22px; font-size: 13px; color: var(--mute); line-height: 1.6; }
   .foot a { color: var(--navy); font-weight: 700; }
   .loading { color: var(--mute); font-size: 15px; }
@@ -123,7 +123,8 @@ else {
       ["예약자", r.nameMasked],
       ["픽업 매장", r.store],
       ["픽업 일시", `${prettyDate(r.pickupDate)} ${r.pickupTime}`],
-      ["케이크", `${r.cake} ${r.qty}개`]
+      ["케이크", Array.isArray(r.items) && r.items.length ? r.items.map((i) => `${i.name} ${i.qty}개`).join("\n") : `${r.cake} ${r.qty}개`],
+      ["총 수량", `${r.qty}개`]
     ];
     $("summary").replaceChildren(...rows.map(([k, val]) => {
       const li = document.createElement("li");

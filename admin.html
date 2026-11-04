@@ -82,7 +82,9 @@
   .dday { margin-left: 4px; font-size: 12px; font-weight: 700; color: var(--alert); }
   .dday.later { color: var(--mute); }
   .store-name { margin: 8px 0 0; font-size: 13px; font-weight: 700; color: var(--done); }
-  .cake { margin: 8px 0 10px; font-size: 17px; font-weight: 700; }
+  .cake { margin: 8px 0 10px; padding: 0; list-style: none; font-size: 16px; font-weight: 700; line-height: 1.5; }
+  .cake b { color: var(--done); }
+  .cake-total { margin: -6px 0 10px; font-size: 13px; font-weight: 700; color: var(--mute); }
   .meta { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; font-size: 14px; }
   .meta dt { color: var(--mute); }
   .meta dd { margin: 0; font-weight: 600; }
@@ -238,7 +240,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, collection, query, where, onSnapshot, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { firebaseConfig, STORES, MESSAGES, PICKUP_TIME } from "./config.js";
+import { firebaseConfig, STORES, MESSAGES, PICKUP_TIME, CAKES, PREORDER_DISCOUNT } from "./config.js";
 
 const $ = (id) => document.getElementById(id);
 const WEEK = ["일", "월", "화", "수", "목", "금", "토"];
@@ -295,7 +297,14 @@ const ddayLabel = (ymd) => {
 const statusUrl = (id) => new URL(`status.html?r=${encodeURIComponent(id)}`, location.href).href;
 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 const smsHref = (phone, body) => `sms:${phone}${isIOS ? "&" : "?"}body=${encodeURIComponent(body)}`;
+const itemsOf = (r) => Array.isArray(r.items) && r.items.length ? r.items : [{ name: r.cake, qty: r.qty }];
+const CAKE_NAMES = CAKES.map((c) => (typeof c === "string" ? c : c.name));
+const salePriceOf = (name) => {
+  const c = CAKES.find((x) => (typeof x === "string" ? x : x.name) === name);
+  return c && typeof c !== "string" && c.price ? Math.max(c.price - (PREORDER_DISCOUNT || 0), 0) : null;
+};
 const fill = (tpl, r) => tpl
+  .replaceAll("{items}", itemsOf(r).map((i) => `- ${i.name} ${i.qty}개`).join("\n"))
   .replaceAll("{name}", r.name).replaceAll("{store}", r.store)
   .replaceAll("{datetime}", `${prettyLong(r.pickupDate)} ${r.pickupTime}`)
   .replaceAll("{cake}", r.cake).replaceAll("{qty}", String(r.qty))
@@ -467,7 +476,8 @@ function card(r) {
       <span class="when">${esc(pretty(r.pickupDate))} ${esc(r.pickupTime)}${ddayLabel(r.pickupDate)}</span>
     </div>
     ${me.role === "master" ? `<p class="store-name">${esc(r.store)}</p>` : ""}
-    <p class="cake">${esc(r.cake)} ${Number(r.qty) || 1}개</p>
+    <ul class="cake">${itemsOf(r).map((i) => `<li>${esc(i.name)} <b>${Number(i.qty) || 1}개</b></li>`).join("")}</ul>
+    ${itemsOf(r).length > 1 ? `<p class="cake-total">총 ${Number(r.qty) || 0}개</p>` : ""}
     <dl class="meta">
       <dt>예약자</dt><dd>${esc(r.name)}</dd>
       <dt>연락처</dt><dd><a href="tel:${esc(r.phone)}">${esc(fmtPhone(r.phone))}</a></dd>
@@ -630,11 +640,17 @@ function notifyNew(n) {
 $("csvBtn").onclick = async () => {
   try {
     const snap = await getDocs(collection(db, "reservations"));
-    const head = ["예약번호", "상태", "매장", "케이크", "수량", "픽업일", "픽업시간", "이름", "연락처", "고객 요청", "매장 메모", "신청일시", "처리자", "마케팅 수신 동의", "동의서 버전", "utm_source", "utm_medium", "utm_campaign", "utm_content"];
+    const head = ["예약번호", "상태", "매장", "주문 상품", "총 수량", ...CAKE_NAMES, "사전예약가 합계", "픽업일", "픽업시간", "이름", "연락처", "고객 요청", "매장 메모", "신청일시", "처리자", "마케팅 수신 동의", "동의서 버전", "utm_source", "utm_medium", "utm_campaign", "utm_content"];
     const cell = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
     const lines = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
       .sort((a, b) => (a.pickupDate + a.pickupTime).localeCompare(b.pickupDate + b.pickupTime))
-      .map((r) => [r.code, STATUS[r.status]?.label || r.status, r.store, r.cake, r.qty, r.pickupDate, r.pickupTime, r.name, fmtPhone(r.phone), r.memo, r.storeNote, fmtTs(r.createdAt), r.updatedBy, r.consentMarketing ? "Y" : "N", r.consentVersion, r.utmSource, r.utmMedium, r.utmCampaign, r.utmContent].map(cell).join(","));
+      .map((r) => {
+        const its = itemsOf(r);
+        const perCake = CAKE_NAMES.map((n) => its.filter((i) => i.name === n).reduce((s, i) => s + i.qty, 0));
+        const sums = its.map((i) => { const sp = salePriceOf(i.name); return sp == null ? null : sp * i.qty; });
+        const total = sums.every((x) => x != null) ? sums.reduce((s, x) => s + x, 0) : "";
+        return [r.code, STATUS[r.status]?.label || r.status, r.store, r.cake, r.qty, ...perCake, total, r.pickupDate, r.pickupTime, r.name, fmtPhone(r.phone), r.memo, r.storeNote, fmtTs(r.createdAt), r.updatedBy, r.consentMarketing ? "Y" : "N", r.consentVersion, r.utmSource, r.utmMedium, r.utmCampaign, r.utmContent].map(cell).join(",");
+      });
     const csv = "\uFEFF" + [head.map(cell).join(","), ...lines].join("\r\n");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
