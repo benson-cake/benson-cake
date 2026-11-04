@@ -249,6 +249,7 @@ src="https://www.facebook.com/tr?id=1686148093182564&ev=PageView&noscript=1"
           <li>픽업 하루 전까지 예약할 수 있어요.</li>
           <li>매장에서 확인한 뒤 문자로 예약 확정을 알려 드려요.</li>
           <li>결제는 픽업하실 때 매장에서 해요.</li>
+          <li>취소 또는 제품 변경 필요 시, 예약한 매장으로 직접 연락 부탁드립니다.</li>
         </ul>
       </div>
 
@@ -257,6 +258,7 @@ src="https://www.facebook.com/tr?id=1686148093182564&ev=PageView&noscript=1"
         <div class="field">
           <label for="store">픽업 매장</label>
           <select id="store" name="store" required><option value="">매장을 선택해 주세요</option></select>
+          <p class="hint" id="storeTel" hidden></p>
           <p class="err" data-for="store"></p>
         </div>
       </fieldset>
@@ -355,7 +357,7 @@ src="https://www.facebook.com/tr?id=1686148093182564&ev=PageView&noscript=1"
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, doc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { firebaseConfig, BRAND, STORES, CAKES, MAX_QTY, MIN_DAYS_AHEAD, MAX_DAYS_AHEAD, PICKUP_TIME, PRIVACY, PREORDER_DISCOUNT } from "./config.js";
+import { firebaseConfig, BRAND, STORES, STORE_PHONES, CAKES, MAX_QTY, MIN_DAYS_AHEAD, MAX_DAYS_AHEAD, PICKUP_TIME, PRIVACY, PREORDER_DISCOUNT } from "./config.js";
 
 const $ = (id) => document.getElementById(id);
 const WEEK = ["일", "월", "화", "수", "목", "금", "토"];
@@ -391,6 +393,12 @@ $("date").max = maxDate;
 const storeSel = $("store");
 [...STORES].sort((a, b) => a.localeCompare(b, "ko")).forEach((s) => {
   storeSel.add(new Option(s.replace(/^벤슨\s*/, ""), s));
+});
+
+storeSel.addEventListener("change", () => {
+  const tel = STORE_PHONES[storeSel.value];
+  $("storeTel").hidden = !tel;
+  if (tel) $("storeTel").innerHTML = `매장 연락처 <a href="tel:${tel.replace(/[^0-9]/g, "")}" style="color:var(--navy);font-weight:700">${tel}</a> · 취소·변경 시 연락해 주세요`;
 });
 
 const cakeName = (c) => (typeof c === "string" ? c : c.name);
