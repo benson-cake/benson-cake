@@ -64,14 +64,14 @@ export const STORE_PHONES = {
   "벤슨 선릉역": "070-4172-6092"
 };
 
-// 예약 가능 케이크 (POS 등록명·정상가 기준). price는 화면 표시용이며, 비워 두면 가격 없이 이름만 보입니다.
+// 예약 가능 케이크 (POS 등록명·정상가 기준). price는 화면 표시용, image는 저장소에 올린 사진 파일 이름(없으면 사진 없이 표시).
 export const CAKES = [
-  { name: "땡큐베리 스트로베리 케이크", price: 39000 },
-  { name: "해피UP 저지밀크 케이크",     price: 39000 },
-  { name: "벨지안 초콜릿 티라미수",     price: 39000 },
-  { name: "피스타치오베리가든",         price: 39000 },
-  { name: "초콜릿 기프트박스 화이트",   price: 39000 },
-  { name: "잇츠마이 버스데이 케이크",   price: 43000 }
+  { name: "땡큐베리 스트로베리 케이크", price: 39000, image: "cake-thankyouberry.jpg" },
+  { name: "해피UP 저지밀크 케이크",     price: 39000, image: "cake-happyup.jpg" },
+  { name: "벨지안 초콜릿 티라미수",     price: 39000, image: "cake-belgian-tiramisu.jpg" },
+  { name: "피스타치오베리가든",         price: 39000, image: "cake-pistachio-berry.jpg" },
+  { name: "초콜릿 기프트박스 화이트",   price: 39000, image: "cake-giftbox-white.jpg" },
+  { name: "잇츠마이 버스데이 케이크",   price: 43000, image: "cake-itsmy-birthday.jpg" }
 ];
 
 // 사전예약 할인 금액 (케이크 1개당). 화면에 정상가 취소선 + 할인가로 표시됩니다. 0이면 정상가만 표시.
