@@ -127,6 +127,12 @@
     padding: 14px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--field);
     transition: border-color .15s, background-color .15s;
   }
+  .cake-row.has-img { grid-template-columns: 84px 1fr auto; grid-template-areas: "im nm nm" "im pr st"; align-items: center; }
+  .cake-row .thumb {
+    grid-area: im; display: block; width: 84px; height: 84px;
+    object-fit: cover; border-radius: 10px; background: #fff;
+    border: 1px solid var(--line);
+  }
   .cake-row.on { border-color: var(--navy); background: #FBF4E1; }
   .cake-row .nm { grid-area: nm; font-size: 16px; font-weight: 700; line-height: 1.35; }
   .cake-row .pr { grid-area: pr; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; }
@@ -430,6 +436,13 @@ if (CAKES.length) {
   CAKES.forEach((c) => {
     const name = cakeName(c);
     const row = document.createElement("div"); row.className = "cake-row";
+    if (c.image) {
+      const img = document.createElement("img");
+      img.className = "thumb"; img.src = c.image; img.alt = name;
+      img.width = 270; img.height = 191; img.loading = "lazy"; img.decoding = "async";
+      img.onerror = () => { img.remove(); row.classList.remove("has-img"); };
+      row.classList.add("has-img"); row.appendChild(img);
+    }
     const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = name;
     row.appendChild(nm);
     if (cakePrice(c)) row.appendChild(priceTag(cakePrice(c)));
