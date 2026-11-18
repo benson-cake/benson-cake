@@ -153,6 +153,8 @@
     font-size: 14px; line-height: 1.65; color: var(--ink);
   }
   .notice ul { margin: 0; padding-left: 18px; }
+  .notice li + li { margin-top: 2px; }
+  .notice b { font-weight: 800; color: var(--xmas-deep); }
 
   fieldset { border: 0; margin: 0 0 28px; padding: 0; }
   legend { padding: 0; margin-bottom: 12px; font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
@@ -257,7 +259,7 @@
   }
   .btn:disabled { opacity: .6; cursor: wait; }
   .btn.closed, .btn.closed:disabled { opacity: 1; cursor: not-allowed; background: rgba(255,255,255,.16); color: #fff; font-size: 16px; }
-  .preview-note { margin: 0 0 20px; padding: 10px 14px; border-radius: 12px; background: #EAF3EE; color: var(--pine); font-size: 13px; font-weight: 600; }
+
   .btn:focus-visible, .stepper button:focus-visible, .check input:focus-visible, summary:focus-visible {
     outline: 3px solid var(--sky); outline-offset: 2px;
   }
@@ -307,16 +309,15 @@ src="https://www.facebook.com/tr?id=1686148093182564&ev=PageView&noscript=1"
 
   <main class="sheet">
     <div id="setupWarning" class="setup-warning" hidden></div>
-    <p id="previewNote" class="preview-note" hidden>직원 테스트 모드예요. 사전예약 기간과 상관없이 신청돼요. 테스트 예약은 관리자 화면에서 삭제해 주세요.</p>
     <p class="recent" id="recent">이전에 신청하신 예약이 있어요. <a id="recentLink" href="#">예약 상태 보기</a></p>
 
     <form id="form" novalidate>
       <div class="notice">
         <ul>
-          <li>픽업 하루 전까지 예약할 수 있어요.<span id="pickupLastNote"></span></li>
+          <li><b id="pickupRangeNote">픽업은 12월 21일(월) ~ 25일(금), 정해진 날짜에만 가능해요.</b></li>
           <li>매장에서 확인한 뒤 문자로 예약 확정을 알려 드려요.</li>
           <li>결제는 픽업하실 때 매장에서 해요.</li>
-          <li>취소 또는 제품 변경 필요 시, 예약한 매장으로 직접 연락 부탁드립니다.</li>
+          <li><b>예약 후 취소하실 경우, 예약한 매장으로 꼭 연락 부탁드립니다.</b> 제품 변경도 매장으로 연락해 주세요.</li>
         </ul>
       </div>
 
@@ -345,14 +346,14 @@ src="https://www.facebook.com/tr?id=1686148093182564&ev=PageView&noscript=1"
         <div class="row">
           <div class="field">
             <label for="date">픽업 날짜</label>
-            <input type="date" id="date" name="date" required>
+            <select id="date" name="date" required><option value="">날짜 선택</option></select>
           </div>
           <div class="field">
             <label for="time">픽업 시간</label>
             <select id="time" name="time" required><option value="">시간 선택</option></select>
           </div>
         </div>
-        <p class="hint" id="dateHint">매장 운영시간 안에서 골라 주세요. 어려운 시간이면 매장에서 연락드려요.</p>
+        <p class="hint" id="dateHint">픽업은 12월 21일(월) ~ 25일(금) 중에서만 고를 수 있어요. 시간은 매장 운영시간 안에서 골라 주세요.</p>
         <p class="err" data-for="date"></p>
         <p class="err" data-for="time"></p>
       </fieldset>
@@ -455,25 +456,33 @@ const today = kstDate(0);
 const tomorrowish = kstDate(MIN_DAYS_AHEAD);
 const minDate = PICKUP_DATES.first && PICKUP_DATES.first > tomorrowish ? PICKUP_DATES.first : tomorrowish;
 const maxDate = PICKUP_DATES.last || kstDate(MAX_DAYS_AHEAD);
-$("date").min = minDate;
-$("date").max = maxDate;
-if (PICKUP_DATES.last) $("pickupLastNote").textContent = ` 픽업은 ${prettyDate(PICKUP_DATES.last)}까지 가능해요.`;
+const addDays = (ymd, n) => {
+  const [y, m, d] = ymd.split("-").map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d + n));
+  return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, "0")}-${String(t.getUTCDate()).padStart(2, "0")}`;
+};
+const pickupDays = [];
+for (let d = minDate; d <= maxDate && pickupDays.length < 62; d = addDays(d, 1)) pickupDays.push(d);
+pickupDays.forEach((d) => $("date").add(new Option(prettyDate(d), d)));
+if (PICKUP_DATES.first && PICKUP_DATES.last) {
+  const [, m1, d1] = PICKUP_DATES.first.split("-").map(Number);
+  const [, m2, d2] = PICKUP_DATES.last.split("-").map(Number);
+  const range = m1 === m2
+    ? `${m1}월 ${d1}일(${prettyDate(PICKUP_DATES.first).slice(-2, -1)}) ~ ${d2}일(${prettyDate(PICKUP_DATES.last).slice(-2, -1)})`
+    : `${prettyDate(PICKUP_DATES.first)} ~ ${prettyDate(PICKUP_DATES.last)}`;
+  $("pickupRangeNote").textContent = `픽업은 ${range}, 정해진 날짜에만 가능해요.`;
+  $("dateHint").textContent = `픽업은 ${range} 중에서만 고를 수 있어요. 시간은 매장 운영시간 안에서 골라 주세요.`;
+}
 
 /* ---------- 사전예약 기간 ---------- */
 $("periodLabel").textContent = RESERVE_PERIOD.label;
 $("heroDiscount").textContent = `사전예약 ${PREORDER_DISCOUNT_RATE}% 할인`;
-const isPreview = new URLSearchParams(location.search).get("preview") === "1";
-const beforeOpen = today < RESERVE_PERIOD.start;
-const afterClose = today > RESERVE_PERIOD.end || minDate > maxDate;
-const reserveOpen = isPreview || (!beforeOpen && !afterClose);
-if (isPreview && (beforeOpen || afterClose)) $("previewNote").hidden = false;
+const reserveOpen = pickupDays.length > 0;    // 신청 기간 제한 없음 — 고를 수 있는 픽업 날짜가 남아 있는 동안 계속 접수
 function lockForPeriod() {
   if (reserveOpen) return;
   const btn = $("submitBtn");
   btn.disabled = true; btn.classList.add("closed");
-  btn.textContent = beforeOpen
-    ? `${prettyDate(RESERVE_PERIOD.start)}부터 신청할 수 있어요`
-    : "크리스마스 케이크 사전예약이 마감되었어요";
+  btn.textContent = "크리스마스 케이크 사전예약이 마감되었어요";
 }
 lockForPeriod();
 
@@ -642,8 +651,7 @@ function validate() {
   if (!v.store) errs.store = "픽업 매장을 선택해 주세요.";
   if (!v.items.length) errs.cake = "케이크를 1개 이상 담아 주세요. (+ 버튼으로 수량 선택)";
   if (!v.date) errs.date = "픽업 날짜를 선택해 주세요.";
-  else if (v.date < minDate) errs.date = `픽업 하루 전까지 예약할 수 있어요. ${prettyDate(minDate)}부터 선택해 주세요.`;
-  else if (v.date > maxDate) errs.date = `${prettyDate(maxDate)}까지 선택할 수 있어요.`;
+  else if (!pickupDays.includes(v.date)) errs.date = "픽업 가능한 날짜 중에서 다시 골라 주세요.";
   if (!v.time) errs.time = "픽업 시간을 선택해 주세요.";
   if (!v.name) errs.name = "이름을 적어 주세요.";
   if (!/^01[016789]\d{7,8}$/.test(v.phone)) errs.phone = "휴대폰 번호를 정확히 적어 주세요.";
