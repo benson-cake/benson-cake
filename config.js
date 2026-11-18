@@ -64,22 +64,33 @@ export const STORE_PHONES = {
   "벤슨 선릉역": "070-4172-6092"
 };
 
-// 예약 가능 케이크 (POS 등록명·정상가 기준). price는 화면 표시용, image는 저장소에 올린 사진 파일 이름(없으면 사진 없이 표시).
-export const CAKES = [
-  { name: "땡큐베리 스트로베리 케이크", price: 39000, image: "cake-thankyouberry.jpg" },
-  { name: "해피UP 저지밀크 케이크",     price: 39000, image: "cake-happyup.jpg" },
-  { name: "벨지안 초콜릿 티라미수",     price: 39000, image: "cake-belgian-tiramisu.jpg" },
-  { name: "피스타치오베리가든",         price: 39000, image: "cake-pistachio-berry.jpg" },
-  { name: "초콜릿 기프트박스 화이트",   price: 39000, image: "cake-giftbox-white.jpg" },
-  { name: "잇츠마이 버스데이 케이크",   price: 43000, image: "cake-itsmy-birthday.jpg" }
-];
+// ---------------------------------------------------------------------
+// 크리스마스 아이스크림 케이크 사전예약 (2026)
+// ---------------------------------------------------------------------
+// 사전예약 신청 기간 (한국 시간, 시작일·마감일 포함). 기간 밖에는 신청 버튼이 잠기고 안내 문구가 나옵니다.
+// 직원 테스트: 주소 끝에 ?preview=1 을 붙이면 기간과 상관없이 신청할 수 있습니다.
+export const RESERVE_PERIOD = { start: "2026-11-20", end: "2026-12-13", label: "11.20 ~ 12.13" };
 
-// 사전예약 할인 금액 (케이크 1개당). 화면에 정상가 취소선 + 할인가로 표시됩니다. 0이면 정상가만 표시.
-export const PREORDER_DISCOUNT = 5000;
+// 픽업 가능 날짜. first를 비우면 '내일'부터, last를 비우면 '오늘 + MAX_DAYS_AHEAD일'까지.
+export const PICKUP_DATES = { first: "", last: "2026-12-25" };   // [확인 필요] 마지막 픽업일
+
+// 사전예약 할인율(%) — 화면 안내 문구용. 실제 표시 금액은 아래 각 케이크의 sale 값을 그대로 씁니다.
+export const PREORDER_DISCOUNT_RATE = 30;
+
+// 예약 가능 케이크 7종 (정가 price → 사전예약가 sale). image는 저장소에 올린 사진 파일 이름.
+export const CAKES = [
+  { name: "홀리데이 스트로베리 기프트박스",   price: 39000, sale: 27300, image: "xmas-holiday-strawberry-giftbox.jpg" },
+  { name: "초콜릿무스 원더랜드",             price: 43000, sale: 30100, image: "xmas-chocolate-mousse-wonderland.jpg" },
+  { name: "피스타치오 베리가든",             price: 39000, sale: 27300, image: "xmas-pistachio-berry-garden.jpg" },
+  { name: "초콜릿 기프트박스",               price: 39000, sale: 27300, image: "xmas-chocolate-giftbox.jpg" },
+  { name: "위시트리 저지밀크 쁘띠 케이크",     price: 15000, sale: 10500, image: "xmas-wishtree-petit.jpg" },
+  { name: "시크릿산타 스트로베리 쁘띠 케이크", price: 15000, sale: 10500, image: "xmas-secretsanta-petit.jpg" },
+  { name: "디어마이 초코무스 쁘띠 케이크",     price: 15000, sale: 10500, image: "xmas-dearmy-petit.jpg" }
+];
 
 export const MAX_QTY = 5;            // 케이크 1종당 최대 수량 (여러 종류를 함께 담을 수 있음)
 export const MIN_DAYS_AHEAD = 1;     // 최소 1일 전 예약 → 내일부터 선택 가능
-export const MAX_DAYS_AHEAD = 30;    // 며칠 뒤까지 예약받을지 (프로모션 기간에 맞춰 조정)
+export const MAX_DAYS_AHEAD = 30;    // PICKUP_DATES.last를 비웠을 때만 사용 (오늘 + N일까지)
 
 // 픽업 시간 선택 범위. 매장별 운영시간이 달라도 매장이 확인 후 확정하는 구조라 공통 범위로 둡니다.
 export const PICKUP_TIME = { start: "11:00", end: "21:00", stepMin: 30 };
@@ -143,7 +154,7 @@ export const PRIVACY = {
 // 사용 가능: {name} {store} {storePhone} {datetime} {items}(줄바꿈 목록) {cake}(한 줄 요약) {qty}(총 수량) {code} {link}
 export const MESSAGES = {
   confirmed:
-`[벤슨] {name}님, 케이크 픽업 예약이 확정되었습니다.
+`[벤슨] {name}님, 크리스마스 케이크 픽업 예약이 확정되었습니다.
 
 픽업 매장: {store}
 픽업 일시: {datetime}
@@ -151,7 +162,7 @@ export const MESSAGES = {
 {items}
 예약번호: {code}
 
-방문하셔서 휴대폰 번호 뒷자리를 말씀해 주시면 사전예약 할인가로 결제해 드립니다.
+방문하셔서 휴대폰 번호 뒷자리를 말씀해 주시면 사전예약가(30% 할인)로 결제해 드립니다.
 취소 또는 제품 변경 필요 시, 매장({storePhone})으로 직접 연락 부탁드립니다.
 예약 확인: {link}`,
 
@@ -159,4 +170,16 @@ export const MESSAGES = {
 `[벤슨] {name}님, 요청하신 {datetime} 픽업이 어려워 연락드립니다.
 가능하신 픽업 날짜와 시간을 이 번호로 답장해 주시면 다시 확정해 드리겠습니다.
 예약번호: {code}`
+};
+
+// ---------------------------------------------------------------------
+// 아래는 계산용입니다 (수정하지 않아도 됩니다)
+// ---------------------------------------------------------------------
+export const cakeByName = (name) => CAKES.find((c) => c.name === name) || null;
+// 사전예약가: sale 값이 있으면 그대로, 없으면 할인율로 계산(10원 단위 반올림)
+export const salePriceOf = (name) => {
+  const c = cakeByName(name);
+  if (!c || !c.price) return null;
+  if (Number.isFinite(c.sale)) return c.sale;
+  return Math.round((c.price * (100 - PREORDER_DISCOUNT_RATE)) / 100 / 10) * 10;
 };

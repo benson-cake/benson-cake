@@ -5,6 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>벤슨 케이크 예약 관리</title>
 <meta name="robots" content="noindex, nofollow">
+<!-- 벤슨 관리자 앱(PWA) 공통 설정 -->
+<link rel="manifest" href="app.webmanifest">
+<meta name="theme-color" content="#22364A">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="벤슨 관리자">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>
   :root {
@@ -46,6 +55,7 @@
   .who { font-size: 13px; opacity: .85; }
   .top-actions { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
   .tbtn { min-height: 36px; padding: 0 12px; border: 1px solid rgba(255,255,255,.35); border-radius: 999px; background: transparent; color: #fff; font-size: 13px; font-weight: 600; }
+  a.tbtn { display: inline-flex; align-items: center; text-decoration: none; }
   .tbtn.on { background: var(--cream); color: var(--navy); border-color: var(--cream); }
 
   .content { max-width: 1080px; margin: 0 auto; padding: 14px 14px 60px; }
@@ -158,6 +168,9 @@
         <div class="who" id="who"></div>
       </div>
       <div class="top-actions">
+        <a class="tbtn" href="app.html" id="homeBtn">전체 메뉴</a>
+        <button class="tbtn on" type="button" data-app-install hidden>앱 설치</button>
+        <button class="tbtn" type="button" data-app-reload hidden>새로고침</button>
         <button class="tbtn" id="alertBtn">새 예약 알림 켜기</button>
         <button class="tbtn" id="csvBtn" hidden>엑셀(CSV) 받기</button>
         <button class="tbtn" id="acctBtn" hidden>계정 관리</button>
@@ -248,11 +261,12 @@
 
 <div class="toast" id="toast" hidden></div>
 
+<script type="module" src="app-shell.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, collection, query, where, onSnapshot, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { firebaseConfig, STORES, MESSAGES, PICKUP_TIME, CAKES, PREORDER_DISCOUNT, STORE_PHONES } from "./config.js";
+import { firebaseConfig, STORES, MESSAGES, PICKUP_TIME, CAKES, STORE_PHONES, salePriceOf } from "./config.js";
 
 const $ = (id) => document.getElementById(id);
 const WEEK = ["일", "월", "화", "수", "목", "금", "토"];
@@ -311,10 +325,6 @@ const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 const smsHref = (phone, body) => `sms:${phone}${isIOS ? "&" : "?"}body=${encodeURIComponent(body)}`;
 const itemsOf = (r) => Array.isArray(r.items) && r.items.length ? r.items : [{ name: r.cake, qty: r.qty }];
 const CAKE_NAMES = CAKES.map((c) => (typeof c === "string" ? c : c.name));
-const salePriceOf = (name) => {
-  const c = CAKES.find((x) => (typeof x === "string" ? x : x.name) === name);
-  return c && typeof c !== "string" && c.price ? Math.max(c.price - (PREORDER_DISCOUNT || 0), 0) : null;
-};
 const fill = (tpl, r) => tpl
   .replaceAll("{items}", itemsOf(r).map((i) => `- ${i.name} ${i.qty}개`).join("\n"))
   .replaceAll("{name}", r.name).replaceAll("{store}", r.store)
@@ -464,6 +474,7 @@ function render() {
 
   const pending = rows.filter((r) => r.status === "requested").length;
   document.title = (pending ? `(${pending}) ` : "") + "벤슨 케이크 예약 관리";
+  setBadge(pending);
 }
 $("tabs").addEventListener("click", (e) => {
   const b = e.target.closest(".tab"); if (!b) return;
@@ -649,13 +660,21 @@ $("editSave").onclick = async () => {
 /* ---------- 새 예약 알림 ---------- */
 let audioCtx = null;
 let alertsOn = false;
+let wakeLock = null;
+async function keepScreenOn() {
+  if (!("wakeLock" in navigator) || document.visibilityState !== "visible") return false;
+  try { wakeLock = await navigator.wakeLock.request("screen"); return true; } catch (_) { return false; }
+}
+document.addEventListener("visibilitychange", () => { if (alertsOn && document.visibilityState === "visible") keepScreenOn(); });
 $("alertBtn").onclick = async () => {
   try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); await audioCtx.resume(); } catch (_) {}
   if ("Notification" in window && Notification.permission === "default") { try { await Notification.requestPermission(); } catch (_) {} }
   alertsOn = true;
-  $("alertBtn").textContent = "새 예약 알림 켜짐";
+  const awake = await keepScreenOn();
+  $("alertBtn").textContent = awake ? "알림 켜짐 · 화면 유지" : "새 예약 알림 켜짐";
   $("alertBtn").classList.add("on");
   beep();
+  toast(awake ? "새 예약이 오면 소리로 알려 드려요. 이 화면이 열려 있는 동안 화면이 꺼지지 않아요." : "새 예약이 오면 소리로 알려 드려요. 이 화면을 열어 두세요.");
 };
 function beep() {
   if (!audioCtx) return;
@@ -671,9 +690,22 @@ function notifyNew(n) {
   if (!alertsOn) return;
   beep();
   if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
-    try { new Notification("벤슨 케이크 새 예약", { body: `확인이 필요한 예약 ${n}건` }); } catch (_) {}
+    const opts = { body: `확인이 필요한 예약 ${n}건`, icon: "icon-192.png", badge: "icon-192.png", tag: "benson-new", renotify: true, data: { url: "./admin.html" } };
+    // 안드로이드 크롬·아이폰 홈 화면 앱은 서비스 워커를 통해서만 알림 표시 가능
+    const viaSW = "serviceWorker" in navigator
+      ? navigator.serviceWorker.getRegistration().then((reg) => reg ? reg.showNotification("벤슨 케이크 새 예약", opts) : Promise.reject())
+      : Promise.reject();
+    viaSW.catch(() => { try { new Notification("벤슨 케이크 새 예약", opts); } catch (_) {} });
   }
 }
+function setBadge(n) {
+  try {
+    if (n > 0 && navigator.setAppBadge) navigator.setAppBadge(n).catch(() => {});
+    else if (navigator.clearAppBadge) navigator.clearAppBadge().catch(() => {});
+  } catch (_) {}
+}
+
+
 
 /* ---------- CSV (마스터) ---------- */
 $("csvBtn").onclick = async () => {

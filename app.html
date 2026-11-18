@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>벤슨 관리자</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="manifest" href="app.webmanifest">
+<meta name="theme-color" content="#22364A">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="벤슨 관리자">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root {
+    color-scheme: light;
+    --sky: #7EA9DB; --cream: #F3E2B3; --navy: #22364A; --ink: #1E2B38;
+    --mute: #5E6E7F; --line: #D6E0EC; --bg: #EEF3F9; --paper: #FFFFFF;
+    --font: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+    box-sizing: border-box;
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; }
+  body { min-height: 100vh; font-family: var(--font); color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased; word-break: keep-all; }
+  :focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
+
+  .top { background: var(--navy); color: #fff; padding: calc(env(safe-area-inset-top, 0px) + 18px) 20px 22px; }
+  .top-in { max-width: 720px; margin: 0 auto; display: flex; align-items: flex-start; gap: 12px; }
+  .top h1 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+  .top p { margin: 4px 0 0; font-size: 13px; opacity: .8; }
+  .top-actions { margin-left: auto; display: flex; gap: 6px; }
+  .tbtn { min-height: 36px; padding: 0 12px; border: 1px solid rgba(255,255,255,.35); border-radius: 999px; background: transparent; color: #fff; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .tbtn.on { background: var(--cream); color: var(--navy); border-color: var(--cream); }
+
+  main { max-width: 720px; margin: 0 auto; padding: 18px 16px calc(32px + env(safe-area-inset-bottom, 0px)); }
+  .section-title { margin: 4px 4px 10px; font-size: 13px; font-weight: 700; color: var(--mute); }
+  .menu { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+  .menu a {
+    display: grid; grid-template-columns: 44px 1fr 20px; align-items: center; gap: 14px;
+    min-height: 72px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line);
+    background: var(--paper); color: inherit; text-decoration: none;
+  }
+  .menu a:active { background: #F6F8FB; }
+  .ico { width: 44px; height: 44px; border-radius: 12px; background: var(--bg); color: var(--navy); display: grid; place-items: center; }
+  .ico svg { width: 22px; height: 22px; }
+  .menu b { display: block; font-size: 16px; font-weight: 700; }
+  .menu small { display: block; margin-top: 2px; font-size: 13px; color: var(--mute); }
+  .chev { width: 18px; height: 18px; color: #A9B5C3; }
+  .foot { margin: 22px 4px 0; font-size: 12px; color: var(--mute); line-height: 1.6; }
+</style>
+</head>
+<body>
+  <header class="top">
+    <div class="top-in">
+      <div>
+        <h1 id="appName">벤슨 관리자</h1>
+        <p>본사·매장 운영 도구</p>
+      </div>
+      <div class="top-actions">
+        <button class="tbtn on" type="button" data-app-install hidden>앱 설치</button>
+        <button class="tbtn" type="button" data-app-reload hidden>새로고침</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <p class="section-title">메뉴</p>
+    <ul class="menu" id="menu"></ul>
+    <p class="foot">각 메뉴는 본사·매장 계정으로 로그인해서 사용해요. 한 번 로그인하면 이 기기에서 계속 유지돼요.</p>
+  </main>
+
+<script type="module">
+import { APP_NAME, APP_MENU } from "./app-menu.js";
+import "./app-shell.js";
+
+const ICONS = {
+  cake: '<path d="M4 21h16"/><path d="M5 21v-7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7"/><path d="M5 16c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0"/><path d="M12 12V8"/><path d="M12 5.5c.8-.8.8-1.7 0-2.5-.8.8-.8 1.7 0 2.5z"/>',
+  clipboard: '<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4h6v3H9z"/><path d="M9 12l2 2 4-4"/>',
+  chart: '<path d="M4 20h16"/><path d="M7 16v-4"/><path d="M12 16V8"/><path d="M17 16v-6"/>',
+  store: '<path d="M4 9l1.5-5h13L20 9"/><path d="M4 9h16v2a3 3 0 0 1-5.3 2 3 3 0 0 1-5.4 0A3 3 0 0 1 4 11z"/><path d="M5 13v8h14v-8"/>',
+  users: '<circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7"/><path d="M18 14.7c1.8.7 3 2.6 3 5.3"/>',
+  link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>'
+};
+const svg = (k) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[k] || ICONS.link}</svg>`;
+
+document.getElementById("appName").textContent = APP_NAME;
+document.title = APP_NAME;
+const ul = document.getElementById("menu");
+APP_MENU.forEach((m) => {
+  const li = document.createElement("li");
+  const a = document.createElement("a");
+  a.href = m.href;
+  const ico = document.createElement("span"); ico.className = "ico"; ico.innerHTML = svg(m.icon);
+  const txt = document.createElement("span");
+  const b = document.createElement("b"); b.textContent = m.title;
+  const s = document.createElement("small"); s.textContent = m.desc || "";
+  txt.append(b, s);
+  const chev = document.createElement("span"); chev.innerHTML = '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+  a.append(ico, txt, chev); li.appendChild(a); ul.appendChild(li);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "벤슨 관리자",
+  "short_name": "벤슨 관리자",
+  "description": "벤슨 본사·매장 운영 관리 앱",
+  "lang": "ko",
+  "id": "./app.html",
+  "start_url": "./app.html?source=app",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#EEF3F9",
+  "theme_color": "#22364A",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

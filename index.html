@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>벤슨 케이크 픽업 사전예약</title>
-<meta name="description" content="벤슨 케이크를 미리 예약하고 원하는 날 매장에서 픽업하세요. 사전예약 시 5,000원 할인.">
-<meta property="og:title" content="벤슨 케이크 픽업 사전예약">
-<meta property="og:description" content="미리 예약하고, 원하는 날 픽업. 사전예약 시 5,000원 할인.">
-<meta name="theme-color" content="#7EA9DB">
+<title>벤슨 크리스마스 케이크 사전예약</title>
+<meta name="description" content="파티시에가 손수 만든 벤슨 크리스마스 아이스크림 케이크, 사전예약 30% 할인 (11.20 ~ 12.13). 원하는 날 매장에서 픽업하세요.">
+<meta property="og:title" content="벤슨 크리스마스 아이스크림 케이크 사전예약 30% 할인">
+<meta property="og:description" content="파티시에가 손수 만든 크리스마스 아이스크림 케이크. 11.20 ~ 12.13 사전예약 시 30% 할인.">
+<meta name="theme-color" content="#A91F2C">
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,6 +27,12 @@
     --paper: #FFFFFF;
     --error: #C0392B;
     --sale: #D9473B;
+    --xmas: #A91F2C;          /* 크리스마스 레드 */
+    --xmas-hi: #C42E3B;
+    --xmas-deep: #84141F;
+    --pine: #1E4A35;          /* 전나무 그린 */
+    --pine-deep: #153626;
+    --warm: #F6F2EA;
     --font: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
     box-sizing: border-box;
   }
@@ -36,53 +42,101 @@
   body {
     font-family: var(--font);
     color: var(--ink);
-    background: var(--sky);
+    background: var(--xmas-deep);
     -webkit-font-smoothing: antialiased;
     word-break: keep-all;
   }
   .wrap { max-width: 480px; margin: 0 auto; }
 
-  /* ---------- Hero ---------- */
+  /* ---------- Hero (크리스마스) ---------- */
   .hero {
     position: relative;
     overflow: hidden;
     padding: calc(env(safe-area-inset-top, 0px) + 22px) 24px 0;
     text-align: center;
     color: #fff;
+    background: radial-gradient(130% 75% at 50% 0%, var(--xmas-hi) 0%, var(--xmas) 48%, var(--xmas-deep) 100%);
   }
-  .hero::after {             /* 시안의 큰 원호 */
+  /* 눈 덮인 언덕 — 아래 흰 신청서와 이어지는 눈밭 */
+  .hero::after {
     content: "";
     position: absolute;
     left: 50%; bottom: -690px;
     width: 1100px; height: 760px;
     transform: translateX(-50%);
     border-radius: 50%;
-    background: var(--sky-soft);
+    background: #fff;
+    box-shadow: 0 -10px 0 rgba(255,255,255,.18);
     z-index: 0;
   }
   .hero > * { position: relative; z-index: 1; }
+  /* 내리는 눈 (두 겹, 속도 다르게) */
+  .hero > .snow { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .snow::before, .snow::after {
+    content: ""; position: absolute; left: 0; right: 0; top: -260px; bottom: 0;
+    background-repeat: repeat;
+    animation: snowfall linear infinite;
+  }
+  .snow::before {
+    background-image:
+      radial-gradient(circle at 18px 26px, rgba(255,255,255,.9) 0 1.6px, transparent 2.2px),
+      radial-gradient(circle at 96px 64px, rgba(255,255,255,.75) 0 1.3px, transparent 1.9px),
+      radial-gradient(circle at 150px 12px, rgba(255,255,255,.85) 0 1.8px, transparent 2.4px),
+      radial-gradient(circle at 60px 132px, rgba(255,255,255,.7) 0 1.2px, transparent 1.8px),
+      radial-gradient(circle at 128px 150px, rgba(255,255,255,.8) 0 1.5px, transparent 2.1px);
+    background-size: 180px 180px;
+    --fall: 180px; animation-duration: 13s;
+  }
+  .snow::after {
+    background-image:
+      radial-gradient(circle at 40px 70px, rgba(255,255,255,.95) 0 2.6px, transparent 3.3px),
+      radial-gradient(circle at 190px 180px, rgba(255,255,255,.85) 0 2.2px, transparent 2.9px),
+      radial-gradient(circle at 230px 40px, rgba(255,255,255,.8) 0 2px, transparent 2.7px);
+    background-size: 260px 260px;
+    --fall: 260px; animation-duration: 21s;
+  }
+  @keyframes snowfall { to { transform: translateY(var(--fall)); } }
+  @media (prefers-reduced-motion: reduce) { .snow::before, .snow::after { animation: none; } }
+
+  /* 눈밭 위 전나무 */
+  .tree { position: absolute; z-index: 1; bottom: 38px; width: auto; pointer-events: none; }
+  .tree.t1 { left: 10px; height: 74px; }
+  .tree.t2 { left: 58px; height: 46px; bottom: 34px; }
+  .tree.t3 { right: 14px; height: 60px; }
+
   .logo { display: block; text-align: left; height: 30px; margin-bottom: 14px; }
   .logo img { height: 30px; width: auto; }
   .logo span { font-family: "Yellowtail", cursive; font-size: 30px; line-height: 30px; color: #fff; }
   .pill {
     display: inline-block; margin: 0;
     padding: 9px 28px; border-radius: 999px;
-    background: var(--cream); color: var(--navy);
+    background: var(--cream); color: var(--xmas-deep);
     font-size: 17px; font-weight: 800; letter-spacing: -0.02em;
   }
   .hand {
-    margin: 18px 0 2px;
+    margin: 18px 0 4px;
     font-family: "Nanum Pen Script", var(--font);
-    font-size: clamp(21px, 6.4vw, 26px); line-height: 1.2; opacity: .95;
+    font-size: clamp(22px, 6.8vw, 28px); line-height: 1.2;
+    color: var(--cream);
   }
-  .hero h1 {
-    margin: 0;
-    font-size: clamp(44px, 13.5vw, 62px);
-    line-height: 1.08; font-weight: 900; letter-spacing: -0.045em;
+  .hero h1 { margin: 0; font-weight: 900; letter-spacing: -0.045em; }
+  .hero h1 .sub {
+    display: block;
+    font-size: clamp(23px, 7vw, 31px); line-height: 1.25; font-weight: 800; letter-spacing: -0.035em;
   }
-  .lead { margin: 14px 0 0; font-size: 19px; font-weight: 500; letter-spacing: -0.02em; }
+  .hero h1 .main {
+    display: block; margin-top: 4px;
+    font-size: clamp(36px, 11vw, 52px); line-height: 1.1;
+  }
+  .period {
+    display: inline-block; margin: 16px 0 0;
+    padding: 6px 16px; border-radius: 999px;
+    border: 1.5px solid rgba(255,255,255,.55);
+    font-size: 18px; font-weight: 700; letter-spacing: .02em;
+    font-variant-numeric: tabular-nums;
+  }
   .hero-img { display: block; width: 78%; max-width: 340px; margin: 18px auto -6px; }
-  .hero-spacer { height: 84px; }
+  .hero-spacer { height: 96px; }
 
   /* ---------- Form sheet ---------- */
   .sheet {
@@ -90,13 +144,13 @@
     margin-top: -28px;
     background: var(--paper);
     border-radius: 28px 28px 0 0;
-    padding: 30px 22px calc(120px + env(safe-area-inset-bottom, 0px));
+    padding: 12px 22px calc(120px + env(safe-area-inset-bottom, 0px));
     min-height: 60vh;
   }
   .notice {
     margin: 0 0 26px; padding: 14px 16px;
-    border-radius: 14px; background: #EEF4FB;
-    font-size: 14px; line-height: 1.65; color: var(--navy);
+    border-radius: 14px; background: var(--warm);
+    font-size: 14px; line-height: 1.65; color: var(--ink);
   }
   .notice ul { margin: 0; padding-left: 18px; }
 
@@ -147,12 +201,12 @@
   }
   .price-note b {
     padding: 4px 10px; border-radius: 999px;
-    background: var(--cream); color: var(--navy); font-size: 13px; font-weight: 800;
+    background: var(--xmas); color: #fff; font-size: 13px; font-weight: 800;
   }
   .order-sum {
     display: flex; justify-content: space-between; align-items: center; gap: 12px;
     margin-top: 12px; padding: 14px 16px; border-radius: 12px;
-    background: var(--navy); color: #fff; font-size: 14px;
+    background: var(--pine); color: #fff; font-size: 14px;
   }
   .order-sum b { font-size: 17px; font-weight: 800; }
   .order-sum .total b { color: var(--cream); }
@@ -173,7 +227,7 @@
   .consent { border-top: 1px solid var(--line); padding-top: 20px; }
   .check { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; font-weight: 600; cursor: pointer; line-height: 1.45; }
   .check input { width: 22px; height: 22px; margin: 0; flex: none; accent-color: var(--navy); }
-  .check.all { padding: 14px; border-radius: 12px; background: #EEF4FB; font-size: 16px; font-weight: 800; color: var(--navy); }
+  .check.all { padding: 14px; border-radius: 12px; background: var(--warm); font-size: 16px; font-weight: 800; color: var(--navy); }
   .consent-item { padding: 14px 2px 0; }
   .consent-item + .consent-item { margin-top: 2px; }
   details { margin: 8px 0 0 32px; font-size: 13px; color: var(--mute); }
@@ -190,18 +244,20 @@
   /* ---------- Sticky CTA ---------- */
   .cta-bar {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
-    background: var(--navy);
+    background: var(--pine);
     padding: 12px 18px calc(12px + env(safe-area-inset-bottom, 0px));
   }
   .cta-bar .wrap { display: block; }
   .btn {
     display: block; width: 100%; min-height: 56px;
     border: 0; border-radius: 999px;
-    background: var(--cream); color: var(--navy);
+    background: var(--cream); color: var(--xmas-deep);
     font: 800 18px/1 var(--font); letter-spacing: -0.02em;
     cursor: pointer;
   }
   .btn:disabled { opacity: .6; cursor: wait; }
+  .btn.closed, .btn.closed:disabled { opacity: 1; cursor: not-allowed; background: rgba(255,255,255,.16); color: #fff; font-size: 16px; }
+  .preview-note { margin: 0 0 20px; padding: 10px 14px; border-radius: 12px; background: #EAF3EE; color: var(--pine); font-size: 13px; font-weight: 600; }
   .btn:focus-visible, .stepper button:focus-visible, .check input:focus-visible, summary:focus-visible {
     outline: 3px solid var(--sky); outline-offset: 2px;
   }
@@ -236,23 +292,28 @@ src="https://www.facebook.com/tr?id=1686148093182564&ev=PageView&noscript=1"
 <body>
 <div class="wrap">
   <header class="hero">
+    <div class="snow" aria-hidden="true"></div>
     <div class="logo" id="logo"><span>Benson</span></div>
     <p class="pill">픽업 사전예약 혜택</p>
-    <p class="hand">세상에서 단 하나뿐인 수제 케이크</p>
-    <h1>벤슨 케이크<br>5,000원 할인</h1>
-    <p class="lead">미리 예약하고, 원하는 날 픽업</p>
+    <p class="hand">파티시에가 손수 만든</p>
+    <h1><span class="sub">크리스마스 아이스크림 케이크</span><span class="main" id="heroDiscount">사전예약 30% 할인</span></h1>
+    <p class="period" id="periodLabel">11.20 ~ 12.13</p>
     <img class="hero-img" id="heroImg" alt="" hidden>
     <div class="hero-spacer"></div>
+    <svg class="tree t1" viewBox="0 0 40 62" aria-hidden="true"><path fill="#F3E2B3" d="M20 0l1.6 3.4 3.7.4-2.8 2.5.8 3.7L20 8.2 16.7 10l.8-3.7-2.8-2.5 3.7-.4z"/><path fill="#1E4A35" d="M20 7l11 15H9zM20 15l14 18H6zM20 25l17 22H3z"/><path fill="#fff" d="M9 22c3-1.6 5 .6 7-.6s4 1.2 6 0 4 .8 9 .6l-1.6 2.2c-3 .3-5-1-7 .2s-4-.8-6 .2-4-.6-6.2.4zM6 33c4-1.6 6 .7 8.4-.4s4.8 1.2 7.2 0 5 .8 12.4.4L32 35.4c-4 .4-6.6-1-9 .2s-5-.8-7.4.2-5-.6-7.6.4zM3 47c5-1.6 7.2.8 10.2-.4s6 1.2 9 0 6 .8 14.8.4L35 49.5c-5 .4-8-1-11 .2s-6-.8-9 .2-6-.6-9.5.4z"/><path fill="#5B3A29" d="M17.5 47h5v9h-5z"/></svg>
+    <svg class="tree t2" viewBox="0 0 40 62" aria-hidden="true"><path fill="#24573F" d="M20 4l11 16H9zM20 13l14 19H6zM20 24l17 23H3z"/><path fill="#fff" d="M20 4l3.4 5c-2-.8-4.8-.8-6.8 0z"/><path fill="#5B3A29" d="M17.5 47h5v9h-5z"/></svg>
+    <svg class="tree t3" viewBox="0 0 40 62" aria-hidden="true"><path fill="#1E4A35" d="M20 2l11 17H9zM20 12l14 19H6zM20 23l17 24H3z"/><path fill="#fff" d="M20 2l3.6 5.6c-2.2-.9-5-.9-7.2 0zM9 19c3-1.4 5 .6 7-.5s4 1.1 6 0 4 .7 9 .5l-1.6 2c-3 .3-5-.9-7 .2s-4-.7-6 .2-4-.5-6.2.4zM6 31c4-1.5 6 .7 8.4-.4s4.8 1.1 7.2 0 5 .8 12.4.4L32 33.3c-4 .4-6.6-.9-9 .2s-5-.7-7.4.2-5-.6-7.6.4z"/><path fill="#5B3A29" d="M17.5 47h5v9h-5z"/></svg>
   </header>
 
   <main class="sheet">
     <div id="setupWarning" class="setup-warning" hidden></div>
+    <p id="previewNote" class="preview-note" hidden>직원 테스트 모드예요. 사전예약 기간과 상관없이 신청돼요. 테스트 예약은 관리자 화면에서 삭제해 주세요.</p>
     <p class="recent" id="recent">이전에 신청하신 예약이 있어요. <a id="recentLink" href="#">예약 상태 보기</a></p>
 
     <form id="form" novalidate>
       <div class="notice">
         <ul>
-          <li>픽업 하루 전까지 예약할 수 있어요.</li>
+          <li>픽업 하루 전까지 예약할 수 있어요.<span id="pickupLastNote"></span></li>
           <li>매장에서 확인한 뒤 문자로 예약 확정을 알려 드려요.</li>
           <li>결제는 픽업하실 때 매장에서 해요.</li>
           <li>취소 또는 제품 변경 필요 시, 예약한 매장으로 직접 연락 부탁드립니다.</li>
@@ -363,7 +424,7 @@ src="https://www.facebook.com/tr?id=1686148093182564&ev=PageView&noscript=1"
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, doc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { firebaseConfig, BRAND, STORES, STORE_PHONES, CAKES, MAX_QTY, MIN_DAYS_AHEAD, MAX_DAYS_AHEAD, PICKUP_TIME, PRIVACY, PREORDER_DISCOUNT } from "./config.js";
+import { firebaseConfig, BRAND, STORES, STORE_PHONES, CAKES, MAX_QTY, MIN_DAYS_AHEAD, MAX_DAYS_AHEAD, PICKUP_TIME, PRIVACY, RESERVE_PERIOD, PICKUP_DATES, PREORDER_DISCOUNT_RATE, salePriceOf } from "./config.js";
 
 const $ = (id) => document.getElementById(id);
 const WEEK = ["일", "월", "화", "수", "목", "금", "토"];
@@ -390,10 +451,31 @@ const prettyDate = (ymd) => {
   const [y, m, d] = ymd.split("-").map(Number);
   return `${m}월 ${d}일(${WEEK[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]})`;
 };
-const minDate = kstDate(MIN_DAYS_AHEAD);
-const maxDate = kstDate(MAX_DAYS_AHEAD);
+const today = kstDate(0);
+const tomorrowish = kstDate(MIN_DAYS_AHEAD);
+const minDate = PICKUP_DATES.first && PICKUP_DATES.first > tomorrowish ? PICKUP_DATES.first : tomorrowish;
+const maxDate = PICKUP_DATES.last || kstDate(MAX_DAYS_AHEAD);
 $("date").min = minDate;
 $("date").max = maxDate;
+if (PICKUP_DATES.last) $("pickupLastNote").textContent = ` 픽업은 ${prettyDate(PICKUP_DATES.last)}까지 가능해요.`;
+
+/* ---------- 사전예약 기간 ---------- */
+$("periodLabel").textContent = RESERVE_PERIOD.label;
+$("heroDiscount").textContent = `사전예약 ${PREORDER_DISCOUNT_RATE}% 할인`;
+const isPreview = new URLSearchParams(location.search).get("preview") === "1";
+const beforeOpen = today < RESERVE_PERIOD.start;
+const afterClose = today > RESERVE_PERIOD.end || minDate > maxDate;
+const reserveOpen = isPreview || (!beforeOpen && !afterClose);
+if (isPreview && (beforeOpen || afterClose)) $("previewNote").hidden = false;
+function lockForPeriod() {
+  if (reserveOpen) return;
+  const btn = $("submitBtn");
+  btn.disabled = true; btn.classList.add("closed");
+  btn.textContent = beforeOpen
+    ? `${prettyDate(RESERVE_PERIOD.start)}부터 신청할 수 있어요`
+    : "크리스마스 케이크 사전예약이 마감되었어요";
+}
+lockForPeriod();
 
 /* ---------- 선택지 채우기 ---------- */
 const storeSel = $("store");
@@ -410,25 +492,25 @@ storeSel.addEventListener("change", () => {
 const cakeName = (c) => (typeof c === "string" ? c : c.name);
 const cakePrice = (c) => (typeof c === "string" ? null : c.price);
 const won = (n) => `${n.toLocaleString("ko-KR")}원`;
-function priceTag(price) {
+function priceTag(c) {
   const pr = document.createElement("span"); pr.className = "pr";
-  const sale = Math.max(price - PREORDER_DISCOUNT, 0);
-  if (!PREORDER_DISCOUNT) { pr.innerHTML = `<span class="now">${won(price)}</span>`; return pr; }
+  const price = cakePrice(c), sale = salePriceOf(cakeName(c));
+  if (!sale || sale >= price) { pr.innerHTML = `<span class="now">${won(price)}</span>`; return pr; }
+  const off = Math.round((1 - sale / price) * 100);
   pr.innerHTML =
     `<span class="sr-only">정상가 ${won(price)}, 사전예약가 ${won(sale)}</span>` +
-    `<span class="was" aria-hidden="true"><span class="off">-${PREORDER_DISCOUNT.toLocaleString("ko-KR")}</span><s>${won(price)}</s></span>` +
+    `<span class="was" aria-hidden="true"><span class="off">-${off}%</span><s>${won(price)}</s></span>` +
     `<span class="now" aria-hidden="true">${won(sale)}</span>`;
   return pr;
 }
 /* ---------- 케이크별 수량 선택 ---------- */
 const counts = new Map(CAKES.map((c) => [cakeName(c), 0]));
-const priceOf = new Map(CAKES.map((c) => [cakeName(c), cakePrice(c)]));
-const saleOf = (name) => { const p = priceOf.get(name); return p ? Math.max(p - (PREORDER_DISCOUNT || 0), 0) : null; };
+const saleOf = (name) => salePriceOf(name);
 
 if (CAKES.length) {
-  if (PREORDER_DISCOUNT && CAKES.some(cakePrice)) {
+  if (PREORDER_DISCOUNT_RATE && CAKES.some(cakePrice)) {
     const note = document.createElement("p"); note.className = "price-note";
-    note.innerHTML = `<b>사전예약가</b><span>1개당 ${won(PREORDER_DISCOUNT)} 할인된 가격이에요</span>`;
+    note.innerHTML = `<b>사전예약가</b><span>1개당 ${PREORDER_DISCOUNT_RATE}% 할인된 가격이에요</span>`;
     $("cakeSlot").appendChild(note);
   }
   const list = document.createElement("div");
@@ -439,13 +521,13 @@ if (CAKES.length) {
     if (c.image) {
       const img = document.createElement("img");
       img.className = "thumb"; img.src = c.image; img.alt = name;
-      img.width = 270; img.height = 191; img.loading = "lazy"; img.decoding = "async";
+      img.width = 400; img.height = 400; img.loading = "lazy"; img.decoding = "async";
       img.onerror = () => { img.remove(); row.classList.remove("has-img"); };
       row.classList.add("has-img"); row.appendChild(img);
     }
     const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = name;
     row.appendChild(nm);
-    if (cakePrice(c)) row.appendChild(priceTag(cakePrice(c)));
+    if (cakePrice(c)) row.appendChild(priceTag(c));
     const st = document.createElement("div"); st.className = "stepper"; st.setAttribute("role", "group"); st.setAttribute("aria-label", `${name} 수량`);
     const minus = document.createElement("button"); minus.type = "button"; minus.textContent = "−"; minus.setAttribute("aria-label", `${name} 1개 빼기`);
     const out = document.createElement("output"); out.textContent = "0"; out.setAttribute("aria-live", "polite");
@@ -589,6 +671,7 @@ const utm = (() => {
 $("form").addEventListener("submit", async (e) => {
   e.preventDefault();
   $("formError").textContent = "";
+  if (!reserveOpen) { lockForPeriod(); return; }
   const { v, ok, first } = validate();
   if (!ok) {
     const el = $(first);
@@ -644,6 +727,7 @@ $("form").addEventListener("submit", async (e) => {
     console.error(err);
     $("formError").textContent = "신청이 접수되지 않았어요. 인터넷 연결을 확인하고 다시 눌러 주세요.";
     btn.disabled = false; btn.textContent = "사전예약 신청하기";
+    lockForPeriod();
   }
 });
 

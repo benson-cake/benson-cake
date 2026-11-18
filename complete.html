@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>벤슨 케이크 사전예약 신청 완료</title>
+<title>벤슨 크리스마스 케이크 사전예약 신청 완료</title>
 <meta name="robots" content="noindex">
-<meta name="theme-color" content="#7EA9DB">
+<meta name="theme-color" content="#A91F2C">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,7 +21,7 @@
   *, *::before, *::after { box-sizing: inherit; }
   [hidden] { display: none !important; }
   html, body { margin: 0; }
-  body { font-family: var(--font); color: var(--ink); background: var(--sky); -webkit-font-smoothing: antialiased; word-break: keep-all; }
+  body { font-family: var(--font); color: var(--ink); background: radial-gradient(130% 60% at 50% 0%, #C42E3B 0%, #A91F2C 50%, #84141F 100%) #84141F; background-attachment: fixed; -webkit-font-smoothing: antialiased; word-break: keep-all; }
   .wrap { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
   header { padding: calc(env(safe-area-inset-top, 0px) + 22px) 24px 30px; color: #fff; text-align: center; }
   .logo { height: 30px; margin-bottom: 22px; text-align: left; }
@@ -39,7 +39,7 @@
   .summary li { display: flex; justify-content: space-between; gap: 16px; padding: 12px 2px; border-bottom: 1px solid var(--line); font-size: 15px; }
   .summary li span:first-child { color: var(--mute); flex: none; }
   .summary li span:last-child { font-weight: 600; text-align: right; white-space: pre-line; }
-  .link-box { padding: 16px; border-radius: 14px; background: #EEF4FB; font-size: 14px; line-height: 1.6; color: var(--navy); }
+  .link-box { padding: 16px; border-radius: 14px; background: #F6F2EA; font-size: 14px; line-height: 1.6; color: var(--navy); }
   .link-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
   .ghost { display: flex; align-items: center; justify-content: center; min-height: 48px; border-radius: 12px; border: 1.5px solid var(--navy); background: #fff; color: var(--navy); font: 700 15px/1 var(--font); text-decoration: none; cursor: pointer; }
   .ghost.fill { background: var(--navy); color: #fff; }
@@ -118,7 +118,7 @@ src="https://www.facebook.com/tr?id=1686148093182564&ev=PageView&noscript=1"
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { firebaseConfig, BRAND, CAKES, PREORDER_DISCOUNT, STORE_PHONES } from "./config.js";
+import { firebaseConfig, BRAND, STORE_PHONES, salePriceOf } from "./config.js";
 
 const $ = (id) => document.getElementById(id);
 const WEEK = ["일", "월", "화", "수", "목", "금", "토"];
@@ -129,10 +129,7 @@ const prettyDate = (ymd) => {
   return `${m}월 ${d}일(${WEEK[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]})`;
 };
 const won = (n) => `${n.toLocaleString("ko-KR")}원`;
-const salePrice = (cakeName) => {
-  const c = CAKES.find((x) => (typeof x === "string" ? x : x.name) === cakeName);
-  return c && typeof c !== "string" && c.price ? Math.max(c.price - (PREORDER_DISCOUNT || 0), 0) : null;
-};
+const salePrice = (cakeName) => salePriceOf(cakeName);
 
 const id = new URLSearchParams(location.search).get("r");
 const statusUrl = id ? new URL(`status.html?r=${encodeURIComponent(id)}`, location.href).href : "";

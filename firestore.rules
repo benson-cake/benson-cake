@@ -1,0 +1,107 @@
+rules_version = '2';
+// 벤슨 케이크 사전예약 — Firestore 보안 규칙
+// 원칙: 고객은 "신청 생성"만, 예약 조회·처리는 로그인한 본사·해당 매장만.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- 권한 ----------
+    function signedIn() { return request.auth != null; }
+    function staffPath() { return /databases/$(database)/documents/staff/$(request.auth.uid); }
+    function isStaff() { return signedIn() && exists(staffPath()); }
+    function me() { return get(staffPath()).data; }
+    function isMaster() { return isStaff() && me().role == 'master'; }
+    function isStoreOf(store) { return isStaff() && me().role == 'store' && me().store == store; }
+    function canManage(store) { return isMaster() || isStoreOf(store); }
+
+    // ---------- 값 검사 ----------
+    function str(v, minLen, maxLen) { return v is string && v.size() >= minLen && v.size() <= maxLen; }
+    function optStr(d, key, maxLen) { return !(key in d) || str(d[key], 0, maxLen); }
+    function validStatus(s) { return s in ['requested', 'confirmed', 'reschedule', 'picked_up', 'cancelled', 'no_show']; }
+    function validDate(v) { return v is string && v.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'); }
+    function validTime(v) { return v is string && v.matches('^[0-9]{2}:[0-9]{2}$'); }
+
+    // ---------- 예약 원본 (개인정보 포함) ----------
+    match /reservations/{id} {
+      allow create: if
+        request.resource.data.keys().hasOnly(['code', 'name', 'phone', 'phoneLast4', 'store', 'cake', 'qty',
+          'items', 'pickupDate', 'pickupTime', 'memo', 'consent', 'consentThirdParty', 'consentMarketing', 'consentVersion',
+          'utmSource', 'utmMedium', 'utmCampaign', 'utmContent', 'status', 'createdAt', 'updatedAt'])
+        && request.resource.data.keys().hasAll(['code', 'name', 'phone', 'phoneLast4', 'store', 'cake', 'qty', 'items',
+          'pickupDate', 'pickupTime', 'consent', 'consentThirdParty', 'consentMarketing', 'consentVersion',
+          'status', 'createdAt'])
+        && str(request.resource.data.code, 6, 6)
+        && str(request.resource.data.name, 1, 20)
+        && request.resource.data.phone is string
+        && request.resource.data.phone.matches('^01[016789][0-9]{7,8}$')
+        && request.resource.data.phoneLast4 is string
+        && request.resource.data.phoneLast4.matches('^[0-9]{4}$')
+        && str(request.resource.data.store, 1, 40)
+        && str(request.resource.data.cake, 1, 400)
+        && request.resource.data.qty is int
+        && request.resource.data.qty >= 1 && request.resource.data.qty <= 50
+        && request.resource.data.items is list
+        && request.resource.data.items.size() >= 1 && request.resource.data.items.size() <= 20
+        && validDate(request.resource.data.pickupDate)
+        && validTime(request.resource.data.pickupTime)
+        && optStr(request.resource.data, 'memo', 200)
+        && optStr(request.resource.data, 'utmSource', 100)
+        && optStr(request.resource.data, 'utmMedium', 100)
+        && optStr(request.resource.data, 'utmCampaign', 100)
+        && optStr(request.resource.data, 'utmContent', 100)
+        && request.resource.data.consent == true
+        && request.resource.data.consentThirdParty == true
+        && request.resource.data.consentMarketing is bool
+        && str(request.resource.data.consentVersion, 1, 20)
+        && request.resource.data.status == 'requested'
+        && request.resource.data.createdAt == request.time
+        && existsAfter(/databases/$(database)/documents/publicStatus/$(id));
+
+      allow read: if canManage(resource.data.store);
+
+      allow update: if canManage(resource.data.store)
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'pickupDate', 'pickupTime', 'storeNote', 'updatedAt', 'updatedBy', 'confirmSmsAt'])
+        && validStatus(request.resource.data.status)
+        && validDate(request.resource.data.pickupDate)
+        && validTime(request.resource.data.pickupTime)
+        && optStr(request.resource.data, 'storeNote', 300)
+        && (!('confirmSmsAt' in request.resource.data) || request.resource.data.confirmSmsAt is timestamp);
+
+      allow delete: if isMaster();
+    }
+
+    // ---------- 고객용 상태 (개인정보 없음, 링크를 아는 사람만 1건 조회) ----------
+    match /publicStatus/{id} {
+      allow get: if true;
+      allow list: if false;
+
+      allow create: if
+        request.resource.data.keys().hasOnly(['code', 'nameMasked', 'store', 'cake', 'qty', 'items',
+          'pickupDate', 'pickupTime', 'status', 'createdAt', 'updatedAt'])
+        && request.resource.data.status == 'requested'
+        && str(request.resource.data.nameMasked, 1, 20)
+        && request.resource.data.qty is int
+        && (!('items' in request.resource.data) || (request.resource.data.items is list && request.resource.data.items.size() <= 20))
+        && validDate(request.resource.data.pickupDate)
+        && validTime(request.resource.data.pickupTime)
+        && existsAfter(/databases/$(database)/documents/reservations/$(id))
+        && getAfter(/databases/$(database)/documents/reservations/$(id)).data.code == request.resource.data.code
+        && getAfter(/databases/$(database)/documents/reservations/$(id)).data.store == request.resource.data.store;
+
+      allow update: if canManage(resource.data.store)
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'pickupDate', 'pickupTime', 'updatedAt'])
+        && validStatus(request.resource.data.status)
+        && validDate(request.resource.data.pickupDate)
+        && validTime(request.resource.data.pickupTime);
+
+      allow delete: if isMaster();
+    }
+
+    // ---------- 직원 권한 (본사가 관리) ----------
+    match /staff/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isMaster());
+      allow write: if isMaster();
+    }
+  }
+}
