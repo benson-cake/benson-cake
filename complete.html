@@ -7,9 +7,6 @@
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#A91F2C">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yellowtail&display=swap">
 <style>
   :root {
     color-scheme: light;
@@ -25,8 +22,7 @@
   .wrap { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
   header { padding: calc(env(safe-area-inset-top, 0px) + 22px) 24px 30px; color: #fff; text-align: center; }
   .logo { height: 30px; margin-bottom: 22px; text-align: left; }
-  .logo img { height: 30px; }
-  .logo span { font-family: "Yellowtail", cursive; font-size: 30px; line-height: 30px; }
+  .logo img { display: block; height: 30px; width: auto; }
   .check-mark { width: 64px; height: 64px; margin: 0 auto 14px; border-radius: 50%; background: var(--cream); display: grid; place-items: center; }
   .check-mark svg { width: 30px; height: 30px; }
   header h1 { margin: 0; font-size: 28px; font-weight: 900; letter-spacing: -0.035em; line-height: 1.3; }
@@ -83,7 +79,7 @@ src="https://www.facebook.com/tr?id=1686148093182564&ev=PageView&noscript=1"
 <body>
 <div class="wrap">
   <header>
-    <div class="logo" id="logo"><span>Benson</span></div>
+    <div class="logo" id="logo"><img src="logo-benson-white.svg" alt="Benson" width="111" height="30"></div>
     <div class="check-mark" aria-hidden="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="#22364A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
     </div>

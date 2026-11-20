@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&family=Yellowtail&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap">
 <style>
   :root {
     color-scheme: light;
@@ -105,8 +105,7 @@
   .tree.t3 { right: 14px; height: 60px; }
 
   .logo { display: block; text-align: left; height: 30px; margin-bottom: 14px; }
-  .logo img { height: 30px; width: auto; }
-  .logo span { font-family: "Yellowtail", cursive; font-size: 30px; line-height: 30px; color: #fff; }
+  .logo img { display: block; height: 30px; width: auto; }
   .pill {
     display: inline-block; margin: 0;
     padding: 9px 28px; border-radius: 999px;
@@ -295,7 +294,7 @@ src="https://www.facebook.com/tr?id=1686148093182564&ev=PageView&noscript=1"
 <div class="wrap">
   <header class="hero">
     <div class="snow" aria-hidden="true"></div>
-    <div class="logo" id="logo"><span>Benson</span></div>
+    <div class="logo" id="logo"><img src="logo-benson-white.svg" alt="Benson" width="111" height="30"></div>
     <p class="pill">픽업 사전예약 혜택</p>
     <p class="hand">파티시에가 손수 만든</p>
     <h1><span class="sub">크리스마스 아이스크림 케이크</span><span class="main" id="heroDiscount">사전예약 30% 할인</span></h1>
@@ -425,7 +424,7 @@ src="https://www.facebook.com/tr?id=1686148093182564&ev=PageView&noscript=1"
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, doc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { firebaseConfig, BRAND, STORES, STORE_PHONES, CAKES, MAX_QTY, MIN_DAYS_AHEAD, MAX_DAYS_AHEAD, PICKUP_TIME, PRIVACY, RESERVE_PERIOD, PICKUP_DATES, PREORDER_DISCOUNT_RATE, salePriceOf } from "./config.js";
+import { firebaseConfig, BRAND, STORES, STORE_PHONES, CAKES, MAX_QTY, MIN_DAYS_AHEAD, MAX_DAYS_AHEAD, PICKUP_TIME, PRIVACY, RESERVE_PERIOD, PICKUP_DATES, PREORDER_DISCOUNT_RATE, salePriceOf, CAMPAIGN } from "./config.js";
 
 const $ = (id) => document.getElementById(id);
 const WEEK = ["일", "월", "화", "수", "목", "금", "토"];
@@ -704,7 +703,7 @@ $("form").addEventListener("submit", async (e) => {
     const batch = writeBatch(db);
     batch.set(ref, {
       code, name: v.name, phone: v.phone, phoneLast4: v.phone.slice(-4),
-      store: v.store, cake, qty, items,
+      store: v.store, cake, qty, items, campaign: CAMPAIGN,
       pickupDate: v.date, pickupTime: v.time,
       memo: v.memo, consent: true, consentThirdParty: true,
       consentMarketing: v.consentMkt, consentVersion: PRIVACY.version,
@@ -713,7 +712,7 @@ $("form").addEventListener("submit", async (e) => {
     });
     batch.set(doc(db, "publicStatus", ref.id), {
       code, nameMasked: maskName(v.name),
-      store: v.store, cake, qty, items,
+      store: v.store, cake, qty, items, campaign: CAMPAIGN,
       pickupDate: v.date, pickupTime: v.time,
       status: "requested", createdAt: now, updatedAt: now
     });

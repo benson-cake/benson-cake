@@ -19,7 +19,7 @@ export const firebaseConfig = {
 
 // 브랜드 이미지 (같은 저장소에 올린 파일 이름 또는 전체 주소). 비워 두면 글자로 표시합니다.
 export const BRAND = {
-  logoUrl: "",        // 예: "logo.png" (흰색 로고 권장)
+  logoUrl: "logo-benson-white.svg",   // 빨간 배경용 흰색 로고. 하늘색 원본은 "logo-benson-blue.svg"
   heroImageUrl: ""    // 예: "cake.png" (배경이 투명한 케이크 사진 권장)
 };
 
@@ -67,6 +67,11 @@ export const STORE_PHONES = {
 // ---------------------------------------------------------------------
 // 크리스마스 아이스크림 케이크 사전예약 (2026)
 // ---------------------------------------------------------------------
+// 예약 구분값 — 지금부터 들어오는 예약에 자동으로 붙습니다. 다음 행사 때는 이름만 바꾸면 됩니다.
+export const CAMPAIGN = "크리스마스 사전예약";
+// 구분값 없이 들어온 이전 예약(5,000원 할인 사전예약 등)을 관리자 화면·CSV에서 부르는 이름
+export const LEGACY_CAMPAIGN = "이전 사전예약";
+
 // 메인 화면에 보이는 행사 기간 문구 (표시용 — 신청은 기간 제한 없이 계속 받습니다)
 export const RESERVE_PERIOD = { label: "11.20 ~ 12.13" };
 

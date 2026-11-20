@@ -7,9 +7,6 @@
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#A91F2C">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yellowtail&display=swap">
 <style>
   :root {
     color-scheme: light;
@@ -26,8 +23,7 @@
   .wrap { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
   header { padding: calc(env(safe-area-inset-top, 0px) + 22px) 24px 26px; color: #fff; }
   .logo { height: 30px; margin-bottom: 18px; }
-  .logo img { height: 30px; }
-  .logo span { font-family: "Yellowtail", cursive; font-size: 30px; line-height: 30px; }
+  .logo img { display: block; height: 30px; width: auto; }
   header p { margin: 0; font-size: 15px; opacity: .9; }
   header h1 { margin: 6px 0 0; font-size: 30px; font-weight: 900; letter-spacing: -0.035em; line-height: 1.25; }
   main { flex: 1; background: var(--paper); border-radius: 28px 28px 0 0; padding: 28px 22px calc(40px + env(safe-area-inset-bottom, 0px)); }
@@ -67,7 +63,7 @@
 <body>
 <div class="wrap">
   <header>
-    <div class="logo" id="logo"><span>Benson</span></div>
+    <div class="logo" id="logo"><img src="logo-benson-white.svg" alt="Benson" width="111" height="30"></div>
     <p>크리스마스 케이크 사전예약</p>
     <h1 id="title">예약을 불러오는 중이에요</h1>
   </header>
