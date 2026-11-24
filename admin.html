@@ -204,10 +204,10 @@
       <button class="chip" data-day="today">오늘 픽업</button>
       <button class="chip" data-day="tomorrow">내일 픽업</button>
       <input type="date" id="dayPick" aria-label="픽업 날짜 선택">
-      <select id="period" aria-label="불러올 기간">
+      <select id="period" aria-label="불러올 기간" autocomplete="off">
+        <option value="all" selected>전체 기간</option>
         <option value="7">최근 7일 이후 픽업</option>
         <option value="30">최근 30일 이후 픽업</option>
-        <option value="all">전체 기간</option>
       </select>
       <input type="search" id="search" placeholder="전화번호 뒷자리 검색" inputmode="search">
     </div>
@@ -390,7 +390,7 @@ let me = null;
 let rows = [];
 let unsub = null;
 let firstLoad = true;
-const state = { tab: "requested", day: "all", dayValue: "", q: "", store: "", period: "7", campaign: CAMPAIGN };
+const state = { tab: "requested", day: "all", dayValue: "", q: "", store: "", period: "all", campaign: "__all" };   // 기본: 전체 기간 · 전체 구분
 const campaignOf = (r) => r.campaign || LEGACY_CAMPAIGN;
 /* 확정 문자 없이 버튼으로 확정하도록 바꾼 시점.
    이 시각 이전에 신청한 고객은 ‘문자로 확정을 알려 드린다’는 안내를 받았으므로,
@@ -450,6 +450,7 @@ onAuthStateChanged(auth, async (user) => {
 /* ---------- 화면 준비 ---------- */
 function setupApp() {
   const master = me.role === "master";
+  $("period").value = state.period;
   $("who").textContent = master ? `본사 마스터 · ${me.email}` : `${me.store} · ${me.email}`;
   $("storeFilter").hidden = !master;
   $("csvBtn").hidden = !master;
