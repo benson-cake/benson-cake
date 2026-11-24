@@ -11,5 +11,5 @@ export const APP_NAME = "벤슨 관리자";
 
 export const APP_MENU = [
   { title: "크리스마스 케이크 사전예약", desc: "예약 확인 · 확정 문자 · 픽업 처리", href: "admin.html", icon: "cake" }
-  // { title: "매장 점검", desc: "QSC 점검 기록", href: "https://…", icon: "clipboard" },
+  // { title: "매장 점검", desc: "QSC 점검 기록", href: "https://…", icon: "clipboard" },title: "매장 점검", desc: "점장·SV 매장 점검 · 사진 · 승인", href: "inspection.html", icon: "clipboard"
 ];
