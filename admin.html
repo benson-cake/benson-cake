@@ -3,777 +3,2278 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>벤슨 케이크 예약 관리</title>
 <meta name="robots" content="noindex, nofollow">
-<!-- 벤슨 관리자 앱(PWA) 공통 설정 -->
-<link rel="manifest" href="app.webmanifest">
-<meta name="theme-color" content="#22364A">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-<link rel="apple-touch-icon" href="icon-180.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="벤슨 관리자">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>벤슨 가맹문의 DB</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
 <style>
-  :root {
-    color-scheme: light;
-    --sky: #7EA9DB; --cream: #F3E2B3; --navy: #22364A; --ink: #1E2B38;
-    --mute: #5E6E7F; --line: #D6E0EC; --bg: #EEF3F9; --paper: #FFFFFF;
-    --warn: #B7791F; --warn-bg: #FFF4DE;
-    --alert: #C0392B; --alert-bg: #FCEDEB;
-    --ok: #2E7D5B; --ok-bg: #E6F3EC;
-    --done: #3D5A80; --done-bg: #E7EEF7;
-    --off: #6B7682; --off-bg: #EEF0F2;
-    --font: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
-    box-sizing: border-box;
-  }
-  *, *::before, *::after { box-sizing: inherit; }
-  [hidden] { display: none !important; }
-  html, body { margin: 0; }
-  body { font-family: var(--font); color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased; word-break: keep-all; font-size: 15px; }
-  button, input, select, textarea { font: inherit; color: inherit; }
-  button { cursor: pointer; }
-  :focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
+:root{
+  --ink:#15213B; --ink-2:#47526B; --ink-3:#7A8499;
+  --navy:#15213B; --brand:#2350B0; --brand-ink:#183C8C; --brand-tint:#EDF2FB;
+  --paper:#fff; --ground:#F2F5FA; --line:#DCE2EC; --line-2:#EAEEF4;
+  --danger:#B42318; --warn:#B54708;
+  --sans:"Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+}
+*{box-sizing:border-box}
+html{color-scheme:light}
+body{margin:0;font:14px/1.5 var(--sans);color:var(--ink);background:var(--ground);word-break:keep-all}
+button,input,select,textarea{font:inherit;color:inherit}
+[hidden]{display:none!important}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.muted{color:var(--ink-3)}
 
-  /* login */
-  .center { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: var(--sky); }
-  .login { width: 100%; max-width: 360px; padding: 28px 24px; border-radius: 22px; background: var(--paper); }
-  .login h1 { margin: 0 0 4px; font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
-  .login p { margin: 0 0 20px; color: var(--mute); font-size: 14px; }
-  label.f { display: block; margin-bottom: 12px; font-size: 13px; font-weight: 600; color: var(--mute); }
-  label.f input, label.f select { display: block; width: 100%; margin-top: 6px; min-height: 46px; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 10px; background: #F7F9FC; font-size: 16px; }
-  .primary { width: 100%; min-height: 48px; border: 0; border-radius: 12px; background: var(--navy); color: #fff; font-weight: 700; font-size: 16px; }
-  .primary:disabled { opacity: .6; }
-  .msg-err { margin: 10px 0 0; color: var(--alert); font-size: 14px; font-weight: 600; }
-  .msg-err:empty { display: none; }
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:0 14px;border:1px solid var(--line);
+  border-radius:8px;background:#fff;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:#B9C3D4}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.primary:hover{background:var(--brand-ink)}
+.btn.danger{color:var(--danger);border-color:transparent;background:none;padding:0 6px}
+.btn.danger:hover{text-decoration:underline}
+.btn.small{min-height:30px;padding:0 10px;font-size:13px}
+.btn:disabled{opacity:.6;cursor:progress}
 
-  /* app */
-  .topbar { position: sticky; top: 0; z-index: 5; background: var(--navy); color: #fff; padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 12px; }
-  .topbar-in { max-width: 1080px; margin: 0 auto; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-  .topbar h1 { margin: 0; font-size: 17px; font-weight: 800; }
-  .who { font-size: 13px; opacity: .85; }
-  .top-actions { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
-  .tbtn { min-height: 36px; padding: 0 12px; border: 1px solid rgba(255,255,255,.35); border-radius: 999px; background: transparent; color: #fff; font-size: 13px; font-weight: 600; }
-  a.tbtn { display: inline-flex; align-items: center; text-decoration: none; }
-  .tbtn.on { background: var(--cream); color: var(--navy); border-color: var(--cream); }
+/* 로그인 */
+.login{min-height:100vh;display:grid;place-items:center;padding:24px}
+.login-card{width:min(380px,100%);background:#fff;border:1px solid var(--line);border-radius:14px;padding:32px 28px 28px}
+.wordmark{font-weight:800;letter-spacing:.14em;font-size:14px;color:var(--brand)}
+.login-card h1{font-size:22px;margin:10px 0 22px}
+.login-card label{display:grid;gap:6px;font-weight:600;color:var(--ink-2);margin-bottom:14px}
+.login-card input{height:44px;border:1px solid var(--line);border-radius:8px;padding:0 12px;background:#fff}
+.login-card .btn{width:100%;min-height:46px;margin-top:6px}
+.login-msg{white-space:pre-line;color:var(--danger);font-size:13px;margin:0 0 12px}
+.login-msg:empty{display:none}
 
-  .content { max-width: 1080px; margin: 0 auto; padding: 14px 14px 60px; }
-  .filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
-  .filters select, .filters input { min-height: 40px; padding: 6px 10px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--paper); font-size: 14px; }
-  .filters input[type=search] { flex: 1; min-width: 150px; }
-  .chip { min-height: 40px; padding: 0 14px; border: 1.5px solid var(--line); border-radius: 999px; background: var(--paper); font-size: 14px; font-weight: 600; color: var(--mute); }
-  .chip.on { border-color: var(--navy); background: var(--navy); color: #fff; }
+/* 상단 바 */
+.bar{position:sticky;top:0;z-index:20;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:space-between;
+  gap:16px;padding:0 24px;height:56px}
+.bar-l{display:flex;align-items:center;gap:14px;height:100%}
+.bar .wordmark{color:#9DB7F0}
+.bar-title{font-weight:700;font-size:15px}
+.tabs{display:flex;gap:2px;height:100%;margin-left:12px}
+.tabs button{border:0;background:none;color:#B8C3DA;padding:0 12px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;border-top:3px solid transparent}
+.tabs button:hover{color:#fff}
+.tabs button.on{color:#fff;border-bottom-color:#7EA2F0}
+.bar-r{display:flex;align-items:center;gap:12px;color:#B8C3DA;font-size:13px}
+.bar-r .btn{background:transparent;border-color:#3A4866;color:#fff;min-height:30px}
+.demo{background:#FFF6E5;color:#7A4B00;padding:8px 24px;font-size:13px;border-bottom:1px solid #F1DDB4}
 
-  .tabs { display: flex; gap: 4px; overflow-x: auto; margin: 0 -14px 14px; padding: 0 14px; scrollbar-width: none; }
-  .tab { flex: none; min-height: 42px; padding: 0 14px; border: 0; border-bottom: 3px solid transparent; background: none; font-weight: 700; color: var(--mute); }
-  .tab b { margin-left: 4px; display: inline-block; min-width: 22px; padding: 1px 6px; border-radius: 999px; background: #DDE5EF; font-size: 12px; color: var(--navy); }
-  .tab.on { color: var(--navy); border-bottom-color: var(--navy); }
-  .tab.attn b { background: var(--warn); color: #fff; }
+main{padding:20px 24px 56px;max-width:1440px;margin:0 auto}
 
-  .list { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
-  .empty { padding: 40px 16px; text-align: center; color: var(--mute); background: var(--paper); border-radius: 14px; }
-  .banner { margin-bottom: 12px; padding: 12px 14px; border-radius: 12px; background: var(--alert-bg); color: var(--alert); font-size: 14px; font-weight: 600; word-break: break-all; }
+/* 요약 */
+.kpis{display:flex;background:#fff;border:1px solid var(--line);border-radius:10px;margin-bottom:14px;overflow:hidden}
+.kpi{flex:1;border:0;border-left:1px solid var(--line-2);background:none;text-align:left;padding:12px 18px;cursor:pointer;display:grid;gap:1px}
+.kpi:first-child{border-left:0}
+.kpi:hover{background:#F7F9FD}
+.kpi .k{font-size:12.5px;color:var(--ink-2);font-weight:600}
+.kpi .v{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.3}
+.kpi.on{background:var(--brand-tint);box-shadow:inset 0 -3px 0 var(--brand)}
+.kpi[data-k="A"] .v{color:var(--brand)}
+.kpi[data-k="new"] .v{color:var(--warn)}
+.kpi[data-k="wait"] .v{color:#6941C6}
+.kpi[data-k="due"] .v{color:#B42318}
 
-  .card { background: var(--paper); border-radius: 14px; padding: 14px; border-left: 5px solid var(--line); }
-  .card.requested { border-left-color: var(--warn); }
-  .card.reschedule { border-left-color: var(--alert); }
-  .card.confirmed { border-left-color: var(--ok); }
-  .card.picked_up { border-left-color: var(--done); }
-  .card.cancelled, .card.no_show { border-left-color: var(--off); opacity: .85; }
-  .card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-  .badge { padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; }
-  .b-requested { background: var(--warn-bg); color: var(--warn); }
-  .b-reschedule { background: var(--alert-bg); color: var(--alert); }
-  .b-confirmed { background: var(--ok-bg); color: var(--ok); }
-  .b-picked_up { background: var(--done-bg); color: var(--done); }
-  .b-cancelled, .b-no_show { background: var(--off-bg); color: var(--off); }
-  .when { font-size: 15px; font-weight: 800; text-align: right; }
-  .dday { margin-left: 4px; font-size: 12px; font-weight: 700; color: var(--alert); }
-  .dday.later { color: var(--mute); }
-  .store-name { margin: 8px 0 0; font-size: 13px; font-weight: 700; color: var(--done); }
-  .cake { margin: 8px 0 10px; padding: 0; list-style: none; font-size: 16px; font-weight: 700; line-height: 1.5; }
-  .cake b { color: var(--done); }
-  .cake-total { margin: -6px 0 10px; font-size: 13px; font-weight: 700; color: var(--mute); }
-  .meta { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; font-size: 14px; }
-  .meta dt { color: var(--mute); }
-  .meta dd { margin: 0; font-weight: 600; }
-  .meta a { color: var(--navy); }
-  .memo, .note { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; font-size: 13px; line-height: 1.5; }
-  .memo { background: #F6F2E6; }
-  .note { background: #EEF3F9; }
-  .actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-  .act { min-height: 40px; padding: 0 12px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--paper); font-size: 14px; font-weight: 700; color: var(--navy); }
-  .act.main { border-color: var(--navy); background: var(--navy); color: #fff; }
-  .act.warn { border-color: var(--alert); color: var(--alert); }
-  .more { margin-top: 10px; font-size: 13px; color: var(--mute); }
-  .more summary { cursor: pointer; }
-  .danger-zone { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); }
-  .danger-zone span { font-size: 12px; color: var(--mute); }
-  .act.danger { border-color: var(--alert); background: var(--alert); color: #fff; }
-  .more select { margin-top: 6px; min-height: 36px; border: 1.5px solid var(--line); border-radius: 8px; padding: 4px 8px; background: #fff; }
+/* 필터 */
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.filters input,.filters select{height:36px;border:1px solid var(--line);border-radius:8px;padding:0 10px;background:#fff}
+.filters .search{flex:1 1 220px;min-width:180px}
+.filters .range{display:inline-flex;align-items:center;gap:6px;color:var(--ink-3)}
+.tbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.tbar .count{color:var(--ink-2);font-weight:600}
+.tbar .keep{color:var(--ink-3);font-weight:500;margin-left:8px;font-size:12.5px}
+.tag.del{color:#9A3412;border-color:#F5C9B5;background:#FFF3EC}
+.tbar .acts{display:flex;gap:8px;flex-wrap:wrap}
 
-  dialog { width: min(440px, calc(100vw - 24px)); border: 0; border-radius: 18px; padding: 20px; color: var(--ink); }
-  dialog::backdrop { background: rgba(20, 32, 45, .45); }
-  dialog h2 { margin: 0 0 6px; font-size: 18px; font-weight: 800; }
-  dialog .to { margin: 0 0 12px; color: var(--mute); font-size: 14px; }
-  dialog textarea { width: 100%; min-height: 200px; padding: 10px; border: 1.5px solid var(--line); border-radius: 10px; font-size: 14px; line-height: 1.55; resize: vertical; }
-  .dlg-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
-  .dlg-actions .wide { grid-column: 1 / -1; }
-  .confirm-step { margin-top: 14px; padding: 14px; border-radius: 12px; background: var(--ok-bg); }
-  .confirm-step ol { margin: 0 0 12px; padding-left: 20px; font-size: 14px; line-height: 1.6; color: var(--ink); }
-  .dlg-btn.done { width: 100%; border-color: var(--ok); background: var(--ok); color: #fff; }
-  .dlg-btn.done:disabled { border-color: var(--line); background: #E3E8EE; color: #8A98A8; cursor: not-allowed; }
-  .dlg-btn { display: flex; align-items: center; justify-content: center; min-height: 46px; border: 1.5px solid var(--navy); border-radius: 12px; background: #fff; color: var(--navy); font-weight: 700; text-decoration: none; font-size: 15px; }
-  .dlg-btn.main { background: var(--navy); color: #fff; }
-  .dlg-btn.plain { border-color: var(--line); color: var(--mute); }
-  .hint { margin: 8px 0 0; font-size: 12px; color: var(--mute); line-height: 1.5; }
-  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  table.staff { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 16px; }
-  table.staff th, table.staff td { padding: 6px 4px; border-bottom: 1px solid var(--line); text-align: left; }
-  .staff-wrap { max-height: 220px; overflow: auto; margin-bottom: 8px; }
+/* 표 */
+.table-wrap{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:auto;max-height:calc(100vh - 290px)}
+.tbl{width:100%;border-collapse:collapse;min-width:1180px}
+#tab-list .tbl th,#tab-list .tbl td{padding-left:9px;padding-right:9px}
+.tbl th{position:sticky;top:0;z-index:1;background:#F7F9FC;text-align:left;font-size:12.5px;color:var(--ink-2);font-weight:700;
+  padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:11px 12px;border-bottom:1px solid var(--line-2);white-space:nowrap;vertical-align:middle}
+.tbl tbody tr{cursor:pointer}
+.tbl tbody tr:hover{background:#F7F9FD}
+.tbl tbody tr.sel{background:var(--brand-tint)}
+.tbl .r{text-align:right;font-variant-numeric:tabular-nums}
+.tbl .c{text-align:center}
+.tbl .region{max-width:170px;overflow:hidden;text-overflow:ellipsis}
+.tbl .who{font-weight:700}
+.empty{padding:56px 16px;text-align:center;color:var(--ink-3)}
 
-  .toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 50; padding: 12px 18px; border-radius: 999px; background: var(--navy); color: #fff; font-weight: 700; font-size: 14px; box-shadow: 0 6px 20px rgba(20,32,45,.25); }
+.badge{display:inline-grid;place-items:center;min-width:26px;height:24px;padding:0 7px;border-radius:6px;font-weight:800;font-size:13px}
+.badge.A{background:var(--brand);color:#fff}
+.badge.B{background:#D9E4F8;color:#183C8C}
+.badge.C{background:#E8EBF0;color:#566077}
+.adj{font-size:11.5px;color:var(--ink-3);margin-left:4px}
+.st{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+.st::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.st.new{color:var(--warn)} .st.reviewed{color:var(--ink-2)} .st.consult{color:var(--brand)} .st.hold{color:var(--ink-3)}
+.st.interview{color:#6941C6} .st.deliberation{color:#B54708} .st.contract{color:#067647} .st.closed{color:var(--ink-3)}
+.aff{height:28px;border:1px solid var(--line);border-radius:999px;padding:0 24px 0 10px;font-size:12.5px;font-weight:700;color:var(--ink-3);
+  cursor:pointer;appearance:none;-webkit-appearance:none;background:#fff url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%237A8499' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 8px center}
+.aff[data-v="high"]{color:#067647;background-color:#ECFDF3;border-color:#ABEFC6}
+.aff[data-v="mid"]{color:#475467;background-color:#F2F4F7;border-color:#D0D5DD}
+.aff[data-v="low"]{color:#B42318;background-color:#FEF3F2;border-color:#FECDCA}
+.tag{font-size:11.5px;font-weight:600;color:var(--warn);border:1px solid #F3D9B8;background:#FFF7EB;border-radius:4px;padding:1px 5px;margin-left:6px}
+
+/* 상세 패널 */
+.scrim{position:fixed;inset:0;background:rgba(21,33,59,.28);z-index:30}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(620px,100vw);background:#fff;z-index:40;display:flex;flex-direction:column;
+  box-shadow:-12px 0 32px rgba(21,33,59,.16);animation:slide .18s ease-out}
+@keyframes slide{from{transform:translateX(24px);opacity:.4}to{transform:none;opacity:1}}
+.d-head{padding:18px 22px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.d-title{font-size:19px;font-weight:800;margin:0;display:flex;align-items:center;gap:8px}
+.d-sub{margin:4px 0 0;color:var(--ink-3);font-size:13px}
+.d-close{border:0;background:none;font-size:22px;line-height:1;color:var(--ink-3);cursor:pointer;padding:4px 8px;border-radius:6px}
+.d-close:hover{background:var(--ground);color:var(--ink)}
+.d-body{overflow:auto;padding:0 22px 28px;flex:1}
+.d-sec{padding:18px 0;border-bottom:1px solid var(--line-2)}
+.d-sec:last-child{border-bottom:0}
+.d-sec h3{font-size:13px;color:var(--ink-2);margin:0 0 10px;font-weight:700}
+.warn{background:#FFF7EB;border:1px solid #F3D9B8;color:#7A3E00;padding:9px 12px;border-radius:8px;margin:0 0 10px;font-size:13px}
+.score-tbl{width:100%;border-collapse:collapse}
+.score-tbl td{padding:8px 0;border-bottom:1px dashed var(--line-2);vertical-align:top}
+.score-tbl .note{color:var(--ink-3);font-size:12.5px}
+.score-tbl .pt{text-align:right;font-weight:800;font-variant-numeric:tabular-nums;width:90px}
+.score-tbl .pt small{font-weight:500;color:var(--ink-3)}
+.meter{height:4px;background:var(--line-2);border-radius:2px;margin-top:6px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--brand)}
+.score-sum{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-weight:700}
+.score-sum b{font-size:20px}
+.ans{display:grid;grid-template-columns:104px minmax(0,1fr);gap:9px 14px;margin:0}
+.ans dt{color:var(--ink-3);font-size:13px;padding-top:1px}
+.ans dd{margin:0;white-space:pre-wrap;word-break:break-word}
+.ans .sub{color:var(--ink-2)}
+.ans a{color:var(--brand)}
+.manage{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.manage label{display:grid;gap:5px;font-size:13px;color:var(--ink-2);font-weight:600}
+.manage .full{grid-column:1/-1}
+.manage select,.manage textarea{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff;color:var(--ink)}
+.manage select{height:38px}
+.manage input{height:38px;border:1px solid var(--line);border-radius:8px;padding:0 10px;background:#fff;color:var(--ink);font-weight:400;width:100%}
+.manage textarea{min-height:90px;resize:vertical}
+.m-actions{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center}
+.m-meta{grid-column:1/-1;color:var(--ink-3);font-size:12.5px;margin:0}
+
+/* 등급 기준 */
+.settings{max-width:1080px}
+.set-head h1{font-size:20px;margin:4px 0 6px}
+.set-head p{color:var(--ink-2);margin:0 0 18px;max-width:60em}
+.set-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.set-card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.set-card.wide{grid-column:1/-1}
+.set-card h2{font-size:15px;margin:0 0 10px}
+.srow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0}
+.srow + .srow{border-top:1px dashed var(--line-2)}
+.num{display:inline-flex;align-items:center;gap:6px;color:var(--ink-2);white-space:nowrap}
+.num input{width:96px;height:34px;border:1px solid var(--line);border-radius:7px;padding:0 8px;text-align:right;font-variant-numeric:tabular-nums;background:#fff}
+.hint{color:var(--ink-3);font-size:12.5px;margin:10px 0 0}
+.kw{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:end;padding:8px 0}
+.kw + .kw{border-top:1px dashed var(--line-2)}
+.kw label{display:grid;gap:6px;font-weight:600;color:var(--ink-2)}
+.kw textarea{width:100%;min-height:70px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;resize:vertical;background:#fff;font-weight:400;color:var(--ink)}
+.tier .btn{margin-left:auto}
+.set-bar{position:sticky;bottom:12px;margin-top:16px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 16px;
+  display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 8px 24px rgba(21,33,59,.10)}
+.set-bar .acts{display:flex;gap:8px}
+
+/* 메일 문의 등록·응답 수정 */
+.drawer.wide{width:min(720px,100vw)}
+.d-foot{border-top:1px solid var(--line);padding:12px 22px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center;background:#fff}
+.d-foot .e-err{grid-column:1/-1;margin:0;color:var(--danger);font-weight:600;font-size:13px}
+.d-foot .e-err:empty{display:none}
+.d-foot .acts{display:flex;gap:8px}
+.e-prev{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px}
+.e-prev b{font-size:18px}
+.e-prev .warn-inline{color:var(--warn);font-weight:700}
+.eg{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
+.eg label,.eg .grp{display:grid;gap:5px;font-size:13px;font-weight:600;color:var(--ink-2);align-content:start}
+.eg .full{grid-column:1/-1}
+.eg input,.eg select,.eg textarea{width:100%;height:38px;border:1px solid var(--line);border-radius:8px;padding:0 10px;background:#fff;color:var(--ink);font-weight:400}
+.eg textarea{height:auto;min-height:64px;padding:8px 10px;resize:vertical}
+.eg small{font-weight:600;color:var(--brand-ink)}
+.eg .opt{font-weight:500;color:var(--ink-3)}
+.e-region{display:grid;grid-template-columns:96px 176px minmax(0,1fr) auto;gap:6px;margin-bottom:6px}
+.e-region select:disabled{background:#F6F8FB}
+.raw{width:100%;min-height:150px;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font:13px/1.55 var(--sans);resize:vertical}
+.e-row{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
+.e-warn{margin:10px 0 0;padding:10px 12px 10px 28px;background:#FFF7EB;border:1px solid #F3D9B8;border-radius:8px;color:#7A3E00;font-size:13px}
+.e-info{margin:8px 0 0;padding:0 0 0 18px;color:var(--ink-2);font-size:13px}
+.d-sec h3 .muted{font-weight:500;margin-left:6px}
+.h3row{display:flex;justify-content:space-between;align-items:center;margin:0 0 10px}
+.h3row h3{margin:0}
+.raw-view summary{cursor:pointer;color:var(--brand);font-weight:600}
+.raw-view pre{white-space:pre-wrap;word-break:break-word;background:var(--ground);border-radius:8px;padding:10px 12px;font:12.5px/1.55 var(--sans);max-height:320px;overflow:auto;margin:10px 0 0}
+@media (max-width:820px){.eg{grid-template-columns:1fr}.e-region{grid-template-columns:1fr 1fr}.e-region .area{grid-column:1/-1}}
+
+/* 진행 단계 · 2차 평가 · 접촉 이력 */
+.chip{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;vertical-align:middle}
+.chip.pass{background:#ECFDF3;color:#067647}
+.chip.recheck{background:#FFF7EB;color:#B54708}
+.chip.fail{background:#F2F4F7;color:#667085}
+.chip.draft{background:#F4F3FF;color:#5925DC}
+.chip.wait{background:#fff;color:var(--ink-3);border:1px dashed #C6CEDB}
+.chip.risk{background:#FEF3F2;color:#B42318;margin-left:4px}
+.chip.b-good{background:#ECFDF3;color:#067647} .chip.b-ok{background:var(--brand-tint);color:var(--brand-ink)} .chip.b-low{background:#FEF3F2;color:#B42318}
+.cell-sub{font-size:12px;color:var(--ink-3);margin-left:5px;font-variant-numeric:tabular-nums}
+.due{font-weight:700;font-variant-numeric:tabular-nums} .due.over{color:#B42318} .due.today{color:#B54708} .due.soon{color:var(--brand)}
+.nocontact{font-size:12px;color:var(--warn);font-weight:700}
+.stages{display:flex;gap:4px;margin:16px 0 0}
+.stages span{flex:1;text-align:center;font-size:11.5px;font-weight:700;padding:6px 2px;border-radius:6px;background:#F2F4F7;color:var(--ink-3)}
+.stages span.done{background:var(--brand-tint);color:var(--brand)}
+.stages span.cur{background:var(--brand);color:#fff}
+.stages.off span{opacity:.5}
+.stage-note{font-size:12.5px;color:var(--ink-3);margin:6px 0 0}
+.d-tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:12px -22px 0;padding:0 22px;position:sticky;top:0;background:#fff;z-index:2}
+.d-tabs button{border:0;background:none;padding:11px 12px 9px;font-weight:700;color:var(--ink-3);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.d-tabs button:hover{color:var(--ink)}
+.d-tabs button.on{color:var(--ink);border-bottom-color:var(--brand)}
+.d-tabs .n{display:inline-grid;place-items:center;min-width:18px;height:18px;border-radius:9px;background:var(--ground);font-size:11px;margin-left:5px;padding:0 6px;color:var(--ink-2)}
+.dform{display:grid;gap:10px}
+.dform label{display:grid;gap:5px;font-size:13px;font-weight:600;color:var(--ink-2)}
+.dform input,.dform select,.dform textarea{width:100%;height:38px;border:1px solid var(--line);border-radius:8px;padding:0 10px;background:#fff;color:var(--ink);font-weight:400}
+.dform textarea{height:auto;min-height:72px;padding:8px 10px;resize:vertical;line-height:1.5}
+.dform .opt{font-weight:500;color:var(--ink-3)}
+.dform .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dform .e-err{margin:0;color:var(--danger);font-weight:600;font-size:13px}
+.dform .e-err:empty{display:none}
+.c-form{background:#F7F9FC;border:1px solid var(--line-2);border-radius:10px;padding:14px}
+.c-form h3{margin:0}
+.inline-check{display:flex!important;align-items:center;gap:8px;font-weight:600;cursor:pointer}
+.dform .inline-check input{width:17px;height:17px;flex:none;margin:0}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg label{position:relative;display:block}
+.seg input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;width:100%;height:100%}
+.seg span{display:inline-flex;align-items:center;height:32px;padding:0 13px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:13px;font-weight:600;color:var(--ink-2)}
+.seg input:checked + span{background:var(--brand);border-color:var(--brand);color:#fff}
+.seg input:focus-visible + span{outline:2px solid var(--brand);outline-offset:2px}
+.c-acts{display:flex;justify-content:flex-end;gap:8px}
+.next-box{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--brand-tint);border:1px solid #CFDDF3;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:13.5px}
+.migrate{display:flex;justify-content:space-between;gap:10px;align-items:center;background:#FFF7EB;border:1px solid #F3D9B8;border-radius:8px;padding:10px 12px;font-size:13px;color:#7A3E00;margin-bottom:12px}
+.tl{list-style:none;margin:0;padding:0}
+.tl li{position:relative;padding:12px 0 12px 20px;border-bottom:1px solid var(--line-2)}
+.tl li:last-child{border-bottom:0}
+.tl li::before{content:"";position:absolute;left:3px;top:20px;width:8px;height:8px;border-radius:50%;background:var(--brand)}
+.tl li.miss::before{background:#C6CEDB}
+.tl .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tl .when{font-weight:700;font-variant-numeric:tabular-nums}
+.tl .by{font-size:12px;color:var(--ink-3);margin-left:auto}
+.tl .acts{display:flex;gap:4px}
+.tl .body{margin:6px 0 0;white-space:pre-wrap;word-break:break-word}
+.tl .nx{margin:6px 0 0;font-size:13px;color:var(--brand-ink);font-weight:600}
+.mchip{height:22px;padding:0 8px;border-radius:999px;background:var(--ground);font-size:12px;font-weight:700;display:inline-flex;align-items:center;color:var(--ink-2)}
+.ev-meta{grid-template-columns:1fr 1fr 1fr}
+.ev-item{padding:14px 0;border-bottom:1px dashed var(--line-2)}
+.ev-item:last-child{border-bottom:0}
+.ev-item .h{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.ev-item .h b{font-size:14.5px}
+.ev-item .w{font-size:12px;color:var(--ink-3);white-space:nowrap}
+.ev-item .g{font-size:12.5px;color:var(--ink-3);margin:4px 0 8px;line-height:1.5}
+.scale{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.scale label{position:relative;display:block}
+.scale input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;width:100%;height:100%}
+.scale span{display:grid;place-content:center;height:46px;border:1px solid var(--line);border-radius:8px;background:#fff;text-align:center;line-height:1.2;font-size:11px;color:var(--ink-3)}
+.scale span b{font-size:16px;color:var(--ink)}
+.scale label:hover span{border-color:var(--brand)}
+.scale input:checked + span{background:var(--brand);border-color:var(--brand);color:#DCE7F8}
+.scale input:checked + span b{color:#fff}
+.scale input:focus-visible + span{outline:2px solid var(--brand);outline-offset:2px}
+.ev-item .memo{margin-top:8px;width:100%;height:34px;border:1px solid var(--line);border-radius:8px;padding:0 10px;background:#fff}
+.risk-list{display:grid;gap:8px}
+.risk-list label{display:flex;gap:8px;align-items:flex-start;font-weight:600;cursor:pointer}
+.risk-list input{width:17px;height:17px;margin:2px 0 0;flex:none;accent-color:#B42318}
+.verdict{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.verdict label{position:relative;display:block}
+.verdict input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;width:100%;height:100%}
+.verdict span{display:grid;place-items:center;height:42px;border:1px solid var(--line);border-radius:8px;font-weight:700;font-size:13px;background:#fff;color:var(--ink-2);text-align:center;padding:0 4px}
+.verdict input:checked + span.pass{background:#067647;border-color:#067647;color:#fff}
+.verdict input:checked + span.recheck{background:#B54708;border-color:#B54708;color:#fff}
+.verdict input:checked + span.fail{background:#475467;border-color:#475467;color:#fff}
+.verdict input:focus-visible + span{outline:2px solid var(--brand);outline-offset:2px}
+.i2{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line-2)}
+.i2 .i2-guide{grid-column:1/-1}
+.i2 input.i2-label,.i2 textarea,.r2 input{border:1px solid var(--line);border-radius:7px;padding:6px 10px;width:100%;background:#fff;font:inherit;color:var(--ink)}
+.i2 input.i2-label{height:34px;font-weight:700}
+.i2 textarea{resize:vertical;font-size:13px}
+.r2 input{height:34px}
+.tg2{display:inline-flex;gap:10px}
+.tg2 label{display:inline-flex;gap:4px;align-items:center;font-weight:700}
+@media (max-width:820px){.ev-meta,.dform .row2{grid-template-columns:1fr}.scale span{font-size:10px}}
+
+/* 구분 */
+.src{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;background:var(--ground);color:var(--ink-2)}
+.src.mail{background:var(--brand-tint);color:var(--brand-ink)}
+.src.network{background:#F4F3FF;color:#5925DC}
+.src.br{background:#FDF2FA;color:#C11574}
+.src.homepage{background:#ECFDF3;color:#067647}
+.imp-tbl select{height:30px;border:1px solid var(--line);border-radius:6px;padding:0 6px;background:#fff;max-width:150px}
+
+/* 엑셀 일괄 등록 */
+.drawer.xwide{width:min(980px,100vw)}
+.imp-tbl{min-width:820px}
+.imp-tbl tbody tr{cursor:default}
+.imp-tbl tr.has-w td{border-bottom:0;padding-bottom:4px}
+.imp-tbl tr.w-row td{padding-top:0;white-space:normal;font-size:12px;color:#7A3E00;line-height:1.5}
+.imp-tbl tr.off td{opacity:.45}
+.imp-tbl tr.off td:first-child{opacity:1}
+
+/* 관리자 계정 */
+.acc-form{display:grid;gap:10px}
+.acc-form label{display:grid;gap:5px;font-size:13px;font-weight:600;color:var(--ink-2)}
+.acc-form input,.acc-form select{height:38px;border:1px solid var(--line);border-radius:8px;padding:0 10px;background:#fff;color:var(--ink);font-weight:400;width:100%}
+.acc-form .opt{font-weight:500;color:var(--ink-3)}
+.acc-form .e-err{margin:0;color:var(--danger);font-weight:600;font-size:13px}
+.acc-form .e-err:empty{display:none}
+.pw-row{display:flex;gap:6px}
+.acc-done{background:var(--brand-tint);border:1px solid #CFDDF3;border-radius:8px;padding:12px 14px;font-size:13px;display:grid;gap:6px}
+.acc-done dl{display:grid;grid-template-columns:96px minmax(0,1fr);gap:4px 10px;margin:0}
+.acc-done dt{color:var(--ink-3)} .acc-done dd{margin:0;font-weight:700;word-break:break-all}
+.acc-tbl{min-width:760px}
+.acc-tbl tbody tr{cursor:default}
+.acc-tbl select{height:30px;border:1px solid var(--line);border-radius:6px;padding:0 6px;background:#fff}
+.acc-tbl .acts-cell{display:flex;gap:6px;flex-wrap:wrap}
+.tag.me{color:var(--brand);border-color:#CFDDF3;background:var(--brand-tint)}
+.ro-note{background:#FFF7EB;border:1px solid #F3D9B8;color:#7A3E00;padding:9px 12px;border-radius:8px;margin:0 0 14px;font-size:13px}
+
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 16px;border-radius:8px;
+  font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;z-index:60;max-width:90vw}
+#toast.show{opacity:1}
+#toast.err{background:var(--danger)}
+
+@media (max-width:820px){
+  .set-grid{grid-template-columns:1fr}
+  .bar{padding:0 14px}
+  .bar-title,.bar-r span{display:none}
+  main{padding:14px 12px 48px}
+  .kpi{padding:10px 12px}
+  .kpi .v{font-size:20px}
+  .manage{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 
 <!-- 로그인 -->
-<section class="center" id="loginView" hidden>
-  <form class="login" id="loginForm">
-    <h1>벤슨 케이크 예약 관리</h1>
-    <p>본사·매장 계정으로 로그인하세요.</p>
-    <label class="f">이메일<input type="email" id="loginEmail" autocomplete="username" required></label>
-    <label class="f">비밀번호<input type="password" id="loginPw" autocomplete="current-password" required></label>
-    <button class="primary" id="loginBtn">로그인</button>
-    <p class="msg-err" id="loginErr"></p>
+<div class="login" id="login" hidden>
+  <form class="login-card" id="loginForm">
+    <div class="wordmark">BENSON</div>
+    <h1>가맹문의 DB</h1>
+    <p class="login-msg" id="loginMsg"></p>
+    <label>이메일<input type="email" id="lEmail" autocomplete="username" required></label>
+    <label>비밀번호<input type="password" id="lPw" autocomplete="current-password" required></label>
+    <button class="btn primary" id="lBtn">로그인</button>
   </form>
-</section>
-
-<!-- 권한 없음 -->
-<section class="center" id="deniedView" hidden>
-  <div class="login">
-    <h1>접근 권한이 없는 계정이에요</h1>
-    <p id="deniedText">본사 담당자에게 매장 계정 연결을 요청해 주세요.</p>
-    <button class="primary" id="deniedLogout">다른 계정으로 로그인</button>
-  </div>
-</section>
-
-<!-- 앱 -->
-<div id="appView" hidden>
-  <header class="topbar">
-    <div class="topbar-in">
-      <div>
-        <h1>케이크 사전예약 관리</h1>
-        <div class="who" id="who"></div>
-      </div>
-      <div class="top-actions">
-        <a class="tbtn" href="app.html" id="homeBtn">전체 메뉴</a>
-        <button class="tbtn on" type="button" data-app-install hidden>앱 설치</button>
-        <button class="tbtn" type="button" data-app-reload hidden>새로고침</button>
-        <button class="tbtn" id="alertBtn">새 예약 알림 켜기</button>
-        <button class="tbtn" id="csvBtn" hidden>엑셀(CSV) 받기</button>
-        <button class="tbtn" id="acctBtn" hidden>계정 관리</button>
-        <button class="tbtn" id="logoutBtn">로그아웃</button>
-      </div>
-    </div>
-  </header>
-
-  <main class="content">
-    <div class="banner" id="banner" hidden></div>
-    <div class="filters">
-      <select id="storeFilter" hidden aria-label="매장"><option value="">전체 매장</option></select>
-      <button class="chip on" data-day="all">전체 날짜</button>
-      <button class="chip" data-day="today">오늘 픽업</button>
-      <button class="chip" data-day="tomorrow">내일 픽업</button>
-      <input type="date" id="dayPick" aria-label="픽업 날짜 선택">
-      <select id="period" aria-label="불러올 기간">
-        <option value="7">최근 7일 이후 픽업</option>
-        <option value="30">최근 30일 이후 픽업</option>
-        <option value="all">전체 기간</option>
-      </select>
-      <input type="search" id="search" placeholder="전화번호 뒷자리 검색" inputmode="search">
-    </div>
-    <nav class="tabs" id="tabs"></nav>
-    <div class="list" id="list"></div>
-  </main>
 </div>
 
-<!-- 문자 -->
-<dialog id="msgDlg">
-  <h2 id="msgTitle"></h2>
-  <p class="to" id="msgTo"></p>
-  <textarea id="msgText" aria-label="보낼 문구"></textarea>
-  <div class="dlg-actions">
-    <a class="dlg-btn main" id="msgSms" href="#">문자 앱 열기</a>
-    <button class="dlg-btn" id="msgCopy" type="button">문구 복사</button>
-    <a class="dlg-btn" id="msgTel" href="#">전화 걸기</a>
-    <button class="dlg-btn plain" type="button" data-close>닫기</button>
-  </div>
-  <div class="confirm-step" id="confirmStep" hidden>
-    <ol>
-      <li><b>문자 앱 열기</b>를 눌러 고객에게 문자를 <b>전송</b>해 주세요.</li>
-      <li>전송 후 이 화면으로 돌아와 아래 버튼을 누르면 <b>확정</b>됩니다.</li>
-    </ol>
-    <button class="dlg-btn done" id="msgDone" type="button" disabled>문자 보냈어요 · 확정 완료</button>
-    <p class="hint" id="msgDoneHint">‘문자 앱 열기’ 또는 ‘문구 복사’를 먼저 눌러야 활성화돼요.</p>
-  </div>
-  <p class="hint" id="msgHint">휴대폰에서는 ‘문자 앱 열기’를 누르면 받는 사람과 문구가 채워진 채로 열려요. 전송만 누르면 됩니다. PC에서는 ‘문구 복사’를 써 주세요.</p>
-</dialog>
-
-<!-- 일시 변경 -->
-<dialog id="editDlg">
-  <h2>픽업 일시 변경</h2>
-  <p class="to" id="editTo"></p>
-  <div class="row2">
-    <label class="f">날짜<input type="date" id="editDate"></label>
-    <label class="f">시간<select id="editTime"></select></label>
-  </div>
-  <p class="msg-err" id="editErr"></p>
-  <div class="dlg-actions">
-    <button class="dlg-btn main" id="editSave" type="button">변경 저장</button>
-    <button class="dlg-btn plain" type="button" data-close>닫기</button>
-  </div>
-  <p class="hint">고객과 통화로 새 일시를 정한 뒤 저장하고, 이어서 ‘확정 문자 보내기’를 눌러 주세요.</p>
-</dialog>
-
-<!-- 계정 관리 (마스터) -->
-<dialog id="acctDlg">
-  <h2>계정 관리</h2>
-  <p class="to">매장 계정은 해당 매장 예약만 보고 처리할 수 있어요.</p>
-  <div class="staff-wrap"><table class="staff"><thead><tr><th>이메일</th><th>권한</th><th>매장</th></tr></thead><tbody id="staffBody"></tbody></table></div>
-  <form id="acctForm">
-    <div class="row2">
-      <label class="f">권한
-        <select id="acctRole"><option value="store">매장</option><option value="master">본사(마스터)</option></select>
-      </label>
-      <label class="f">매장<select id="acctStore"></select></label>
+<!-- 앱 -->
+<div id="app" hidden>
+  <header class="bar">
+    <div class="bar-l">
+      <span class="wordmark">BENSON</span>
+      <span class="bar-title">가맹문의 DB</span>
+      <nav class="tabs" aria-label="화면 전환">
+        <button type="button" data-tab="list" class="on">문의 목록</button>
+        <button type="button" data-tab="settings">평가 기준</button>
+        <button type="button" data-tab="accounts" id="tabAccounts" hidden>관리자 계정</button>
+      </nav>
     </div>
-    <label class="f">이메일(아이디)<input type="email" id="acctEmail" required></label>
-    <label class="f">비밀번호 (6자 이상)<input type="text" id="acctPw" minlength="6" required autocomplete="off"></label>
-    <p class="msg-err" id="acctErr"></p>
-    <div class="dlg-actions">
-      <button class="dlg-btn main" id="acctSave">계정 만들기</button>
-      <button class="dlg-btn plain" type="button" data-close>닫기</button>
+    <div class="bar-r"><span id="who"></span><button type="button" class="btn small" id="pwBtn">비밀번호 변경</button><button type="button" class="btn small" id="logout">로그아웃</button></div>
+  </header>
+  <div class="demo" id="demoBanner" hidden>데모 화면입니다. 예시 데이터로 동작하며 실제 DB에는 저장되지 않습니다.</div>
+
+  <main id="tab-list">
+    <section class="kpis" id="kpis" aria-label="등급별 건수"></section>
+
+    <section class="filters" aria-label="검색 조건">
+      <input type="search" class="search" id="fQ" placeholder="성함, 연락처, 이메일, 지역 검색">
+      <span class="range"><input type="date" id="fFrom" aria-label="시작일"> ~ <input type="date" id="fTo" aria-label="종료일"></span>
+      <select id="fGrade" aria-label="등급"><option value="">등급 전체</option><option>A</option><option>B</option><option>C</option></select>
+      <select id="fStatus" aria-label="처리 상태"></select>
+      <select id="fSource" aria-label="구분"></select>
+      <select id="fAff" aria-label="우호도"></select>
+      <select id="fE2" aria-label="2차 평가"><option value="">2차 평가 전체</option><option value="wait">2차 평가 대기</option>
+        <option value="draft">2차 작성 중</option><option value="pass">심의 상정</option><option value="recheck">보완 후 재상담</option><option value="fail">부적합</option></select>
+      <select id="fNext" aria-label="다음 일정"><option value="">다음 일정 전체</option><option value="due">오늘까지(지난 일정 포함)</option>
+        <option value="week">7일 이내</option><option value="none">다음 일정 없음</option></select>
+      <select id="fSort" aria-label="정렬"><option value="new">최신순</option><option value="score">1차 점수순</option>
+        <option value="score2">2차 점수순</option><option value="next">다음 일정순</option><option value="last">최근 접촉순</option></select>
+    </section>
+
+    <div class="tbar">
+      <span><span class="count" id="count"></span><span class="keep" id="keepNote"></span></span>
+      <div class="acts">
+        <button type="button" class="btn" id="copyMail">메일용 접수폼 링크 복사</button>
+        <button type="button" class="btn" id="copyHp">홈페이지용 링크 복사</button>
+        <button type="button" class="btn" id="exportBtn">엑셀 다운로드</button>
+        <button type="button" class="btn" id="newImport">엑셀 일괄 등록</button>
+        <button type="button" class="btn primary" id="newEntry">문의 직접 등록</button>
+      </div>
     </div>
-  </form>
-</dialog>
 
-<div class="toast" id="toast" hidden></div>
+    <div class="table-wrap">
+      <table class="tbl">
+        <thead><tr>
+          <th>접수일시</th><th>성함</th><th>구분</th><th>연락처</th><th>희망 지역</th><th class="r">투자 가능</th>
+          <th>1차 평가</th><th>2차 평가</th><th>우호도</th><th>진행 단계</th><th>최근 접촉</th><th>다음 일정</th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <p class="empty" id="empty" hidden></p>
+    </div>
+  </main>
 
-<script type="module" src="app-shell.js"></script>
+  <main id="tab-settings" class="settings" hidden>
+    <div class="set-head">
+      <h1>1차 기본평가 <span class="muted" style="font-size:14px;font-weight:600">자동 등급</span></h1>
+      <p>STEP 1 등급(A 우선 상담, B 상담, C 보류)을 계산하는 기준입니다. 저장하면 모든 문의가 새 기준으로 다시 분류되며, 검토 처리한 문의는 처리 당시 등급이 따로 남습니다.</p>
+      <p class="ro-note" id="setRo" hidden>평가 기준은 마스터 권한 계정만 바꿀 수 있습니다. 현재 기준을 확인만 할 수 있습니다.</p>
+    </div>
+    <div class="set-grid">
+      <section class="set-card">
+        <h2>필수 조건</h2>
+        <div class="srow"><span>최소 투자 가능 금액</span><span class="num"><input type="number" min="0" step="500" data-k="minInvest"> 만원</span></div>
+        <p class="hint">이 금액 미만이면 점수와 관계없이 C(보류)로 분류합니다.</p>
+      </section>
+      <section class="set-card">
+        <h2>투자 여력</h2>
+        <div id="tierRows"></div>
+        <button type="button" class="btn small" id="addTier" style="margin-top:8px">구간 추가</button>
+        <p class="hint">금액이 큰 구간부터 적용하고, 어느 구간에도 들지 않으면 0점입니다.</p>
+      </section>
+      <section class="set-card wide">
+        <h2>희망 지역</h2>
+        <div class="kw">
+          <label>1순위 상권 키워드<textarea data-k="kw.p1" placeholder="예: 성남시 분당구, 판교, 서울 송파구"></textarea></label>
+          <span class="num"><input type="number" min="0" max="100" data-k="regionScore.p1"> 점</span>
+        </div>
+        <div class="kw">
+          <label>2순위 상권 키워드<textarea data-k="kw.p2" placeholder="예: 용인시 수지구, 광교"></textarea></label>
+          <span class="num"><input type="number" min="0" max="100" data-k="regionScore.p2"> 점</span>
+        </div>
+        <div class="srow"><span>그 외 지역</span><span class="num"><input type="number" min="0" max="100" data-k="regionScore.other"> 점</span></div>
+        <p class="hint">쉼표나 줄바꿈으로 구분합니다. 신청자가 고른 ‘시·도 시·군·구’와 직접 쓴 상권명에 키워드가 들어 있으면 그 순위로 봅니다(희망 지역이 여러 곳이면 가장 높은 순위 적용). 중구·남구처럼 이름이 겹치는 구는 ‘서울 중구’처럼 시·도를 붙여 쓰세요.</p>
+      </section>
+      <section class="set-card"><h2>외식업 경험</h2><div id="setFnb"></div></section>
+      <section class="set-card"><h2>운영 참여 계획</h2><div id="setOper"></div></section>
+      <section class="set-card"><h2>연령대</h2><div id="setAge"></div></section>
+      <section class="set-card">
+        <h2>등급 구간</h2>
+        <div class="srow"><span><span class="badge A">A</span> 우선 상담</span><span class="num"><input type="number" min="0" data-k="cut.A"> 점 이상</span></div>
+        <div class="srow"><span><span class="badge B">B</span> 상담</span><span class="num"><input type="number" min="0" data-k="cut.B"> 점 이상</span></div>
+        <div class="srow"><span><span class="badge C">C</span> 보류</span><span class="muted">B 기준 미만 또는 필수 조건 미충족</span></div>
+        <p class="hint">점포 확보 여부, 희망 오픈 시기, 지원 사유, 기타 문의는 점수에 넣지 않고 상세 화면에서 참고용으로만 보여 줍니다.</p>
+      </section>
+    </div>
+    <div class="set-head" style="margin-top:30px">
+      <h1>2차 심층 상담평가 <span class="muted" style="font-size:14px;font-weight:600">상담 담당자 입력</span></h1>
+      <p>1차 선별 대상자를 대면 상담한 뒤 상세 화면 [2차 심층평가]에서 입력합니다. 항목별 1~5점(정량)과 리스크·종합 의견(정성)을 함께 남기고, 최종 판정은 상담 담당자가 고릅니다.</p>
+    </div>
+    <div class="set-grid">
+      <section class="set-card wide">
+        <h2>평가 항목 <span class="muted" id="i2Sum" style="font-weight:600;font-size:13px;margin-left:6px"></span></h2>
+        <div id="i2Rows"></div>
+        <button type="button" class="btn small" id="i2Add" style="margin-top:8px">항목 추가</button>
+        <p class="hint">항목별 (점수 ÷ 5 × 배점)을 합해 100점 만점으로 환산합니다. 배점 합계가 100이 아니어도 비율대로 환산됩니다. 확인 포인트는 상담 화면에 질문 가이드로 보입니다. 항목을 지우면 그 항목에 입력된 점수는 계산에서 빠집니다.</p>
+      </section>
+      <section class="set-card">
+        <h2>리스크 확인 항목</h2>
+        <div id="r2Rows"></div>
+        <button type="button" class="btn small" id="r2Add" style="margin-top:8px">리스크 추가</button>
+        <p class="hint">점수에는 넣지 않고, 체크하면 목록과 상세 화면에 '리스크'로 표시됩니다.</p>
+      </section>
+      <section class="set-card">
+        <h2>대상과 점수 구간</h2>
+        <div class="srow"><span>2차 평가 대상 (1차 등급)</span><span class="tg2" id="tg2">
+          <label><input type="checkbox" value="A"> A</label><label><input type="checkbox" value="B"> B</label><label><input type="checkbox" value="C"> C</label></span></div>
+        <div class="srow"><span><span class="chip b-good">우수</span></span><span class="num"><input type="number" min="0" max="100" id="b2Good"> 점 이상</span></div>
+        <div class="srow"><span><span class="chip b-ok">보통</span></span><span class="num"><input type="number" min="0" max="100" id="b2Ok"> 점 이상</span></div>
+        <div class="srow"><span><span class="chip b-low">미흡</span></span><span class="muted">보통 기준 미만</span></div>
+        <p class="hint">대상 등급은 목록의 '2차 평가 대기' 집계에 쓰입니다. 점수 구간은 참고 표시이며, 최종 판정은 상담 담당자가 따로 정합니다.</p>
+        <button type="button" class="btn small" id="i2Reset">2차 기본값 불러오기</button>
+      </section>
+    </div>
+    <div class="set-bar">
+      <div id="setPreview"></div>
+      <div class="acts">
+        <button type="button" class="btn" id="setReset">1차 기본값 불러오기</button>
+        <button type="button" class="btn primary" id="setSave">기준 저장</button>
+      </div>
+    </div>
+  </main>
+
+  <main id="tab-accounts" class="settings" hidden>
+    <div class="set-head">
+      <h1>관리자 계정</h1>
+      <p>마스터는 계정 추가, 권한 변경, 접근 해제, 등급 기준 변경을 할 수 있습니다. 일반 관리자는 문의 조회·검토·등록을 할 수 있습니다.</p>
+    </div>
+    <div class="set-grid">
+      <section class="set-card">
+        <h2>새 계정 만들기</h2>
+        <div class="acc-form">
+          <label>이름<input id="aName" maxlength="30"></label>
+          <label>이메일<input id="aEmail" type="email" maxlength="120" autocomplete="off"></label>
+          <label><span>임시 비밀번호 <span class="opt">8자 이상</span></span>
+            <span class="pw-row"><input id="aPw" maxlength="64" autocomplete="new-password"><button type="button" class="btn small" id="aGen">자동 생성</button></span></label>
+          <label>권한<select id="aRole"><option value="admin">일반 관리자</option><option value="master">마스터</option></select></label>
+          <div><button type="button" class="btn primary" id="aCreate">계정 만들기</button></div>
+          <p class="e-err" id="aErr"></p>
+          <div class="acc-done" id="aDone" hidden></div>
+        </div>
+      </section>
+      <section class="set-card">
+        <h2>기존 계정 UID로 등록</h2>
+        <p class="hint" style="margin:0 0 10px">이미 가입된 이메일이거나 Firebase 콘솔에서 만든 계정은 UID로 등록합니다. 그 사람이 관리자 화면에 로그인하면 화면에 UID가 표시됩니다.</p>
+        <div class="acc-form">
+          <label>UID<input id="uUid" maxlength="128" autocomplete="off"></label>
+          <label>이름<input id="uName" maxlength="30"></label>
+          <label><span>이메일 <span class="opt">선택</span></span><input id="uEmail" type="email" maxlength="120" autocomplete="off"></label>
+          <label>권한<select id="uRole"><option value="admin">일반 관리자</option><option value="master">마스터</option></select></label>
+          <div><button type="button" class="btn" id="uAdd">등록</button></div>
+          <p class="e-err" id="uErr"></p>
+        </div>
+      </section>
+      <section class="set-card wide">
+        <h2>계정 목록</h2>
+        <div class="table-wrap" style="max-height:none">
+          <table class="tbl acc-tbl">
+            <thead><tr><th>이름</th><th>이메일</th><th>권한</th><th>상태</th><th>최근 로그인</th><th>관리</th></tr></thead>
+            <tbody id="accRows"></tbody>
+          </table>
+        </div>
+        <p class="hint">접근 해제한 계정은 로그인해도 데이터를 볼 수 없고, '다시 허용'으로 되살릴 수 있습니다. 로그인 계정 자체를 완전히 지우려면 Firebase 콘솔 Authentication에서 삭제하세요. 본인 계정의 권한·상태는 다른 마스터만 바꿀 수 있습니다.</p>
+      </section>
+    </div>
+  </main>
+
+  <div class="scrim" id="scrim" hidden></div>
+  <aside class="drawer" id="drawer" hidden aria-labelledby="dTitle" role="dialog">
+    <div class="d-head">
+      <div><h2 class="d-title" id="dTitle"></h2><p class="d-sub" id="dSub"></p></div>
+      <button type="button" class="d-close" id="dClose" aria-label="닫기">×</button>
+    </div>
+    <div class="d-body" id="dBody"></div>
+    <div class="d-foot" id="dFoot" hidden></div>
+  </aside>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, collection, query, where, onSnapshot, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { firebaseConfig, STORES, MESSAGES, PICKUP_TIME, CAKES, STORE_PHONES, salePriceOf } from "./config.js";
+import * as C from "./config.js";
+import * as P from "./mail-parser.js";
 
-const $ = (id) => document.getElementById(id);
-const WEEK = ["일", "월", "화", "수", "목", "금", "토"];
-const STATUS = {
-  requested:  { label: "확인 필요" },
-  reschedule: { label: "시간 조정 중" },
-  confirmed:  { label: "확정" },
-  picked_up:  { label: "픽업 완료" },
-  no_show:    { label: "노쇼" },
-  cancelled:  { label: "취소" }
-};
-const TABS = [
-  ["requested", "확인 필요"], ["reschedule", "시간 조정 중"], ["confirmed", "확정"],
-  ["picked_up", "픽업 완료"], ["closed", "취소·노쇼"], ["all", "전체"]
-];
+const $  = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = C.esc;
+const DEMO = new URLSearchParams(location.search).has("demo");
 
-if (!firebaseConfig.apiKey) {
-  document.body.innerHTML = '<p style="padding:24px;font-family:sans-serif">config.js에 Firebase 설정을 먼저 입력해 주세요.</p>';
-  throw new Error("Firebase config missing");
+let fb = null, user = null, unsub = null;
+let ALL = [], VIEW = [];
+let CFG = C.mergeGrading();
+let CFG2 = C.mergeInterview();
+const filt = { q: "", from: "", to: "", grade: "", status: "", source: "", aff: "", e2: "", next: "", sort: "new" };
+let openId = null, dirty = false, setDirty = false;
+let mode = null;            // 상세 패널: null(닫힘), detail(문의 상세), entry(등록·수정), pw(비밀번호 변경)
+let dTab = "basic";         // 상세 패널 탭: basic(1차 평가·진행) | contacts(접촉 이력) | eval2(2차 심층평가)
+let editingContact = null;  // 수정 중인 접촉 기록 id
+const VSHORT = { pass: "심의 상정", recheck: "재상담", fail: "부적합" };
+const STATUS_SHORT = { new: "미확인", reviewed: "1차 검토", consult: "유선 상담", interview: "대면·2차 평가",
+  deliberation: "출점 심의", contract: "가맹계약", hold: "보류·보관", closed: "종료" };
+let me = null;              // 로그인한 관리자 { uid, email, name, role }
+let ADMINS = [], unsubAdmins = null;
+const ROLE = { master: "마스터", admin: "일반 관리자" };
+const isMaster = () => me?.role === "master";
+
+/* ---------- 공통 ---------- */
+function toast(msg, isErr = false) {
+  const t = $("#toast");
+  t.textContent = msg; t.classList.toggle("err", isErr); t.classList.add("show");
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("show"), 2600);
 }
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-/* ---------- 공통 유틸 ---------- */
-const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const kstDate = (offsetDays = 0) =>
-  new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" })
-    .format(new Date(Date.now() + offsetDays * 86400000));
-const pretty = (ymd) => {
-  if (!ymd) return "";
-  const [y, m, d] = ymd.split("-").map(Number);
-  return `${m}/${d}(${WEEK[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]})`;
-};
-const prettyLong = (ymd) => {
-  const [y, m, d] = ymd.split("-").map(Number);
-  return `${m}월 ${d}일(${WEEK[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]})`;
-};
-const fmtPhone = (p = "") => p.length === 11 ? `${p.slice(0, 3)}-${p.slice(3, 7)}-${p.slice(7)}` : p.length === 10 ? `${p.slice(0, 3)}-${p.slice(3, 6)}-${p.slice(6)}` : p;
-const fmtTs = (ts) => {
-  if (!ts || !ts.toDate) return "";
-  const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
-    .formatToParts(ts.toDate()).map((x) => [x.type, x.value]));
-  return `${p.month}/${p.day} ${p.hour}:${p.minute}`;
-};
-const daysBetween = (a, b) => (Date.parse(b) - Date.parse(a)) / 86400000;
-const ddayLabel = (ymd) => {
-  const n = daysBetween(kstDate(0), ymd);
-  if (n === 0) return '<span class="dday">오늘</span>';
-  if (n === 1) return '<span class="dday">내일</span>';
-  if (n > 1) return `<span class="dday later">D-${n}</span>`;
-  return '<span class="dday later">지남</span>';
-};
-const statusUrl = (id) => new URL(`status.html?r=${encodeURIComponent(id)}`, location.href).href;
-const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-const smsHref = (phone, body) => `sms:${phone}${isIOS ? "&" : "?"}body=${encodeURIComponent(body)}`;
-const itemsOf = (r) => Array.isArray(r.items) && r.items.length ? r.items : [{ name: r.cake, qty: r.qty }];
-const CAKE_NAMES = CAKES.map((c) => (typeof c === "string" ? c : c.name));
-const fill = (tpl, r) => tpl
-  .replaceAll("{items}", itemsOf(r).map((i) => `- ${i.name} ${i.qty}개`).join("\n"))
-  .replaceAll("{name}", r.name).replaceAll("{store}", r.store)
-  .replaceAll("{storePhone}", STORE_PHONES[r.store] || "매장")
-  .replaceAll("{datetime}", `${prettyLong(r.pickupDate)} ${r.pickupTime}`)
-  .replaceAll("{cake}", r.cake).replaceAll("{qty}", String(r.qty))
-  .replaceAll("{code}", r.code).replaceAll("{link}", statusUrl(r.id));
-
-async function copyText(text) {
-  try { await navigator.clipboard.writeText(text); }
-  catch (_) {
-    const t = document.createElement("textarea"); t.value = text; document.body.appendChild(t);
-    t.select(); document.execCommand("copy"); t.remove();
-  }
+const pad = n => String(n).padStart(2, "0");
+function fmtShort(d) {
+  if (!d) return "-";
+  const y = d.getFullYear() !== new Date().getFullYear() ? `${String(d.getFullYear()).slice(2)}.` : "";
+  return `${y}${pad(d.getMonth() + 1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
-let toastTimer;
-function toast(text) {
-  $("toast").textContent = text; $("toast").hidden = false;
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => { $("toast").hidden = true; }, 2600);
+const fmtFull = d => d ? `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}` : "-";
+const ymd = d => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
+const digits = s => String(s || "").replace(/\D/g, "");
+const fmtMD = d => d ? `${pad(d.getMonth() + 1)}.${pad(d.getDate())}` : "-";
+const dayOf = s => { const [y, m, d] = String(s).split("-").map(Number); return new Date(y, m - 1, d); };
+const startOfDay = d => { const t = new Date(d); t.setHours(0, 0, 0, 0); return t; };
+const ts = d => DEMO ? d : fb.F.Timestamp.fromDate(d);
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const parseDay = (s, end) => { if (!s) return null; const [y, m, d] = s.split("-").map(Number); return end ? new Date(y, m - 1, d, 23, 59, 59, 999) : new Date(y, m - 1, d); };
+
+/* ---------- 화면 전환 ---------- */
+function showLogin(msg = "") {
+  $("#app").hidden = true; $("#login").hidden = false;
+  $("#loginMsg").textContent = msg;
 }
-function showView(name) {
-  ["loginView", "deniedView", "appView"].forEach((v) => { $(v).hidden = v !== name; });
+function showApp() {
+  $("#login").hidden = true; $("#app").hidden = false;
+  $("#who").textContent = me ? `${me.name} (${ROLE[me.role] || me.role})` : "";
+  applyRole();
 }
-document.querySelectorAll("dialog [data-close]").forEach((b) => b.addEventListener("click", () => b.closest("dialog").close()));
+function applyRole() {
+  const m = isMaster();
+  $("#tabAccounts").hidden = !m;
+  $("#setRo").hidden = m;
+  $("#setSave").hidden = !m; $("#setReset").hidden = !m; $("#addTier").hidden = !m;
+  $("#i2Add").hidden = !m; $("#r2Add").hidden = !m; $("#i2Reset").hidden = !m;
+  lockSettings();
+}
+function lockSettings() {
+  const m = isMaster();
+  $$("#tab-settings input, #tab-settings textarea").forEach(el => { el.disabled = !m; });
+  $$("#tab-settings .t-rm").forEach(el => { el.hidden = !m; });
+  $$("#tab-settings select").forEach(el => { el.disabled = !m; });
+}
 
-/* ---------- 상태 ---------- */
-let me = null;
-let rows = [];
-let unsub = null;
-let firstLoad = true;
-const state = { tab: "requested", day: "all", dayValue: "", q: "", store: "", period: "7" };
+/* ---------- Firebase ---------- */
+async function loadFirebase() {
+  const [appM, authM, fsM] = await Promise.all([
+    import(`${C.FIREBASE_SDK}/firebase-app.js`),
+    import(`${C.FIREBASE_SDK}/firebase-auth.js`),
+    import(`${C.FIREBASE_SDK}/firebase-firestore.js`)
+  ]);
+  const app = appM.initializeApp(C.firebaseConfig);
+  return { auth: authM.getAuth(app), db: fsM.getFirestore(app), A: authM, F: fsM, appM };
+}
 
-/* ---------- 로그인 ---------- */
-$("loginForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  $("loginErr").textContent = ""; $("loginBtn").disabled = true;
-  try { await signInWithEmailAndPassword(auth, $("loginEmail").value.trim(), $("loginPw").value); }
-  catch (err) {
-    console.error(err);
-    $("loginErr").textContent = err.code === "auth/too-many-requests"
-      ? "로그인 시도가 많아 잠시 막혔어요. 몇 분 뒤 다시 시도해 주세요."
-      : "이메일 또는 비밀번호가 맞지 않아요.";
-  } finally { $("loginBtn").disabled = false; }
-});
-$("logoutBtn").onclick = () => signOut(auth);
-$("deniedLogout").onclick = () => signOut(auth);
+async function init() {
+  try { fb = await loadFirebase(); }
+  catch (e) { showLogin("Firebase를 불러오지 못했습니다. 네트워크 연결을 확인한 뒤 새로고침하세요."); return; }
 
-onAuthStateChanged(auth, async (user) => {
-  if (unsub) { unsub(); unsub = null; }
-  rows = []; me = null;
-  if (!user) { showView("loginView"); return; }
-  try {
-    const snap = await getDoc(doc(db, "staff", user.uid));
-    const data = snap.exists() ? snap.data() : null;
-    if (!data || !(data.role === "master" || (data.role === "store" && data.store))) {
-      $("deniedText").textContent = `이 계정(${user.email})은 예약 관리 권한이 연결되지 않았어요. 본사 담당자에게 요청해 주세요.`;
-      showView("deniedView"); return;
+  let pendingMsg = "";
+  fb.A.onAuthStateChanged(fb.auth, async u => {
+    if (!u) { stopSub(); user = null; me = null; showLogin(pendingMsg); pendingMsg = ""; return; }
+    let data;
+    try {
+      const a = await fb.F.getDoc(fb.F.doc(fb.db, "admins", u.uid));
+      if (!a.exists()) {
+        pendingMsg = `관리자로 등록되지 않은 계정입니다.\n마스터에게 아래 UID로 등록을 요청한 뒤 다시 로그인하세요.\nUID: ${u.uid}`;
+        await fb.A.signOut(fb.auth); return;
+      }
+      data = a.data();
+      if (data.active === false) {
+        pendingMsg = "접근이 해제된 계정입니다. 마스터에게 문의하세요.";
+        await fb.A.signOut(fb.auth); return;
+      }
+    } catch (e) {
+      pendingMsg = `권한을 확인하지 못했습니다. 보안 규칙이 게시되었는지 확인하세요. (${e.code || e.message})`;
+      await fb.A.signOut(fb.auth); return;
     }
-    me = { uid: user.uid, email: user.email, ...data };
-  } catch (err) {
-    console.error(err);
-    $("deniedText").textContent = "권한 정보를 불러오지 못했어요. Firestore 보안 규칙이 게시되었는지 확인해 주세요.";
-    showView("deniedView"); return;
-  }
-  setupApp();
-  showView("appView");
-  subscribe();
-});
-
-/* ---------- 화면 준비 ---------- */
-function setupApp() {
-  const master = me.role === "master";
-  $("who").textContent = master ? `본사 마스터 · ${me.email}` : `${me.store} · ${me.email}`;
-  $("storeFilter").hidden = !master;
-  $("csvBtn").hidden = !master;
-  $("acctBtn").hidden = !master;
-  if (master && $("storeFilter").options.length === 1) {
-    [...STORES].sort((a, b) => a.localeCompare(b, "ko")).forEach((s) => $("storeFilter").add(new Option(s, s)));
-  }
-}
-
-$("storeFilter").onchange = (e) => { state.store = e.target.value; render(); };
-$("period").onchange = (e) => { state.period = e.target.value; subscribe(); };
-$("search").oninput = (e) => { state.q = e.target.value.trim(); render(); };
-document.querySelectorAll(".chip").forEach((c) => c.addEventListener("click", () => {
-  state.day = c.dataset.day; state.dayValue = ""; $("dayPick").value = "";
-  document.querySelectorAll(".chip").forEach((x) => x.classList.toggle("on", x === c));
-  render();
-}));
-$("dayPick").onchange = (e) => {
-  state.day = e.target.value ? "date" : "all"; state.dayValue = e.target.value;
-  document.querySelectorAll(".chip").forEach((x) => x.classList.toggle("on", !e.target.value && x.dataset.day === "all"));
-  render();
-};
-
-/* ---------- 실시간 구독 ---------- */
-function subscribe() {
-  if (unsub) unsub();
-  firstLoad = true;
-  $("banner").hidden = true;
-  const cons = [];
-  if (me.role === "store") cons.push(where("store", "==", me.store));
-  if (state.period !== "all") cons.push(where("pickupDate", ">=", kstDate(-Number(state.period))));
-  unsub = onSnapshot(query(collection(db, "reservations"), ...cons), (snap) => {
-    let added = 0;
-    if (!firstLoad) snap.docChanges().forEach((ch) => { if (ch.type === "added" && !ch.doc.metadata.hasPendingWrites) added++; });
-    rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    firstLoad = false;
-    render();
-    if (added) notifyNew(added);
-  }, (err) => {
-    console.error(err);
-    $("banner").hidden = false;
-    $("banner").textContent = err.code === "failed-precondition"
-      ? "Firestore 색인이 필요해요. 설정 가이드의 ‘복합 색인 만들기’를 진행해 주세요. (" + err.message + ")"
-      : "예약 목록을 불러오지 못했어요: " + err.message;
+    user = u;
+    me = { uid: u.uid, email: u.email, name: data.name || u.email, role: data.role === "admin" ? "admin" : "master" };
+    showApp();
+    fb.F.updateDoc(fb.F.doc(fb.db, "admins", u.uid), { email: u.email, lastLoginAt: fb.F.serverTimestamp() }).catch(() => {});
+    await loadSettings();
+    subscribe();
+    if (isMaster()) subscribeAdmins();
+    purgeExpired();
   });
 }
 
-/* ---------- 목록 ---------- */
-function baseFiltered() {
-  const today = kstDate(0), tomorrow = kstDate(1);
-  const q = state.q.toLowerCase();
-  return rows.filter((r) => {
-    if (me.role === "master" && state.store && r.store !== state.store) return false;
-    if (state.day === "today" && r.pickupDate !== today) return false;
-    if (state.day === "tomorrow" && r.pickupDate !== tomorrow) return false;
-    if (state.day === "date" && r.pickupDate !== state.dayValue) return false;
-    if (q && !((r.phoneLast4 || "").includes(q) || (r.phone || "").includes(q) || (r.name || "").toLowerCase().includes(q) || (r.code || "").toLowerCase().includes(q))) return false;
+$("#loginForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  if (!fb) return;
+  const btn = $("#lBtn"); btn.disabled = true; $("#loginMsg").textContent = "";
+  try {
+    await fb.A.signInWithEmailAndPassword(fb.auth, $("#lEmail").value.trim(), $("#lPw").value);
+  } catch (err) {
+    const m = {
+      "auth/invalid-credential": "이메일 또는 비밀번호가 맞지 않습니다.",
+      "auth/wrong-password": "이메일 또는 비밀번호가 맞지 않습니다.",
+      "auth/user-not-found": "이메일 또는 비밀번호가 맞지 않습니다.",
+      "auth/invalid-email": "이메일 형식을 확인하세요.",
+      "auth/too-many-requests": "로그인 시도가 많아 잠시 막혔습니다. 몇 분 뒤 다시 시도하세요.",
+      "auth/operation-not-allowed": "Firebase 콘솔에서 이메일/비밀번호 로그인을 사용 설정하세요."
+    }[err.code];
+    $("#loginMsg").textContent = m || `로그인하지 못했습니다. (${err.code || err.message})`;
+  } finally { btn.disabled = false; }
+});
+
+$("#logout").addEventListener("click", async () => {
+  if (DEMO) { location.href = location.pathname; return; }
+  closeDrawer(true);
+  await fb.A.signOut(fb.auth);
+});
+
+async function loadSettings() {
+  try {
+    const s = await fb.F.getDoc(fb.F.doc(fb.db, "settings", "grading"));
+    CFG = C.mergeGrading(s.exists() ? s.data() : {});
+  } catch (e) {
+    CFG = C.mergeGrading();
+    toast("1차 평가 기준을 불러오지 못해 기본값으로 계산합니다.", true);
+  }
+  try {
+    const s2 = await fb.F.getDoc(fb.F.doc(fb.db, "settings", "interview"));
+    CFG2 = C.mergeInterview(s2.exists() ? s2.data() : {});
+  } catch (e) {
+    CFG2 = C.mergeInterview();
+    toast("2차 평가 기준을 불러오지 못해 기본값으로 표시합니다.", true);
+  }
+}
+
+function subscribe() {
+  stopSub();
+  const q = fb.F.query(fb.F.collection(fb.db, "inquiries"), fb.F.orderBy("createdAt", "desc"));
+  unsub = fb.F.onSnapshot(q,
+    snap => { ALL = snap.docs.map(d => ({ id: d.id, ...d.data() })); refresh(); },
+    err => toast(`문의 목록을 불러오지 못했습니다. (${err.code})`, true));
+}
+function stopSub() {
+  if (unsub) { unsub(); unsub = null; }
+  if (unsubAdmins) { unsubAdmins(); unsubAdmins = null; }
+}
+
+/* ---------- 보관 기간 지난 문의 자동 삭제 ---------- */
+const keepLabel = C.RETENTION_MONTHS % 12 === 0 ? `${C.RETENTION_MONTHS / 12}년` : `${C.RETENTION_MONTHS}개월`;
+async function purgeExpired() {
+  const cutoff = new Date(); cutoff.setMonth(cutoff.getMonth() - C.RETENTION_MONTHS);
+  try {
+    let n = 0;
+    if (DEMO) {
+      const before = ALL.length;
+      ALL = ALL.filter(r => { const d = C.toDate(r.createdAt); return !d || d >= cutoff; });
+      n = before - ALL.length;
+      if (n) refresh();
+    } else {
+      const snap = await fb.F.getDocs(fb.F.query(fb.F.collection(fb.db, "inquiries"),
+        fb.F.where("createdAt", "<", fb.F.Timestamp.fromDate(cutoff))));
+      const docs = snap.docs; n = docs.length;
+      for (let i = 0; i < docs.length; i += 400) {
+        const batch = fb.F.writeBatch(fb.db);
+        docs.slice(i, i + 400).forEach(d => batch.delete(d.ref));
+        await batch.commit();
+      }
+    }
+    if (n) toast(`보관 기간(${keepLabel})이 지난 문의 ${n}건을 자동 삭제했습니다.`);
+  } catch (e) {
+    toast(`보관 기간이 지난 문의를 삭제하지 못했습니다. (${e.code || e.message})`, true);
+  }
+}
+
+/* ---------- 데이터 가공 ---------- */
+function enrich(list, cfg) {
+  const cnt = {};
+  list.forEach(r => { const p = digits(r.phone); if (p) cnt[p] = (cnt[p] || 0) + 1; });
+  list.forEach(r => {
+    r._g = C.computeGrade(r, cfg);
+    r._final = ["A", "B", "C"].includes(r.gradeOverride) ? r.gradeOverride : r._g.grade;
+    r._dup = cnt[digits(r.phone)] || 1;
+    r._date = C.toDate(r.createdAt);
+    r._status = C.STATUS.some(x => x.v === r.status) ? r.status : "new";
+    r._aff = C.AFFINITY.some(x => x.v === r.affinity) ? r.affinity : "";
+    r._contacts = (Array.isArray(r.contacts) ? r.contacts : [])
+      .map(c => ({ ...c, _at: C.toDate(c.at) || new Date(0) })).sort((a, b) => b._at - a._at);
+    r._last = r._contacts[0] || null;
+    r._next = nextAction(r._contacts);
+    r._active = !C.INACTIVE.includes(r._status);
+    r._target = CFG2.targetGrades.includes(r._final);
+    r._e2 = r.eval2 ? C.computeEval2(r.eval2, CFG2) : null;
+    r._e2state = r._e2 ? (r._e2.verdict || "draft") : (r._target && r._active ? "wait" : "");
+  });
+}
+
+/* 다음 할 일: 예정일을 적은 가장 최근 기록. 그 뒤 예정일 당일 이후에 연결된 접촉이 있으면 처리된 것으로 봄
+   ('연결 안 됨' 기록은 예정을 지우지 않음) */
+function nextAction(list) {
+  const c = list.find(x => x.nextAt); if (!c) return null;
+  const due = dayOf(c.nextAt);
+  if (list.some(x => x._at > c._at && !x.noAnswer && startOfDay(x._at) >= due)) return null;
+  const date = dayOf(c.nextAt);
+  return { date, text: c.next || "", days: Math.round((date - startOfDay(new Date())) / 86400000) };
+}
+function nextMatch(r, f) {
+  if (f === "none") return r._active && !r._next;
+  if (!r._next || !r._active) return false;
+  return f === "due" ? r._next.days <= 0 : r._next.days <= 7;
+}
+
+function baseFilter(list) {
+  const from = parseDay(filt.from), to = parseDay(filt.to, true);
+  const q = filt.q.trim().toLowerCase(), qd = digits(q);
+  return list.filter(r => {
+    if (from && (!r._date || r._date < from)) return false;
+    if (to && (!r._date || r._date > to)) return false;
+    if (filt.source && srcOf(r) !== filt.source) return false;
+    if (q) {
+      const hay = [r.name, r.email, r.regionNote, r.sourceNote, ...(r.regions || []).map(C.regionLabel)].join(" ").toLowerCase();
+      if (!hay.includes(q) && !(qd.length >= 3 && digits(r.phone).includes(qd))) return false;
+    }
     return true;
   });
 }
-const inTab = (r, tab) => tab === "all" ? true : tab === "closed" ? (r.status === "cancelled" || r.status === "no_show") : r.status === tab;
 
-function render() {
-  const base = baseFiltered();
-  $("tabs").innerHTML = TABS.map(([key, label]) => {
-    const n = base.filter((r) => inTab(r, key)).length;
-    const attn = (key === "requested" || key === "reschedule") && n > 0;
-    return `<button class="tab${state.tab === key ? " on" : ""}${attn ? " attn" : ""}" data-tab="${key}">${label}<b>${n}</b></button>`;
-  }).join("");
-
-  const list = base.filter((r) => inTab(r, state.tab))
-    .sort((a, b) => (a.pickupDate + a.pickupTime).localeCompare(b.pickupDate + b.pickupTime));
-  $("list").innerHTML = list.length ? list.map(card).join("")
-    : `<div class="empty">${state.tab === "requested" ? "확인할 새 예약이 없어요." : "해당하는 예약이 없어요."}</div>`;
-
-  const pending = rows.filter((r) => r.status === "requested").length;
-  document.title = (pending ? `(${pending}) ` : "") + "벤슨 케이크 예약 관리";
-  setBadge(pending);
+function refresh() {
+  enrich(ALL, CFG);
+  const base = baseFilter(ALL);
+  renderKpis(base);
+  VIEW = base.filter(r => (!filt.grade || r._final === filt.grade) && (!filt.status || r._status === filt.status)
+    && (!filt.aff || (filt.aff === "none" ? !r._aff : r._aff === filt.aff))
+    && (!filt.e2 || r._e2state === filt.e2) && (!filt.next || nextMatch(r, filt.next)));
+  const byDate = (a, b) => (b._date || 0) - (a._date || 0);
+  const sorts = {
+    score: (a, b) => b._g.total - a._g.total || byDate(a, b),
+    score2: (a, b) => (b._e2 ? b._e2.total : -1) - (a._e2 ? a._e2.total : -1) || byDate(a, b),
+    next: (a, b) => (a._next ? a._next.date : Infinity) - (b._next ? b._next.date : Infinity) || byDate(a, b),
+    last: (a, b) => (b._last ? b._last._at : 0) - (a._last ? a._last._at : 0) || byDate(a, b)
+  };
+  VIEW.sort(sorts[filt.sort] || byDate);
+  renderTable();
+  if (mode === "detail" && openId && !dirty) renderDrawer(openId);
+  updatePreview();
 }
-$("tabs").addEventListener("click", (e) => {
-  const b = e.target.closest(".tab"); if (!b) return;
-  state.tab = b.dataset.tab; render();
+
+/* ---------- 목록 ---------- */
+function renderKpis(base) {
+  const n = k => base.filter(r => r._final === k).length;
+  const items = [
+    { k: "all", t: "전체", v: base.length },
+    { k: "A", t: "A 우선 상담", v: n("A") },
+    { k: "B", t: "B 상담", v: n("B") },
+    { k: "C", t: "C 보류", v: n("C") },
+    { k: "new", t: "미확인", v: base.filter(r => r._status === "new").length },
+    { k: "wait", t: "2차 평가 대기", v: base.filter(r => r._e2state === "wait").length },
+    { k: "due", t: "연락 예정 (오늘까지)", v: base.filter(r => nextMatch(r, "due")).length }
+  ];
+  const set = [filt.grade, filt.status, filt.e2, filt.next].filter(Boolean);
+  const active = !set.length ? "all" : set.length > 1 ? ""
+    : filt.grade || (filt.status === "new" ? "new" : filt.e2 === "wait" ? "wait" : filt.next === "due" ? "due" : "");
+  $("#kpis").innerHTML = items.map(i =>
+    `<button type="button" class="kpi${i.k === active ? " on" : ""}" data-k="${i.k}"><span class="k">${i.t}</span><span class="v">${i.v}</span></button>`).join("");
+}
+$("#kpis").addEventListener("click", e => {
+  const b = e.target.closest(".kpi"); if (!b) return;
+  const k = b.dataset.k;
+  filt.grade = ["A", "B", "C"].includes(k) ? k : "";
+  filt.status = k === "new" ? "new" : "";
+  filt.e2 = k === "wait" ? "wait" : "";
+  filt.next = k === "due" ? "due" : "";
+  $("#fGrade").value = filt.grade; $("#fStatus").value = filt.status;
+  $("#fE2").value = filt.e2; $("#fNext").value = filt.next;
+  refresh();
 });
 
-function actionsFor(r) {
-  const A = (act, label, cls = "") => `<button class="act ${cls}" data-act="${act}" data-id="${esc(r.id)}">${label}</button>`;
-  switch (r.status) {
-    case "requested":  return A("confirm", "확정 문자 보내기", "main") + A("reschedule", "시간 조정 필요", "warn") + A("edit", "일시 변경") + A("note", "메모");
-    case "reschedule": return A("confirm", "확정 문자 보내기", "main") + A("edit", "일시 변경") + A("msgReschedule", "조정 문자 보기") + A("note", "메모");
-    case "confirmed":  return A("pickup", "픽업 완료", "main") + A("noshow", "노쇼", "warn") + A("msgConfirm", "확정 문자 다시 보기") + A("edit", "일시 변경") + A("note", "메모");
-    default:           return A("note", "메모");
+function delTag(r) {
+  const exp = C.expiryOf(r.createdAt);
+  if (!exp) return "";
+  const left = Math.ceil((exp - Date.now()) / 86400000);
+  return left <= 30 ? `<span class="tag del" title="${fmtFull(exp)} 자동 삭제 예정">삭제 D-${Math.max(left, 0)}</span>` : "";
+}
+function affSelect(r) {
+  return `<select class="aff" data-v="${r._aff}" aria-label="우호도">
+    <option value=""${r._aff ? "" : " selected"}>미평가</option>
+    ${C.AFFINITY.map(o => `<option value="${o.v}"${r._aff === o.v ? " selected" : ""}>${esc(o.t)}</option>`).join("")}
+  </select>`;
+}
+const srcOf = r => C.SOURCE.some(x => x.v === r.source) ? r.source : "etc";
+const srcLabel = v => (C.SOURCE.find(x => x.v === v) || {}).t || "기타";
+function srcCell(r) {
+  const v = srcOf(r), o = C.SOURCE.find(x => x.v === v) || {};
+  const how = r.entry === "manual" ? "직접 등록" : r.entry === "import" ? "엑셀 일괄 등록" : "접수폼";
+  return `<span class="src ${v}" title="${esc([o.t, r.sourceNote, how].filter(Boolean).join(" · "))}">${esc(o.s || o.t || "기타")}</span>`
+    + (r.entry === "manual" ? `<span class="cell-sub">수기</span>` : r.entry === "import" ? `<span class="cell-sub">일괄</span>` : "");
+}
+function statusCell(s) { return `<span class="st ${s}" title="${esc(C.label(C.STATUS, s))}">${esc(STATUS_SHORT[s] || C.label(C.STATUS, s))}</span>`; }
+function e2Cell(r) {
+  if (!r._e2) return r._e2state === "wait" ? `<span class="chip wait">대기</span>` : `<span class="muted">-</span>`;
+  const v = r._e2.verdict;
+  return (v ? `<span class="chip ${v}">${VSHORT[v]}</span>` : `<span class="chip draft">작성 중</span>`)
+    + `<span class="cell-sub">${r._e2.total}</span>`
+    + (r._e2.risks.length ? `<span class="chip risk" title="${esc(r._e2.risks.map(x => x.label).join(", "))}">리스크 ${r._e2.risks.length}</span>` : "");
+}
+function lastCell(r) {
+  if (!r._last) return r._active && r._target ? `<span class="nocontact">미접촉</span>` : `<span class="muted">-</span>`;
+  return `${fmtMD(r._last._at)} ${esc(C.label(C.CONTACT_METHODS, r._last.method))}${r._last.noAnswer ? `<span class="cell-sub">부재</span>` : ""}<span class="cell-sub">${r._contacts.length}회</span>`;
+}
+function dueText(n) { return n.days < 0 ? `지남 ${-n.days}일` : n.days === 0 ? "오늘" : `D-${n.days}`; }
+function dueCls(n, active = true) { return !active ? "" : n.days < 0 ? "over" : n.days === 0 ? "today" : n.days <= 3 ? "soon" : ""; }
+function nextCell(r) {
+  const n = r._next; if (!n) return `<span class="muted">-</span>`;
+  return `<span class="due ${dueCls(n, r._active)}" title="${esc(n.text)}">${fmtMD(n.date)} (${dueText(n)})</span>`;
+}
+
+function renderTable() {
+  const body = $("#rows");
+  body.innerHTML = VIEW.map(r => {
+    const regs = r.regions || [];
+    const reg = regs.length ? C.regionLabel(regs[0]) + (regs.length > 1 ? ` 외 ${regs.length - 1}곳` : "") : "-";
+    return `<tr data-id="${esc(r.id)}" tabindex="0" class="${r.id === openId ? "sel" : ""}">
+      <td>${fmtShort(r._date)}</td>
+      <td class="who">${esc(r.name)}${r._dup > 1 ? `<span class="tag" title="같은 연락처로 ${r._dup}건 접수">중복 ${r._dup}</span>` : ""}${delTag(r)}</td>
+      <td>${srcCell(r)}</td>
+      <td>${esc(r.phone)}</td>
+      <td class="region" title="${esc(regs.map(C.regionLabel).join(", "))}">${esc(reg)}</td>
+      <td class="r">${esc(C.manToShort(r.investment))}</td>
+      <td><span class="badge ${r._final}">${r._final}</span><span class="cell-sub">${r._g.total}</span>${r.gradeOverride ? `<span class="adj" title="자동 등급 ${r._g.grade}에서 조정">조정</span>` : ""}</td>
+      <td>${e2Cell(r)}</td>
+      <td>${affSelect(r)}</td>
+      <td>${statusCell(r._status)}</td>
+      <td>${lastCell(r)}</td>
+      <td>${nextCell(r)}</td>
+    </tr>`;
+  }).join("");
+  $("#keepNote").textContent = `접수일로부터 ${keepLabel}이 지나면 자동 삭제`;
+  $("#count").textContent = `${VIEW.length}건${VIEW.length !== ALL.length ? ` / 전체 ${ALL.length}건` : ""}`;
+  const empty = $("#empty");
+  empty.hidden = VIEW.length > 0;
+  empty.textContent = ALL.length ? "조건에 맞는 문의가 없습니다. 검색어나 필터를 바꿔 보세요."
+    : "아직 접수된 문의가 없습니다. ‘메일용 접수폼 링크 복사’로 접수폼 링크를 안내 메일에 넣어 보내세요.";
+}
+$("#rows").addEventListener("click", e => {
+  if (e.target.closest(".aff")) return;
+  const tr = e.target.closest("tr[data-id]"); if (tr) openDrawer(tr.dataset.id);
+});
+$("#rows").addEventListener("keydown", e => {
+  if (e.key !== "Enter" || e.target.closest(".aff")) return;
+  const tr = e.target.closest("tr[data-id]"); if (tr) openDrawer(tr.dataset.id);
+});
+
+/* 우호도: 목록에서 바로 변경 */
+$("#rows").addEventListener("change", e => {
+  const sel = e.target.closest(".aff"); if (!sel) return;
+  sel.dataset.v = sel.value;
+  setAffinity(sel.closest("tr").dataset.id, sel.value);
+});
+async function setAffinity(id, v) {
+  const r = ALL.find(x => x.id === id); if (!r) return;
+  const payload = { affinity: v || null, affinityBy: DEMO ? "demo" : user.email };
+  try {
+    if (DEMO) { Object.assign(r, payload, { affinityAt: new Date() }); refresh(); }
+    else await fb.F.updateDoc(fb.F.doc(fb.db, "inquiries", id), { ...payload, affinityAt: fb.F.serverTimestamp() });
+    toast(v ? `${r.name} 님 우호도를 '${C.label(C.AFFINITY, v)}'(으)로 저장했습니다.` : `${r.name} 님 우호도를 미평가로 바꿨습니다.`);
+  } catch (e) {
+    toast(`우호도를 저장하지 못했습니다. (${e.code || e.message})`, true);
+    refresh();
   }
 }
 
-function card(r) {
-  const st = STATUS[r.status] || STATUS.requested;
-  const statusOpts = Object.entries(STATUS).map(([k, v]) => `<option value="${k}"${k === r.status ? " selected" : ""}>${v.label}</option>`).join("");
-  return `<article class="card ${esc(r.status)}">
-    <div class="card-top">
-      <span class="badge b-${esc(r.status)}">${st.label}</span>
-      <span class="when">${esc(pretty(r.pickupDate))} ${esc(r.pickupTime)}${ddayLabel(r.pickupDate)}</span>
+/* 필터 */
+$("#fStatus").innerHTML = `<option value="">진행 단계 전체</option>` + C.STATUS.map(s => `<option value="${s.v}">${esc(STATUS_SHORT[s.v] || s.t)}</option>`).join("");
+$("#fSource").innerHTML = `<option value="">구분 전체</option>` + C.SOURCE.map(s => `<option value="${s.v}">${esc(s.t)}</option>`).join("");
+$("#fAff").innerHTML = `<option value="">우호도 전체</option>` + C.AFFINITY.map(s => `<option value="${s.v}">우호도 ${esc(s.t)}</option>`).join("")
+  + `<option value="none">우호도 미평가</option>`;
+const filterMap = { fQ: "q", fFrom: "from", fTo: "to", fGrade: "grade", fStatus: "status", fSource: "source", fAff: "aff", fE2: "e2", fNext: "next", fSort: "sort" };
+Object.entries(filterMap).forEach(([id, k]) => {
+  $("#" + id).addEventListener(id === "fQ" ? "input" : "change", e => { filt[k] = e.target.value; refresh(); });
+});
+
+/* 링크 복사 */
+async function copy(text, msg) {
+  try { await navigator.clipboard.writeText(text); toast(msg); }
+  catch { window.prompt("아래 링크를 복사하세요.", text); }
+}
+$("#copyMail").addEventListener("click", () => copy(new URL("./", location.href).href, "메일용 접수폼 링크를 복사했습니다."));
+$("#copyHp").addEventListener("click", () => copy(new URL("./?src=homepage", location.href).href, "홈페이지용 접수폼 링크를 복사했습니다."));
+
+/* 엑셀 */
+$("#exportBtn").addEventListener("click", () => {
+  if (!window.XLSX) { toast("엑셀 라이브러리를 불러오지 못했습니다. 새로고침 후 다시 시도하세요.", true); return; }
+  if (!VIEW.length) { toast("내보낼 문의가 없습니다.", true); return; }
+  const reg = (r, i) => r.regions?.[i] ? C.regionLabel(r.regions[i]) : "";
+  const rows = VIEW.map(r => ({
+    "접수일시": fmtFull(r._date), "구분": srcLabel(srcOf(r)), "구분 상세": r.sourceNote || "",
+    "성함": r.name, "연락처": r.phone, "이메일": r.email, "연령대": C.label(C.AGE, r.ageBand),
+    "희망지역1": reg(r, 0), "희망지역2": reg(r, 1), "희망지역3": reg(r, 2),
+    "투자가능금액(만원)": Number(r.investment) || 0,
+    "외식업 경험": C.label(C.FNB, r.fnbExp), "경험 상세": r.fnbDetail || "",
+    "지원 사유": r.motive || "", "희망 오픈 시기": C.label(C.OPEN, r.openTiming),
+    "운영 참여": C.label(C.OPER, r.operation), "운영 참여 상세": r.operationNote || "",
+    "점포 확보": C.label(C.STORE, r.store), "점포 소재지": r.storeAddress || "", "점포 면적(평)": r.storeArea || "",
+    "기타 문의": r.etc || "",
+    "점수": r._g.total, "자동 등급": r._g.grade, "최종 등급": r._final,
+    "우호도": r._aff ? C.label(C.AFFINITY, r._aff) : "미평가",
+    "진행 단계": C.label(C.STATUS, r._status), "메모": r.memo || "",
+    "2차 점수": r._e2 ? r._e2.total : "", "2차 구간": r._e2 ? C.BAND[r._e2.band] : "",
+    "2차 최종 판정": r._e2 ? (r._e2.verdict ? C.label(C.VERDICT, r._e2.verdict) : "작성 중") : (r._e2state === "wait" ? "대기" : ""),
+    "2차 리스크": r._e2 ? r._e2.risks.map(x => x.label).join(", ") : "",
+    "2차 종합 의견": r.eval2?.opinion || "", "2차 상담일": r.eval2?.date || "", "2차 평가자": r.eval2?.evaluator || "",
+    "접촉 횟수": r._contacts.length, "최근 접촉일": r._last ? fmtFull(r._last._at) : "",
+    "최근 접촉 방법": r._last ? C.label(C.CONTACT_METHODS, r._last.method) : "",
+    "다음 할 일": r._next ? r._next.text : "", "다음 일정": r._next ? fmtFull(r._next.date).slice(0, 10) : "",
+    "등록 방식": r.entry === "manual" ? "직접 등록" : r.entry === "import" ? "엑셀 일괄 등록" : "접수폼", "오픈 시기 원문": r.openTimingNote || "",
+    "개인정보 동의 체크": r.consent ? "Y" : "N"
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws["!cols"] = Object.keys(rows[0]).map(k => ({ wch: ["지원 사유", "기타 문의", "메모", "경험 상세", "2차 종합 의견"].includes(k) ? 40 : Math.max(10, k.length * 2 + 2) }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "가맹문의");
+  const cRows = VIEW.flatMap(r => r._contacts.map(c => ({
+    "성함": r.name, "연락처": r.phone, "구분": srcLabel(srcOf(r)), "1차 등급": r._final, "진행 단계": C.label(C.STATUS, r._status),
+    "접촉 일시": fmtFull(c._at), "방법": C.label(C.CONTACT_METHODS, c.method), "연결": c.noAnswer ? "연결 안 됨" : "연결",
+    "내용": c.summary || "", "다음 할 일": c.next || "", "예정일": c.nextAt || "", "기록자": c.byName || c.by || ""
+  })));
+  if (cRows.length) {
+    const cws = XLSX.utils.json_to_sheet(cRows);
+    cws["!cols"] = Object.keys(cRows[0]).map(k => ({ wch: k === "내용" ? 50 : k === "다음 할 일" ? 24 : 14 }));
+    XLSX.utils.book_append_sheet(wb, cws, "접촉 이력");
+  }
+  const eRows = VIEW.filter(r => r._e2).map(r => {
+    const o = { "성함": r.name, "연락처": r.phone, "1차 등급": r._final, "1차 점수": r._g.total,
+      "상담일": r.eval2.date || "", "상담 방식": r.eval2.method || "", "평가자": r.eval2.evaluator || "" };
+    r._e2.items.forEach(it => { o[`${it.label} (배점 ${it.weight})`] = it.s || ""; });
+    Object.assign(o, { "2차 점수": r._e2.total, "구간": C.BAND[r._e2.band], "리스크": r._e2.risks.map(x => x.label).join(", "),
+      "리스크 메모": r.eval2.riskNote || "", "종합 의견": r.eval2.opinion || "",
+      "최종 판정": r._e2.verdict ? C.label(C.VERDICT, r._e2.verdict) : "작성 중" });
+    return o;
+  });
+  if (eRows.length) {
+    const ews = XLSX.utils.json_to_sheet(eRows);
+    ews["!cols"] = Object.keys(eRows[0]).map(k => ({ wch: k === "종합 의견" || k === "리스크 메모" ? 50 : Math.max(10, Math.min(24, k.length * 2)) }));
+    XLSX.utils.book_append_sheet(wb, ews, "2차 평가");
+  }
+  XLSX.writeFile(wb, `벤슨_가맹문의DB_${ymd(new Date())}.xlsx`);
+});
+
+/* ---------- 상세 ---------- */
+function markSel() { $$("#rows tr").forEach(tr => tr.classList.toggle("sel", !!openId && tr.dataset.id === openId)); }
+function showDrawer(wide) {
+  $("#drawer").classList.toggle("wide", wide);
+  $("#drawer").classList.remove("xwide");
+  $("#drawer").hidden = false; $("#scrim").hidden = false;
+  $("#dBody").scrollTop = 0;
+}
+function openDrawer(id, tab) {
+  if (mode && dirty && !(mode === "detail" && openId === id) && !confirm("저장하지 않은 변경 내용이 있습니다. 이동할까요?")) return;
+  if (tab) dTab = tab; else if (openId !== id || mode !== "detail") dTab = "basic";
+  mode = "detail"; openId = id; dirty = false; editingContact = null;
+  $("#dFoot").hidden = true;
+  renderDrawer(id);
+  showDrawer(false);
+  markSel();
+  $("#dClose").focus();
+}
+function closeDrawer(force = false) {
+  if (!mode) return;
+  if (!force && dirty && !confirm("저장하지 않은 변경 내용이 있습니다. 닫을까요?")) return;
+  const id = openId;
+  mode = null; openId = null; dirty = false;
+  $("#drawer").hidden = true; $("#scrim").hidden = true;
+  markSel();
+  const tr = id && $(`#rows tr[data-id="${CSS.escape(id)}"]`); if (tr) tr.focus();
+}
+$("#dClose").addEventListener("click", () => closeDrawer());
+$("#scrim").addEventListener("click", () => closeDrawer());
+document.addEventListener("keydown", e => { if (e.key === "Escape" && mode) closeDrawer(); });
+
+function stageStrip(r) {
+  const idx = C.STAGES.findIndex(st => st.vs.includes(r._status)), off = idx < 0;
+  return `<div class="stages${off ? " off" : ""}" aria-label="진행 단계">${C.STAGES.map((st, i) =>
+    `<span class="${!off && i < idx ? "done" : !off && i === idx ? "cur" : ""}">${st.t}</span>`).join("")}</div>
+    ${off ? `<p class="stage-note">현재 '${esc(C.label(C.STATUS, r._status))}' 상태입니다.</p>` : ""}`;
+}
+
+function renderDrawer(id) {
+  const r = ALL.find(x => x.id === id);
+  if (!r) { closeDrawer(true); return; }
+  $("#dTitle").innerHTML = `${esc(r.name)} <span class="badge ${r._final}" title="1차 기본평가 등급">${r._final}</span>`
+    + (r._e2?.verdict ? `<span class="chip ${r._e2.verdict}" title="2차 최종 판정">${VSHORT[r._e2.verdict]}</span>` : "");
+  $("#dSub").textContent = `${fmtFull(r._date)} 접수 · 구분: ${srcLabel(srcOf(r))}${r.sourceNote ? ` (${r.sourceNote})` : ""}${r.entry === "manual" ? " · 직접 등록" : r.entry === "import" ? " · 엑셀 일괄 등록" : ""}`;
+  const tabs = [["basic", "1차 평가·진행", ""], ["contacts", "접촉 이력", r._contacts.length || ""],
+    ["eval2", "2차 심층평가", r._e2 ? `${r._e2.total}점` : r._e2state === "wait" ? "대기" : ""]];
+  const body = dTab === "contacts" ? contactsTab(r) : dTab === "eval2" ? eval2Tab(r) : basicTab(r);
+  $("#dBody").innerHTML = stageStrip(r)
+    + `<nav class="d-tabs" role="tablist">${tabs.map(([k, t, n]) =>
+      `<button type="button" role="tab" data-dt="${k}" aria-selected="${dTab === k}" class="${dTab === k ? "on" : ""}">${t}${n !== "" ? `<span class="n">${n}</span>` : ""}</button>`).join("")}</nav>`
+    + body;
+  $("#dFoot").hidden = dTab !== "eval2";
+  if (dTab === "contacts") bindContacts(r); else if (dTab === "eval2") bindEval2(r); else bindBasic(r);
+}
+$("#dBody").addEventListener("click", e => {
+  const b = e.target.closest(".d-tabs button"); if (!b || mode !== "detail" || b.dataset.dt === dTab) return;
+  if (dirty && !confirm("저장하지 않은 변경 내용이 있습니다. 탭을 옮길까요?")) return;
+  dTab = b.dataset.dt; dirty = false; editingContact = null;
+  renderDrawer(openId);
+  $("#dBody").scrollTop = 0;
+});
+$("#dBody").addEventListener("input", () => { if (mode === "detail") { dirty = true; if (dTab === "eval2") updateEval2Sum(); } });
+$("#dBody").addEventListener("change", () => { if (mode === "detail") { dirty = true; if (dTab === "eval2") updateEval2Sum(); } });
+
+function basicTab(r) {
+  const g = r._g;
+  const scoreRows = g.items.map(it => `<tr>
+      <td><b>${esc(it.label)}</b><div class="note">${esc(it.note)}</div>
+        <div class="meter"><i style="width:${it.max ? Math.round(it.score / it.max * 100) : 0}%"></i></div></td>
+      <td class="pt">${it.score}<small> / ${it.max}</small></td></tr>`).join("");
+
+  const ans = [
+    ["연락처", `<a href="tel:${digits(r.phone)}">${esc(r.phone)}</a>${r.email ? `\n<a href="mailto:${esc(r.email)}">${esc(r.email)}</a>` : ""}`],
+    ["연령대", esc(C.label(C.AGE, r.ageBand))],
+    ["희망 지역", ((r.regions || []).map((x, i) => `${i + 1}. ${esc(C.regionLabel(x))}`).join("\n") || "-")
+      + (r.regionNote ? `\n<span class="sub">원문: ${esc(r.regionNote)}</span>` : "")],
+    ["투자 가능 금액", esc(C.manToText(r.investment))],
+    ["외식업 경험", esc(C.label(C.FNB, r.fnbExp)) + (r.fnbDetail ? `\n<span class="sub">${esc(r.fnbDetail)}</span>` : "")],
+    ["지원 사유", esc(r.motive) || "-"],
+    ["희망 오픈 시기", esc(C.label(C.OPEN, r.openTiming)) + (r.openTimingNote ? `\n<span class="sub">원문: ${esc(r.openTimingNote)}</span>` : "")],
+    ["운영 참여 계획", esc(C.label(C.OPER, r.operation)) + (r.operationNote ? ` (${esc(r.operationNote)})` : "")],
+    ["점포 확보", esc(C.label(C.STORE, r.store)) + (r.storeAddress ? `\n<span class="sub">${esc(r.storeAddress)}${r.storeArea ? `, ${esc(r.storeArea)}평` : ""}</span>` : "")],
+    ["기타 문의", esc(r.etc) || "-"],
+    ["개인정보 동의", r.consent ? "동의 (접수폼)" : r.entry === "manual" ? "동의 체크 없음 (직접 등록)" : r.entry === "import" ? "동의 체크 없음 (기존 자료)" : "-"],
+    ["자동 삭제 예정", C.expiryOf(r.createdAt) ? fmtFull(C.expiryOf(r.createdAt)).slice(0, 10) : "-"]
+  ].map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
+
+  const reviewed = C.toDate(r.reviewedAt);
+  const meta = [
+    reviewed ? `최근 저장 ${fmtFull(reviewed)}${r.reviewedBy ? `, ${esc(r.reviewedBy)}` : ""}` : "",
+    r.gradeAtReview && r.gradeAtReview !== r._final ? `처리 당시 등급 ${esc(r.gradeAtReview)} (${Number(r.scoreAtReview) || 0}점)` : ""
+  ].filter(Boolean).join(" · ");
+
+  return `
+    <section class="d-sec">
+      <h3>1차 기본평가 <span class="muted">접수 정보로 자동 계산</span></h3>
+      ${g.mustFail ? `<p class="warn">투자 가능 금액이 필수 기준(${esc(C.manToText(CFG.minInvest))}) 미만이라 점수와 관계없이 C로 분류됩니다.</p>` : ""}
+      <table class="score-tbl">${scoreRows}</table>
+      <div class="score-sum"><span>합계 <b>${g.total}</b> <span class="muted">/ ${g.maxTotal}점</span></span>
+        <span>자동 등급 <span class="badge ${g.grade}">${g.grade}</span></span></div>
+    </section>
+    <section class="d-sec">
+      <div class="h3row"><h3>응답 내용</h3><button type="button" class="btn small" id="mEdit">응답 수정</button></div>
+      <dl class="ans">${ans}</dl>
+    </section>
+    ${r.rawText ? `<section class="d-sec raw-view"><details><summary>메일 원문 보기</summary><pre>${esc(r.rawText)}</pre></details></section>` : ""}
+    <section class="d-sec">
+      <h3>진행 관리</h3>
+      <div class="manage">
+        <label>구분<select id="mSource">${C.SOURCE.map(o => `<option value="${o.v}">${esc(o.t)}</option>`).join("")}</select></label>
+        <label><span>구분 상세 <span class="muted" style="font-weight:500">선택</span></span><input id="mSourceNote" maxlength="100"></label>
+        <label>우호도<select id="mAff"><option value="">미평가</option>${C.AFFINITY.map(o => `<option value="${o.v}">${esc(o.t)}</option>`).join("")}</select></label>
+        <label>등급<select id="mGrade">
+          <option value="">자동 (${g.grade})</option><option value="A">A로 조정</option><option value="B">B로 조정</option><option value="C">C로 조정</option>
+        </select></label>
+        <label class="full">진행 단계<select id="mStatus">${C.STATUS.map(s => `<option value="${s.v}">${esc(s.t)}</option>`).join("")}</select></label>
+        <label class="full">메모<textarea id="mMemo" maxlength="2000" placeholder="특이사항 (통화·상담 내용은 '접촉 이력' 탭에 기록)"></textarea></label>
+        <div class="m-actions">
+          <button type="button" class="btn danger" id="mDel">문의 삭제</button>
+          <button type="button" class="btn primary" id="mSave">저장</button>
+        </div>
+        ${meta ? `<p class="m-meta">${meta}</p>` : ""}
+      </div>
+    </section>`;
+
+}
+
+function bindBasic(r) {
+  const g = r._g;
+  $("#mGrade").value = r.gradeOverride || "";
+  $("#mStatus").value = r._status;
+  $("#mAff").value = r._aff;
+  $("#mSource").value = srcOf(r);
+  $("#mSourceNote").value = r.sourceNote || "";
+  const srcHint = () => { $("#mSourceNote").placeholder = (C.SOURCE.find(x => x.v === $("#mSource").value) || {}).hint || "필요하면 메모"; };
+  srcHint(); $("#mSource").addEventListener("change", srcHint);
+  $("#mMemo").value = r.memo || "";
+  ["mSource", "mSourceNote", "mAff", "mGrade", "mStatus", "mMemo"].forEach(i => $("#" + i).addEventListener("input", () => { dirty = true; }));
+  $("#mSave").addEventListener("click", () => saveReview(r.id));
+  $("#mDel").addEventListener("click", () => removeInquiry(r.id));
+  $("#mEdit").addEventListener("click", () => openEntry(r));
+}
+
+/* ---------- 접촉 이력 ---------- */
+function memoReplies(r) {
+  return String(r.memo || "").split("\n").map(line => {
+    const m = line.match(/^\s*(\d+)차 회신:\s*(.+)$/); if (!m) return null;
+    const at = P.parseKDate(m[2]); if (!at) return null;
+    return { line, n: m[1], at, method: P.replyMethod(m[2]) };
+  }).filter(Boolean);
+}
+const dtLocal = d => `${toInputDate(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+function contactsTab(r) {
+  const ed = editingContact ? r._contacts.find(c => c.id === editingContact) : null;
+  const migr = memoReplies(r), n = r._next;
+  return `<section class="d-sec">
+    ${n ? `<div class="next-box"><span><b>다음 할 일</b> ${esc(n.text || "(내용 없음)")}</span>
+      <span class="due ${dueCls(n, r._active)}">${fmtMD(n.date)} (${dueText(n)})</span></div>` : ""}
+    ${migr.length ? `<div class="migrate"><span>메모에 회신 기록 ${migr.length}건이 있습니다.</span>
+      <button type="button" class="btn small" id="cMigrate">접촉 이력으로 옮기기</button></div>` : ""}
+    <div class="c-form dform">
+      <h3>${ed ? "접촉 기록 수정" : "새 접촉 기록"}</h3>
+      <div class="row2">
+        <label>일시<input type="datetime-local" id="cAt" value="${dtLocal(ed ? ed._at : new Date())}"></label>
+        <label class="inline-check" style="align-self:end;min-height:38px"><input type="checkbox" id="cMiss"${ed?.noAnswer ? " checked" : ""}> 연결 안 됨 (부재·미회신)</label>
+      </div>
+      <div class="seg" role="radiogroup" aria-label="접촉 방법">${C.CONTACT_METHODS.map(m =>
+        `<label><input type="radio" name="cMethod" value="${m.v}"${(ed ? ed.method : "call") === m.v ? " checked" : ""}><span>${esc(m.t)}</span></label>`).join("")}</div>
+      <label>내용<textarea id="cSummary" maxlength="2000" placeholder="상담·통화 내용, 문의 사항, 안내한 내용">${esc(ed?.summary || "")}</textarea></label>
+      <div class="row2">
+        <label>다음 할 일 <input id="cNext" maxlength="200" value="${esc(ed?.next || "")}" placeholder="예: 대면 상담 일정 확정"></label>
+        <label>예정일<input type="date" id="cNextAt" value="${esc(ed?.nextAt || "")}"></label>
+      </div>
+      ${ed ? "" : `<label><span>진행 단계도 함께 변경 <span class="opt">선택</span></span><select id="cStatus">
+        <option value="">변경 안 함 (현재: ${esc(C.label(C.STATUS, r._status))})</option>
+        ${C.STATUS.filter(st => st.v !== r._status).map(st => `<option value="${st.v}">${esc(st.t)}</option>`).join("")}</select></label>`}
+      <p class="e-err" id="cErr" role="alert"></p>
+      <div class="c-acts">${ed ? `<button type="button" class="btn" id="cCancel">취소</button>` : ""}
+        <button type="button" class="btn primary" id="cSave">${ed ? "수정 저장" : "기록 추가"}</button></div>
     </div>
-    ${me.role === "master" ? `<p class="store-name">${esc(r.store)}</p>` : ""}
-    <ul class="cake">${itemsOf(r).map((i) => `<li>${esc(i.name)} <b>${Number(i.qty) || 1}개</b></li>`).join("")}</ul>
-    ${itemsOf(r).length > 1 ? `<p class="cake-total">총 ${Number(r.qty) || 0}개</p>` : ""}
-    <dl class="meta">
-      <dt>예약자</dt><dd>${esc(r.name)}</dd>
-      <dt>연락처</dt><dd><a href="tel:${esc(r.phone)}">${esc(fmtPhone(r.phone))}</a></dd>
-      <dt>예약번호</dt><dd>${esc(r.code)}</dd>
-      <dt>신청</dt><dd>${esc(fmtTs(r.createdAt))}</dd>
-      <dt>마케팅 수신</dt><dd>${r.consentMarketing ? "동의" : "미동의"}</dd>
-      ${r.confirmSmsAt ? `<dt>확정 문자</dt><dd>${esc(fmtTs(r.confirmSmsAt))} 발송 확인</dd>` : ""}
-    </dl>
-    ${r.memo ? `<p class="memo">고객 요청: ${esc(r.memo)}</p>` : ""}
-    ${r.storeNote ? `<p class="note">매장 메모: ${esc(r.storeNote)}</p>` : ""}
-    <div class="actions">${actionsFor(r)}</div>
-    <details class="more"><summary>${me.role === "master" ? "상태 변경 · 삭제" : "다른 상태로 변경"}</summary>
-      <select data-act="setStatus" data-id="${esc(r.id)}" aria-label="상태 변경">${statusOpts}</select>
-      ${me.role === "master" ? `<div class="danger-zone"><button class="act danger" data-act="delete" data-id="${esc(r.id)}">예약 삭제</button><span>테스트 건 정리용 · 되돌릴 수 없어요</span></div>` : ""}
-    </details>
-  </article>`;
+  </section>
+  <section class="d-sec">
+    <h3>접촉 이력 <span class="muted">${r._contacts.length}건, 최신순</span></h3>
+    ${r._contacts.length ? `<ul class="tl">${r._contacts.map(c => `<li class="${c.noAnswer ? "miss" : ""}" data-cid="${esc(c.id)}">
+      <div class="top"><span class="when">${fmtFull(c._at)}</span><span class="mchip">${esc(C.label(C.CONTACT_METHODS, c.method))}</span>
+        ${c.noAnswer ? `<span class="chip fail">연결 안 됨</span>` : ""}
+        <span class="by">${esc(c.byName || c.by || "")}</span>
+        <span class="acts"><button type="button" class="btn small c-edit">수정</button><button type="button" class="btn small danger c-del">삭제</button></span></div>
+      ${c.summary ? `<p class="body">${esc(c.summary)}</p>` : ""}
+      ${c.next || c.nextAt ? `<p class="nx">다음: ${esc(c.next || "(내용 없음)")}${c.nextAt ? ` · ${esc(c.nextAt.replace(/-/g, "."))}` : ""}</p>` : ""}
+    </li>`).join("")}</ul>`
+    : `<p class="muted">아직 기록이 없습니다. 전화·문자·대면 상담 등 접촉할 때마다 위에서 기록하세요.</p>`}
+  </section>`;
 }
 
-/* ---------- 처리 ---------- */
-const findRow = (id) => rows.find((r) => r.id === id);
-
-async function saveStatus(r, status, extra = {}) {
-  const ts = serverTimestamp();
-  const b = writeBatch(db);
-  b.update(doc(db, "reservations", r.id), { status, updatedAt: ts, updatedBy: me.email || me.uid, ...extra });
-  const pub = { status, updatedAt: ts };
-  if (extra.pickupDate) pub.pickupDate = extra.pickupDate;
-  if (extra.pickupTime) pub.pickupTime = extra.pickupTime;
-  b.update(doc(db, "publicStatus", r.id), pub);
-  await b.commit();
+function bindContacts(r) {
+  $("#cSave").addEventListener("click", () => saveContact(r.id));
+  $("#cCancel")?.addEventListener("click", () => { editingContact = null; dirty = false; renderDrawer(r.id); });
+  $("#cMigrate")?.addEventListener("click", () => migrateMemo(r.id));
+  $$("#dBody .tl li").forEach(li => {
+    const cid = li.dataset.cid;
+    $(".c-edit", li).addEventListener("click", () => {
+      if (dirty && !confirm("작성 중인 내용이 있습니다. 이 기록을 수정할까요?")) return;
+      editingContact = cid; dirty = false; renderDrawer(r.id); $("#dBody").scrollTop = 0; $("#cSummary").focus();
+    });
+    $(".c-del", li).addEventListener("click", () => deleteContact(r.id, cid));
+  });
 }
 
-$("list").addEventListener("click", async (e) => {
-  const btn = e.target.closest("button[data-act]"); if (!btn) return;
-  const r = findRow(btn.dataset.id); if (!r) return;
-  const act = btn.dataset.act;
+/* 접촉 이력은 문의 문서 안의 목록(contacts)으로 저장. 동시에 고쳐도 덮어쓰지 않도록 트랜잭션 사용 */
+async function mutateContacts(id, fn, extra = null) {
+  if (DEMO) {
+    const r = ALL.find(x => x.id === id);
+    r.contacts = fn([...(r.contacts || [])]); if (extra) Object.assign(r, extra);
+    return;
+  }
+  const ref = fb.F.doc(fb.db, "inquiries", id);
+  await fb.F.runTransaction(fb.db, async tx => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) throw new Error("문의가 삭제되어 저장할 수 없습니다.");
+    tx.update(ref, { contacts: fn([...(snap.data().contacts || [])]), contactsUpdatedAt: fb.F.serverTimestamp(), ...(extra || {}) });
+  });
+}
+const whoAmI = () => ({ by: DEMO ? "demo@example.com" : user.email, byName: me?.name || (DEMO ? "데모" : user.email) });
+
+async function saveContact(id) {
+  const r = ALL.find(x => x.id === id); if (!r) return;
+  const err = $("#cErr"); err.textContent = "";
+  const atV = $("#cAt").value, noAnswer = $("#cMiss").checked;
+  const rec = { method: ($('input[name="cMethod"]:checked') || {}).value || "etc", noAnswer,
+    summary: $("#cSummary").value.trim().slice(0, 2000), next: $("#cNext").value.trim().slice(0, 200), nextAt: $("#cNextAt").value };
+  if (!atV) { err.textContent = "접촉 일시를 입력하세요."; return; }
+  if (!rec.summary && !noAnswer) { err.textContent = "내용을 입력하세요. 연결이 안 된 경우 '연결 안 됨'을 체크하면 내용 없이 저장됩니다."; return; }
+  const at = new Date(atV), status = $("#cStatus")?.value || "", editId = editingContact, who = whoAmI();
+  const extra = status ? { status, ...(status !== "new" ? { gradeAtReview: r._final, scoreAtReview: r._g.total } : {}) } : null;
+  const btn = $("#cSave"); btn.disabled = true;
   try {
-    if (act === "confirm") {
-      openMsg("confirmed", r, "confirm");   // 문자 전송 확인 후에만 확정
-    } else if (act === "reschedule") {
-      btn.disabled = true;
-      await saveStatus(r, "reschedule");
-      openMsg("reschedule", r);
-    } else if (act === "msgConfirm") openMsg("confirmed", r);
-    else if (act === "msgReschedule") openMsg("reschedule", r);
-    else if (act === "pickup") {
-      await saveStatus(r, "picked_up"); toast("픽업 완료로 처리했어요");
-    } else if (act === "noshow") {
-      if (!confirm(`${r.name}님 예약을 노쇼로 처리할까요?`)) return;
-      await saveStatus(r, "no_show"); toast("노쇼로 처리했어요");
-    } else if (act === "delete") {
-      if (me.role !== "master") return;
-      const ok = confirm(
-        `이 예약을 완전히 삭제할까요?\n\n` +
-        `${r.name} (${fmtPhone(r.phone)})\n${r.store} · ${prettyLong(r.pickupDate)} ${r.pickupTime}\n예약번호 ${r.code}\n\n` +
-        `삭제하면 되돌릴 수 없고, 고객의 예약 확인 링크도 열리지 않아요.`
-      );
-      if (!ok) return;
-      btn.disabled = true;
-      const b = writeBatch(db);
-      b.delete(doc(db, "reservations", r.id));
-      b.delete(doc(db, "publicStatus", r.id));
-      await b.commit();
-      toast("예약을 삭제했어요");
-    } else if (act === "edit") openEdit(r);
-    else if (act === "note") {
-      const v = prompt("매장 메모 (고객에게는 보이지 않아요)", r.storeNote || "");
-      if (v === null) return;
-      await updateDoc(doc(db, "reservations", r.id), { storeNote: v.slice(0, 300), updatedAt: serverTimestamp(), updatedBy: me.email || me.uid });
-      toast("메모를 저장했어요");
-    }
-  } catch (err) {
-    console.error(err);
-    toast("저장하지 못했어요. 권한이나 연결을 확인해 주세요.");
+    await mutateContacts(id, list => editId
+      ? list.map(c => c.id === editId ? { ...c, ...rec, at: ts(at), editedBy: who.by, editedAt: ts(new Date()) } : c)
+      : [...list, { id: newId(), ...rec, at: ts(at), ...who, savedAt: ts(new Date()) }], extra);
+    editingContact = null; dirty = false; refresh();
+    toast(editId ? "접촉 기록을 수정했습니다." : status ? `접촉 기록을 추가하고 진행 단계를 '${STATUS_SHORT[status]}'(으)로 바꿨습니다.` : "접촉 기록을 추가했습니다.");
+  } catch (e) {
+    btn.disabled = false; err.textContent = `저장하지 못했습니다. (${e.code || e.message})`;
+  }
+}
+
+async function deleteContact(id, cid) {
+  const r = ALL.find(x => x.id === id), c = r?._contacts.find(x => x.id === cid); if (!c) return;
+  if (!confirm(`${fmtFull(c._at)} ${C.label(C.CONTACT_METHODS, c.method)} 기록을 삭제할까요? 되돌릴 수 없습니다.`)) return;
+  try {
+    await mutateContacts(id, list => list.filter(x => x.id !== cid));
+    if (editingContact === cid) editingContact = null;
+    dirty = false; refresh(); toast("접촉 기록을 삭제했습니다.");
+  } catch (e) { toast(`삭제하지 못했습니다. (${e.code || e.message})`, true); }
+}
+
+async function migrateMemo(id) {
+  const r = ALL.find(x => x.id === id); if (!r) return;
+  const items = memoReplies(r); if (!items.length) return;
+  if (!confirm(`메모의 회신 기록 ${items.length}건을 접촉 이력으로 옮길까요? 옮긴 줄은 메모에서 지웁니다.`)) return;
+  const lines = new Set(items.map(x => x.line));
+  const memo = String(r.memo || "").split("\n").filter(l => !lines.has(l)).join("\n").trim();
+  const who = whoAmI();
+  try {
+    await mutateContacts(id, list => [...list, ...items.map(x => ({ id: newId(), at: ts(x.at), method: x.method, noAnswer: false,
+      summary: `${x.n}차 회신 (기존 엑셀 기록)`, next: "", nextAt: "", ...who, savedAt: ts(new Date()) }))], { memo });
+    dirty = false; refresh(); toast(`${items.length}건을 접촉 이력으로 옮겼습니다.`);
+  } catch (e) { toast(`옮기지 못했습니다. (${e.code || e.message})`, true); }
+}
+
+/* ---------- 2차 심층 상담평가 ---------- */
+function eval2Tab(r) {
+  const ev = r.eval2 || {}, saved = C.toDate(ev.savedAt);
+  return `<section class="d-sec">
+    ${!r._target ? `<p class="warn">1차 등급 ${r._final} — 2차 평가 대상(1차 ${esc(CFG2.targetGrades.join("·") || "없음")})은 아니지만 필요하면 입력할 수 있습니다.</p>` : ""}
+    <p class="hint" style="margin:0 0 12px">대면 상담에서 확인한 내용을 항목별 1~5점으로 매기고(정량), 리스크와 종합 의견을 남긴 뒤(정성) 최종 판정을 고릅니다. 판정 전에도 [2차 평가 저장]으로 중간 저장할 수 있습니다.</p>
+    <div class="dform ev-meta">
+      <label>상담일<input type="date" id="vDate" value="${esc(ev.date || toInputDate(new Date()))}"></label>
+      <label>상담 방식<select id="vMethod">${["대면", "화상", "전화"].map(m => `<option${(ev.method || "대면") === m ? " selected" : ""}>${m}</option>`).join("")}</select></label>
+      <label>평가자<input id="vBy" maxlength="30" value="${esc(ev.evaluator || me?.name || "")}"></label>
+    </div>
+  </section>
+  <section class="d-sec">
+    <h3>정량 평가 <span class="muted">1 매우 미흡 ~ 5 매우 우수</span></h3>
+    ${CFG2.items.map(it => `<div class="ev-item" data-iid="${esc(it.id)}">
+      <div class="h"><b>${esc(it.label)}</b><span class="w">배점 ${it.weight}</span></div>
+      ${it.guide ? `<p class="g">확인 포인트: ${esc(it.guide)}</p>` : ""}
+      <div class="scale" role="radiogroup" aria-label="${esc(it.label)}">${C.SCALE.map(sc =>
+        `<label><input type="radio" name="sc_${esc(it.id)}" value="${sc.v}"${Number(ev.scores?.[it.id]) === sc.v ? " checked" : ""}><span><b>${sc.v}</b>${sc.t}</span></label>`).join("")}</div>
+      <input class="memo" maxlength="300" placeholder="근거 메모 (선택)" value="${esc(ev.notes?.[it.id] || "")}" aria-label="${esc(it.label)} 근거 메모">
+    </div>`).join("")}
+  </section>
+  <section class="d-sec">
+    <h3>리스크 확인 <span class="muted">점수와 별개로 표시</span></h3>
+    <div class="risk-list">${CFG2.risks.map(rk =>
+      `<label><input type="checkbox" data-rid="${esc(rk.id)}"${ev.risks?.[rk.id] ? " checked" : ""}><span>${esc(rk.label)}</span></label>`).join("")
+      || `<p class="muted">등록된 리스크 항목이 없습니다. 평가 기준 화면에서 추가할 수 있습니다.</p>`}</div>
+    <div class="dform" style="margin-top:12px"><label><span>리스크 메모 <span class="opt">선택</span></span><textarea id="vRiskNote" maxlength="1000" placeholder="예: 본인은 주 2회만 근무, 매장 운영은 친척에게 맡길 계획">${esc(ev.riskNote || "")}</textarea></label></div>
+  </section>
+  <section class="d-sec">
+    <h3>정성 평가</h3>
+    <div class="dform"><label><span>상담 담당자 종합 의견 <span class="opt">운영 역량, 브랜드 적합성, 특이사항</span></span>
+      <textarea id="vOpinion" maxlength="3000" rows="5">${esc(ev.opinion || "")}</textarea></label></div>
+    <h3 style="margin:16px 0 10px">최종 판정</h3>
+    <div class="verdict" role="radiogroup" aria-label="최종 판정">${C.VERDICT.map(v =>
+      `<label><input type="radio" name="vVerdict" value="${v.v}"${ev.verdict === v.v ? " checked" : ""}><span class="${v.v}">${esc(v.t)}</span></label>`).join("")}</div>
+    ${saved ? `<p class="m-meta" style="margin-top:12px">최근 저장 ${fmtFull(saved)}${ev.savedBy ? `, ${esc(ev.savedBy)}` : ""}${Number.isFinite(ev.scoreAtSave) && ev.scoreAtSave !== r._e2?.total ? ` · 저장 당시 ${ev.scoreAtSave}점 (이후 평가 기준 변경)` : ""}</p>` : ""}
+    ${r.eval2 ? `<div style="margin-top:12px"><button type="button" class="btn danger" id="vDel">2차 평가 삭제</button></div>` : ""}
+  </section>`;
+}
+
+function bindEval2(r) {
+  $("#dFoot").innerHTML = `<div class="e-prev" id="vSum"></div>
+    <div class="acts"><button type="button" class="btn primary" id="vSave">2차 평가 저장</button></div>
+    <p class="e-err" id="vErr" role="alert"></p>`;
+  $("#vSave").addEventListener("click", () => saveEval2(r.id));
+  $("#vDel")?.addEventListener("click", () => deleteEval2(r.id));
+  updateEval2Sum();
+}
+function readEval2() {
+  const scores = {}, notes = {}, risks = {};
+  $$("#dBody .ev-item").forEach(el => {
+    const id = el.dataset.iid, c = $("input[type=radio]:checked", el), m = $(".memo", el).value.trim();
+    if (c) scores[id] = Number(c.value);
+    if (m) notes[id] = m.slice(0, 300);
+  });
+  $$("#dBody .risk-list input[data-rid]").forEach(el => { if (el.checked) risks[el.dataset.rid] = true; });
+  return { date: $("#vDate").value, method: $("#vMethod").value, evaluator: $("#vBy").value.trim().slice(0, 30),
+    scores, notes, risks, riskNote: $("#vRiskNote").value.trim().slice(0, 1000),
+    opinion: $("#vOpinion").value.trim().slice(0, 3000), verdict: ($('input[name="vVerdict"]:checked') || {}).value || "" };
+}
+function updateEval2Sum() {
+  if (mode !== "detail" || dTab !== "eval2" || !$("#vSum")) return;
+  const res = C.computeEval2(readEval2(), CFG2);
+  $("#vSum").innerHTML = `정량 <b>${res.total}</b><span class="muted">/ 100</span>
+    <span class="chip b-${res.band}">${C.BAND[res.band]}</span>
+    ${res.unscored ? `<span class="warn-inline">미평가 ${res.unscored}개</span>` : ""}
+    ${res.risks.length ? `<span class="chip risk">리스크 ${res.risks.length}</span>` : ""}
+    ${res.verdict ? `<span class="chip ${res.verdict}">${VSHORT[res.verdict]}</span>` : `<span class="muted">최종 판정 전</span>`}`;
+}
+
+async function saveEval2(id) {
+  const r = ALL.find(x => x.id === id); if (!r) return;
+  const ev = readEval2(), res = C.computeEval2(ev, CFG2), err = $("#vErr"); err.textContent = "";
+  if (!ev.date) { err.textContent = "상담일을 입력하세요."; return; }
+  if (ev.verdict && !ev.opinion) { err.textContent = "최종 판정을 저장하려면 종합 의견을 입력하세요."; return; }
+  if (ev.verdict && res.unscored && !confirm(`점수를 매기지 않은 항목이 ${res.unscored}개 있습니다. 그대로 최종 판정을 저장할까요?`)) return;
+  const order = ["new", "reviewed", "consult", "interview", "deliberation", "contract"], pos = order.indexOf(r._status);
+  let status = null;
+  if (ev.verdict === "pass" && pos >= 0 && pos < 4) {
+    if (confirm("최종 판정이 '심의 상정'입니다. 진행 단계를 '출점 심의 (STEP 4)'로 바꿀까요?")) status = "deliberation";
+  } else if (ev.verdict === "fail" && r._status !== "closed") {
+    if (confirm("최종 판정이 '부적합'입니다. 진행 단계를 '종료 (탈락·포기)'로 바꿀까요?")) status = "closed";
+  } else if (ev.verdict !== "pass" && ev.verdict !== "fail" && pos >= 0 && pos < 3) {
+    if (confirm("진행 단계를 '대면 상담·2차 평가 (STEP 3)'로 바꿀까요?")) status = "interview";
+  }
+  const by = whoAmI().by;
+  const data = { ...ev, scoreAtSave: res.total, bandAtSave: res.band, savedBy: by,
+    itemsAtSave: res.items.map(i => ({ id: i.id, label: i.label, weight: i.weight, score: i.s })) };
+  const extra = status ? { status, gradeAtReview: r._final, scoreAtReview: r._g.total } : {};
+  const btn = $("#vSave"); btn.disabled = true;
+  try {
+    if (DEMO) Object.assign(r, { eval2: { ...data, savedAt: new Date() } }, extra);
+    else await fb.F.updateDoc(fb.F.doc(fb.db, "inquiries", id), { eval2: { ...data, savedAt: fb.F.serverTimestamp() }, ...extra });
+    dirty = false; refresh();
+    toast(`2차 평가를 저장했습니다.${status ? ` 진행 단계를 '${STATUS_SHORT[status]}'(으)로 바꿨습니다.` : ""}`);
+  } catch (e) {
+    btn.disabled = false; err.textContent = `저장하지 못했습니다. (${e.code || e.message})`;
+  }
+}
+
+async function deleteEval2(id) {
+  const r = ALL.find(x => x.id === id); if (!r) return;
+  if (!confirm(`${r.name} 님의 2차 평가를 삭제할까요? 되돌릴 수 없습니다.`)) return;
+  try {
+    if (DEMO) delete r.eval2;
+    else await fb.F.updateDoc(fb.F.doc(fb.db, "inquiries", id), { eval2: fb.F.deleteField() });
+    dirty = false; refresh(); toast("2차 평가를 삭제했습니다.");
+  } catch (e) { toast(`삭제하지 못했습니다. (${e.code || e.message})`, true); }
+}
+
+async function saveReview(id) {
+  const r = ALL.find(x => x.id === id); if (!r) return;
+  const ov = $("#mGrade").value || null;
+  const status = $("#mStatus").value;
+  const payload = { gradeOverride: ov, status, memo: $("#mMemo").value.trim().slice(0, 2000), reviewedBy: DEMO ? "demo" : user.email };
+  if (status !== "new") { payload.gradeAtReview = ov || r._g.grade; payload.scoreAtReview = r._g.total; }
+  const src = $("#mSource").value || "etc", srcNote = $("#mSourceNote").value.trim().slice(0, 100);
+  if (src !== srcOf(r) || srcNote !== (r.sourceNote || "")) { payload.source = src; payload.sourceNote = srcNote; }
+  const aff = $("#mAff").value;
+  const affChanged = aff !== r._aff;
+  if (affChanged) { payload.affinity = aff || null; payload.affinityBy = payload.reviewedBy; }
+  const btn = $("#mSave"); btn.disabled = true;
+  dirty = false;
+  try {
+    if (DEMO) Object.assign(r, payload, { reviewedAt: new Date() }, affChanged ? { affinityAt: new Date() } : {});
+    else await fb.F.updateDoc(fb.F.doc(fb.db, "inquiries", id), {
+      ...payload, reviewedAt: fb.F.serverTimestamp(), ...(affChanged ? { affinityAt: fb.F.serverTimestamp() } : {})
+    });
+    refresh();
+    toast("저장했습니다.");
+  } catch (e) {
+    dirty = true;
+    toast(`저장하지 못했습니다. (${e.code || e.message})`, true);
     btn.disabled = false;
   }
-});
-
-$("list").addEventListener("change", async (e) => {
-  const sel = e.target.closest("select[data-act=setStatus]"); if (!sel) return;
-  const r = findRow(sel.dataset.id); if (!r || sel.value === r.status) return;
-  if (sel.value === "confirmed") { sel.value = r.status; openMsg("confirmed", r, "confirm"); return; }
-  if (!confirm(`상태를 ‘${STATUS[sel.value].label}’(으)로 바꿀까요?`)) { sel.value = r.status; return; }
-  try { await saveStatus(r, sel.value); toast(`‘${STATUS[sel.value].label}’(으)로 바꿨어요`); }
-  catch (err) { console.error(err); toast("저장하지 못했어요."); sel.value = r.status; }
-});
-
-/* ---------- 문자 ---------- */
-let msgRow = null;
-let msgMode = "view";
-let confirmedNow = false;
-function openMsg(kind, r, mode = "view") {
-  msgRow = r; msgMode = mode; confirmedNow = false;
-  $("confirmStep").hidden = mode !== "confirm";
-  $("msgHint").hidden = mode === "confirm";
-  $("msgDone").disabled = true;
-  $("msgDoneHint").hidden = false;
-  $("msgTitle").textContent = kind === "confirmed" ? "확정 문자 보내기" : "시간 조정 문자 보내기";
-  $("msgTo").textContent = `받는 분: ${r.name} (${fmtPhone(r.phone)})`;
-  $("msgText").value = fill(MESSAGES[kind], r);
-  $("msgSms").href = smsHref(r.phone, $("msgText").value);
-  $("msgTel").href = `tel:${r.phone}`;
-  $("msgDlg").showModal();
-  $("msgText").scrollTop = 0;
-  $("msgSms").focus();
 }
-$("msgText").addEventListener("input", () => { if (msgRow) $("msgSms").href = smsHref(msgRow.phone, $("msgText").value); });
-const unlockDone = () => { if (msgMode === "confirm") { $("msgDone").disabled = false; $("msgDoneHint").hidden = true; } };
-$("msgSms").addEventListener("click", unlockDone);
-$("msgCopy").onclick = async () => { await copyText($("msgText").value); toast("문구를 복사했어요"); unlockDone(); };
-$("msgDone").onclick = async () => {
-  if (!msgRow || msgMode !== "confirm") return;
-  $("msgDone").disabled = true;
+
+async function removeInquiry(id) {
+  const r = ALL.find(x => x.id === id); if (!r) return;
+  if (!confirm(`${r.name} 님의 문의를 삭제할까요? 삭제하면 되돌릴 수 없습니다.`)) return;
   try {
-    await saveStatus(msgRow, "confirmed", { confirmSmsAt: serverTimestamp() });
-    confirmedNow = true;
-    $("msgDlg").close();
-    toast("문자 발송 확인 · 확정 처리했어요");
-  } catch (err) {
-    console.error(err);
-    toast("저장하지 못했어요. 권한이나 연결을 확인해 주세요.");
-    $("msgDone").disabled = false;
+    if (DEMO) { ALL = ALL.filter(x => x.id !== id); closeDrawer(true); refresh(); }
+    else { await fb.F.deleteDoc(fb.F.doc(fb.db, "inquiries", id)); closeDrawer(true); }
+    toast("삭제했습니다.");
+  } catch (e) { toast(`삭제하지 못했습니다. (${e.code || e.message})`, true); }
+}
+
+/* ---------- 메일 문의 등록 · 응답 수정 ---------- */
+const sidoOpts = Object.keys(C.REGIONS).map(s => `<option>${s}</option>`).join("");
+const selOpts = list => `<option value="">선택</option>` + list.map(o => `<option value="${o.v}">${esc(o.t)}</option>`).join("");
+const toInputDate = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+function entryDate(s) {
+  const [y, m, d] = s.split("-").map(Number), now = new Date();
+  return (y === now.getFullYear() && m === now.getMonth() + 1 && d === now.getDate()) ? now : new Date(y, m - 1, d, 12, 0, 0);
+}
+
+function eRegionRow(r = {}) {
+  const row = document.createElement("div");
+  row.className = "e-region";
+  row.innerHTML = `<select class="sido" aria-label="시·도"><option value="">시·도</option>${sidoOpts}</select>
+    <select class="sigungu" aria-label="시·군·구"></select>
+    <input class="area" maxlength="60" placeholder="상권 (선택)" aria-label="상권">
+    <button type="button" class="btn small rm">삭제</button>`;
+  const sido = $(".sido", row), sg = $(".sigungu", row), area = $(".area", row);
+  const fillSg = () => {
+    const list = C.REGIONS[sido.value] || [];
+    sg.innerHTML = `<option value="">시·군·구</option>` + list.map(x => `<option>${x}</option>`).join("")
+      + (sido.value ? `<option value="__etc">목록에 없음</option>` : "");
+    sg.disabled = !sido.value;
+  };
+  sido.value = r.sido || ""; fillSg();
+  area.value = r.area || "";
+  if (r.sido) {
+    sg.value = r.sigungu || "__etc";
+    if (r.sigungu && sg.value !== r.sigungu) { sg.value = "__etc"; area.value = `${r.sigungu} ${area.value}`.trim(); }
   }
-};
-$("msgDlg").addEventListener("close", () => {
-  if (msgMode === "confirm" && !confirmedNow) toast("아직 확정되지 않았어요 (문자 전송 확인 필요)");
-  msgMode = "view";
-});
+  sido.addEventListener("change", fillSg);
+  $(".rm", row).addEventListener("click", () => { row.remove(); syncRegionBtns(); dirty = true; updateEntryPreview(); });
+  return row;
+}
+function syncRegionBtns() {
+  const rows = $$("#eRegions .e-region");
+  rows.forEach(r => { $(".rm", r).hidden = rows.length === 1; });
+  $("#eAddRegion").hidden = rows.length >= 3;
+}
+const readERegions = () => $$("#eRegions .e-region").map(r => {
+  const sg = $(".sigungu", r).value;
+  return { sido: $(".sido", r).value, sigungu: sg === "__etc" ? "" : sg, area: $(".area", r).value.trim().slice(0, 60) };
+}).filter(r => r.sido);
 
-/* ---------- 일시 변경 ---------- */
-let editRow = null;
-const toMin = (hhmm) => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + m; };
-const pad = (n) => String(n).padStart(2, "0");
-for (let t = toMin(PICKUP_TIME.start); t <= toMin(PICKUP_TIME.end); t += PICKUP_TIME.stepMin) {
-  const v = `${pad(Math.floor(t / 60))}:${pad(t % 60)}`; $("editTime").add(new Option(v, v));
+function openEntry(rec = null) {
+  if (mode && dirty && !confirm("저장하지 않은 변경 내용이 있습니다. 이동할까요?")) return;
+  mode = "entry"; openId = rec ? rec.id : null; dirty = false;
+  $("#dTitle").textContent = rec ? `응답 수정: ${rec.name}` : "문의 직접 등록";
+  $("#dSub").textContent = rec ? "저장하면 자동 등급이 수정한 응답으로 다시 계산됩니다." : "전화·메일·방문 등으로 받은 문의를 직접 입력해 등록합니다.";
+  $("#dBody").innerHTML = `
+    ${rec ? "" : `<section class="d-sec">
+      <h3>메일 회신 붙여넣기 <span class="muted">선택 — 메일로 받은 경우 붙여넣으면 아래 칸이 자동으로 채워집니다</span></h3>
+      <textarea class="raw" id="eRaw" placeholder="회신 메일의 1~10번 답변 부분을 그대로 붙여넣으세요."></textarea>
+      <div class="e-row"><button type="button" class="btn" id="eParse">내용 자동 채우기</button><span class="muted" id="eParseMsg"></span></div>
+      <ul class="e-info" id="eInfo" hidden></ul>
+      <ul class="e-warn" id="eWarn" hidden></ul>
+    </section>`}
+    <section class="d-sec">
+      <h3>응답 내용${rec ? "" : `<span class="muted">자동으로 채운 값을 확인하고 고쳐 주세요</span>`}</h3>
+      <div class="eg">
+        <label>성함<input id="eName" maxlength="30"></label>
+        <label>연락처<input id="ePhone" maxlength="13" inputmode="numeric"></label>
+        <label class="full"><span>이메일 <span class="opt">선택</span></span><input id="eEmail" type="email" maxlength="120"></label>
+        <label>접수일<input id="eDate" type="date"></label>
+        <label>구분<select id="eSource">${C.SOURCE.map(o => `<option value="${o.v}">${esc(o.t)}</option>`).join("")}</select></label>
+        <label class="full"><span>구분 상세 <span class="opt">선택</span></span><input id="eSourceNote" maxlength="100"></label>
+        <label>연령대<select id="eAge">${selOpts(C.AGE)}</select></label>
+        <label>총 투자 가능 금액 (만원)<input id="eInv" inputmode="numeric" maxlength="9"><small id="eInvRead"></small></label>
+        <div class="grp full"><span>희망 지역 <span class="opt">최대 3곳</span></span>
+          <div id="eRegions"></div>
+          <div><button type="button" class="btn small" id="eAddRegion">지역 추가</button></div>
+        </div>
+        <label>외식업 경험<select id="eFnb">${selOpts(C.FNB)}</select></label>
+        <label>경험 상세<textarea id="eFnbDetail" maxlength="1000" rows="2" style="min-height:38px"></textarea></label>
+        <label class="full">지원 사유<textarea id="eMotive" maxlength="2000" rows="4"></textarea></label>
+        <label>희망 오픈 시기<select id="eOpen">${selOpts(C.OPEN)}</select></label>
+        <label><span>오픈 시기 원문 <span class="opt">선택</span></span><input id="eOpenNote" maxlength="100"></label>
+        <label>운영 참여 계획<select id="eOper">${selOpts(C.OPER)}</select></label>
+        <label><span>운영 참여 상세 <span class="opt">선택</span></span><input id="eOperNote" maxlength="200"></label>
+        <label>점포 확보<select id="eStore">${selOpts(C.STORE)}</select></label>
+        <label><span>점포 면적(평) <span class="opt">선택</span></span><input id="eStoreArea" maxlength="20"></label>
+        <label class="full"><span>점포 소재지 <span class="opt">선택</span></span><input id="eStoreAddr" maxlength="200"></label>
+        <label class="full">기타 문의<textarea id="eEtc" maxlength="2000" rows="3"></textarea></label>
+      </div>
+    </section>`;
+  $("#dFoot").innerHTML = `<div class="e-prev" id="ePrev"></div>
+    <div class="acts"><button type="button" class="btn" id="eCancel">취소</button>
+      <button type="button" class="btn primary" id="eSave">${rec ? "수정 저장" : "등록"}</button></div>
+    <p class="e-err" id="eErr" role="alert"></p>`;
+  $("#dFoot").hidden = false;
+
+  fillEntry(rec || {});
+  $("#eDate").value = toInputDate((rec && C.toDate(rec.createdAt)) || new Date());
+  $("#eAddRegion").addEventListener("click", () => {
+    $("#eRegions").appendChild(eRegionRow()); syncRegionBtns(); dirty = true;
+  });
+  $("#ePhone").addEventListener("input", e => { e.target.value = P.fmtPhone(e.target.value); });
+  $("#eInv").addEventListener("input", e => {
+    const d = e.target.value.replace(/\D/g, "").replace(/^0+/, "").slice(0, 7);
+    e.target.value = d ? Number(d).toLocaleString("ko-KR") : "";
+  });
+  $("#eCancel").addEventListener("click", () => {
+    if (rec) { if (!dirty || confirm("수정한 내용을 버릴까요?")) { dirty = false; openDrawer(rec.id); } }
+    else closeDrawer();
+  });
+  $("#eSave").addEventListener("click", saveEntry);
+  if (!rec) $("#eParse").addEventListener("click", runParse);
+
+  showDrawer(true);
+  markSel();
+  (rec ? $("#eName") : $("#eRaw")).focus();
 }
-function openEdit(r) {
-  editRow = r;
-  $("editTo").textContent = `${r.name} (${fmtPhone(r.phone)}) · 현재 ${prettyLong(r.pickupDate)} ${r.pickupTime}`;
-  $("editDate").value = r.pickupDate;
-  $("editDate").min = kstDate(0);
-  if (![...$("editTime").options].some((o) => o.value === r.pickupTime)) $("editTime").add(new Option(r.pickupTime, r.pickupTime));
-  $("editTime").value = r.pickupTime;
-  $("editErr").textContent = "";
-  $("editDlg").showModal();
+
+function fillEntry(d) {
+  const set = (id, v) => { $("#" + id).value = v ?? ""; };
+  set("eName", d.name); set("ePhone", d.phone); set("eEmail", d.email); set("eAge", d.ageBand);
+  if (d.source || !$("#eSource").value) set("eSource", C.SOURCE.some(x => x.v === d.source) ? d.source : d.source ? "etc" : "mail");
+  set("eSourceNote", d.sourceNote);
+  const eHint = () => { $("#eSourceNote").placeholder = (C.SOURCE.find(x => x.v === $("#eSource").value) || {}).hint || "필요하면 메모"; };
+  eHint(); $("#eSource").onchange = eHint;
+  set("eInv", d.investment ? Number(d.investment).toLocaleString("ko-KR") : "");
+  set("eFnb", d.fnbExp); set("eFnbDetail", d.fnbDetail); set("eMotive", d.motive);
+  set("eOpen", d.openTiming); set("eOpenNote", d.openTimingNote);
+  set("eOper", d.operation); set("eOperNote", d.operationNote);
+  set("eStore", d.store); set("eStoreAddr", d.storeAddress); set("eStoreArea", d.storeArea);
+  set("eEtc", d.etc);
+  const box = $("#eRegions"); box.innerHTML = "";
+  (d.regions && d.regions.length ? d.regions : [{}]).slice(0, 3).forEach(r => box.appendChild(eRegionRow(r)));
+  syncRegionBtns();
+  updateEntryPreview();
 }
-$("editSave").onclick = async () => {
-  const d = $("editDate").value, t = $("editTime").value;
-  if (!d || !t) { $("editErr").textContent = "날짜와 시간을 모두 골라 주세요."; return; }
+
+function runParse() {
+  const raw = $("#eRaw").value;
+  if (!raw.trim()) { $("#eParseMsg").textContent = "붙여넣은 내용이 없습니다."; return; }
+  const res = P.parseMail(raw);
+  fillEntry(res.data);
+  dirty = true;
+  $("#eParseMsg").textContent = `10개 질문 중 ${res.found}개를 읽었습니다.`;
+  const info = [];
+  if (res.data.investment) info.push(`투자 가능 금액: ${C.manToText(res.data.investment)}으로 읽었습니다.`);
+  if (res.data.openTiming && res.data.openTimingNote)
+    info.push(`오픈 시기: '${res.data.openTimingNote}' → ${C.label(C.OPEN, res.data.openTiming)} (기간의 중간 시점 기준)`);
+  $("#eInfo").innerHTML = info.map(x => `<li>${esc(x)}</li>`).join(""); $("#eInfo").hidden = !info.length;
+  $("#eWarn").innerHTML = res.warnings.map(x => `<li>${esc(x)}</li>`).join(""); $("#eWarn").hidden = !res.warnings.length;
+}
+
+function readEntry() {
+  const v = id => $("#" + id).value.trim();
+  const d = {
+    name: v("eName"), phone: P.fmtPhone(v("ePhone")), email: v("eEmail"), ageBand: v("eAge"), source: v("eSource") || "mail", sourceNote: v("eSourceNote").slice(0, 100),
+    regions: readERegions(), investment: Number(v("eInv").replace(/\D/g, "")) || 0,
+    fnbExp: v("eFnb"), fnbDetail: v("eFnbDetail").slice(0, 1000), motive: v("eMotive").slice(0, 2000),
+    openTiming: v("eOpen"), openTimingNote: v("eOpenNote").slice(0, 100),
+    operation: v("eOper"), operationNote: v("eOperNote").slice(0, 200),
+    store: v("eStore"), storeAddress: v("eStoreAddr").slice(0, 200), storeArea: v("eStoreArea").slice(0, 20),
+    etc: v("eEtc").slice(0, 2000)
+  };
+  const errs = [];
+  if (!d.name) errs.push("성함");
+  const pd = digits(d.phone);
+  if (!pd && !d.email) errs.push("연락처 또는 이메일");
+  if (pd && (pd.length < 9 || pd.length > 11)) errs.push("연락처 형식");
+  if (d.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email)) errs.push("이메일 형식");
+  if (!v("eDate")) errs.push("접수일");
+  // 나머지 항목은 비워도 등록됩니다(비운 항목은 0점). 미입력 항목은 미리보기 옆에 표시합니다.
+  return { d, errs };
+}
+
+const missing = d => [[!d.ageBand, "연령대"], [!d.regions.length, "희망 지역"], [!d.investment, "투자 금액"],
+  [!d.fnbExp, "외식업 경험"], [!d.operation, "운영 참여"]].filter(x => x[0]).map(x => x[1]);
+function updateEntryPreview() {
+  if (mode !== "entry" || !$("#ePrev")) return;
+  const { d } = readEntry();
+  $("#eInvRead").textContent = d.investment ? C.manToText(d.investment) : "";
+  const g = C.computeGrade(d, CFG);
+  $("#ePrev").innerHTML = `예상 점수 <b>${g.total}</b><span class="muted">/ ${g.maxTotal}</span>
+    <span class="badge ${g.grade}">${g.grade}</span>
+    <span class="muted">${g.items.map(i => `${esc(i.label)} ${i.score}`).join(", ")}</span>
+    ${g.mustFail ? `<span class="warn-inline">필수 금액 미달</span>` : ""}
+    ${missing(d).length ? `<span class="warn-inline">미입력: ${missing(d).join(", ")}</span>` : ""}`;
+}
+$("#dBody").addEventListener("input", () => { if (mode === "entry") { dirty = true; updateEntryPreview(); } });
+$("#dBody").addEventListener("change", () => { if (mode === "entry") { dirty = true; updateEntryPreview(); } });
+
+async function saveEntry() {
+  const { d, errs } = readEntry();
+  if (errs.length) { $("#eErr").textContent = `확인할 항목: ${errs.join(", ")}`; return; }
+  $("#eErr").textContent = "";
+  const date = entryDate($("#eDate").value);
+  const by = DEMO ? "demo" : user.email;
+  const btn = $("#eSave"); btn.disabled = true;
   try {
-    await saveStatus(editRow, editRow.status, { pickupDate: d, pickupTime: t });
-    $("editDlg").close(); toast("픽업 일시를 바꿨어요");
-  } catch (err) { console.error(err); $("editErr").textContent = "저장하지 못했어요."; }
-};
-
-/* ---------- 새 예약 알림 ---------- */
-let audioCtx = null;
-let alertsOn = false;
-let wakeLock = null;
-async function keepScreenOn() {
-  if (!("wakeLock" in navigator) || document.visibilityState !== "visible") return false;
-  try { wakeLock = await navigator.wakeLock.request("screen"); return true; } catch (_) { return false; }
-}
-document.addEventListener("visibilitychange", () => { if (alertsOn && document.visibilityState === "visible") keepScreenOn(); });
-$("alertBtn").onclick = async () => {
-  try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); await audioCtx.resume(); } catch (_) {}
-  if ("Notification" in window && Notification.permission === "default") { try { await Notification.requestPermission(); } catch (_) {} }
-  alertsOn = true;
-  const awake = await keepScreenOn();
-  $("alertBtn").textContent = awake ? "알림 켜짐 · 화면 유지" : "새 예약 알림 켜짐";
-  $("alertBtn").classList.add("on");
-  beep();
-  toast(awake ? "새 예약이 오면 소리로 알려 드려요. 이 화면이 열려 있는 동안 화면이 꺼지지 않아요." : "새 예약이 오면 소리로 알려 드려요. 이 화면을 열어 두세요.");
-};
-function beep() {
-  if (!audioCtx) return;
-  try {
-    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-    o.frequency.value = 880; g.gain.value = 0.15;
-    o.connect(g); g.connect(audioCtx.destination);
-    o.start(); o.stop(audioCtx.currentTime + 0.25);
-  } catch (_) {}
-}
-function notifyNew(n) {
-  toast(`새 예약 ${n}건이 들어왔어요`);
-  if (!alertsOn) return;
-  beep();
-  if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
-    const opts = { body: `확인이 필요한 예약 ${n}건`, icon: "icon-192.png", badge: "icon-192.png", tag: "benson-new", renotify: true, data: { url: "./admin.html" } };
-    // 안드로이드 크롬·아이폰 홈 화면 앱은 서비스 워커를 통해서만 알림 표시 가능
-    const viaSW = "serviceWorker" in navigator
-      ? navigator.serviceWorker.getRegistration().then((reg) => reg ? reg.showNotification("벤슨 케이크 새 예약", opts) : Promise.reject())
-      : Promise.reject();
-    viaSW.catch(() => { try { new Notification("벤슨 케이크 새 예약", opts); } catch (_) {} });
-  }
-}
-function setBadge(n) {
-  try {
-    if (n > 0 && navigator.setAppBadge) navigator.setAppBadge(n).catch(() => {});
-    else if (navigator.clearAppBadge) navigator.clearAppBadge().catch(() => {});
-  } catch (_) {}
-}
-
-
-
-/* ---------- CSV (마스터) ---------- */
-$("csvBtn").onclick = async () => {
-  try {
-    const snap = await getDocs(collection(db, "reservations"));
-    const head = ["예약번호", "상태", "매장", "주문 상품", "총 수량", ...CAKE_NAMES, "사전예약가 합계", "픽업일", "픽업시간", "이름", "연락처", "고객 요청", "매장 메모", "신청일시", "처리자", "확정 문자 발송 확인", "마케팅 수신 동의", "동의서 버전", "utm_source", "utm_medium", "utm_campaign", "utm_content"];
-    const cell = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const lines = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
-      .sort((a, b) => (a.pickupDate + a.pickupTime).localeCompare(b.pickupDate + b.pickupTime))
-      .map((r) => {
-        const its = itemsOf(r);
-        const perCake = CAKE_NAMES.map((n) => its.filter((i) => i.name === n).reduce((s, i) => s + i.qty, 0));
-        const sums = its.map((i) => { const sp = salePriceOf(i.name); return sp == null ? null : sp * i.qty; });
-        const total = sums.every((x) => x != null) ? sums.reduce((s, x) => s + x, 0) : "";
-        return [r.code, STATUS[r.status]?.label || r.status, r.store, r.cake, r.qty, ...perCake, total, r.pickupDate, r.pickupTime, r.name, fmtPhone(r.phone), r.memo, r.storeNote, fmtTs(r.createdAt), r.updatedBy, fmtTs(r.confirmSmsAt), r.consentMarketing ? "Y" : "N", r.consentVersion, r.utmSource, r.utmMedium, r.utmCampaign, r.utmContent].map(cell).join(",");
+    if (openId) {
+      const id = openId, r = ALL.find(x => x.id === id);
+      const changedDate = !r._date || ymd(r._date) !== ymd(date);
+      if (DEMO) Object.assign(r, d, { editedBy: by, editedAt: new Date() }, changedDate ? { createdAt: date } : {});
+      else await fb.F.updateDoc(fb.F.doc(fb.db, "inquiries", id), {
+        ...d, editedBy: by, editedAt: fb.F.serverTimestamp(),
+        ...(changedDate ? { createdAt: fb.F.Timestamp.fromDate(date) } : {})
       });
-    const csv = "\uFEFF" + [head.map(cell).join(","), ...lines].join("\r\n");
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-    a.download = `벤슨_케이크예약_${kstDate(0).replaceAll("-", "")}.csv`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  } catch (err) { console.error(err); toast("내려받지 못했어요."); }
-};
-
-/* ---------- 계정 관리 (마스터) ---------- */
-let secondaryAuth = null;
-const getSecondaryAuth = () => secondaryAuth || (secondaryAuth = getAuth(initializeApp(firebaseConfig, "secondary")));
-
-[...STORES].sort((a, b) => a.localeCompare(b, "ko")).forEach((s) => $("acctStore").add(new Option(s, s)));
-$("acctRole").onchange = () => { $("acctStore").disabled = $("acctRole").value !== "store"; };
-
-async function loadStaff() {
-  const snap = await getDocs(collection(db, "staff"));
-  const list = snap.docs.map((d) => d.data()).sort((a, b) => (a.role + (a.store || "")).localeCompare(b.role + (b.store || ""), "ko"));
-  $("staffBody").innerHTML = list.map((s) => `<tr><td>${esc(s.email)}</td><td>${s.role === "master" ? "본사" : "매장"}</td><td>${esc(s.store || "-")}</td></tr>`).join("")
-    || '<tr><td colspan="3">등록된 계정이 없어요.</td></tr>';
+      dirty = false; refresh(); openDrawer(id);
+      toast("응답을 수정했습니다.");
+    } else {
+      const base = { ...d, consent: false, entry: "manual", rawText: ($("#eRaw")?.value || "").slice(0, 20000),
+        enteredBy: by, formVersion: C.FORM_VERSION, status: "new" };
+      let id;
+      if (DEMO) { id = "m" + Date.now(); ALL.push({ id, ...base, createdAt: date, enteredAt: new Date() }); }
+      else {
+        const ref = await fb.F.addDoc(fb.F.collection(fb.db, "inquiries"),
+          { ...base, createdAt: fb.F.Timestamp.fromDate(date), enteredAt: fb.F.serverTimestamp() });
+        id = ref.id;
+      }
+      dirty = false; refresh();
+      if (ALL.some(x => x.id === id)) openDrawer(id); else closeDrawer(true);
+      toast("문의를 등록했습니다.");
+    }
+  } catch (e) {
+    btn.disabled = false;
+    $("#eErr").textContent = `저장하지 못했습니다. (${e.code || e.message})`;
+  }
 }
-$("acctBtn").onclick = async () => {
-  $("acctErr").textContent = "";
-  $("acctDlg").showModal();
-  try { await loadStaff(); } catch (err) { console.error(err); $("staffBody").innerHTML = '<tr><td colspan="3">목록을 불러오지 못했어요.</td></tr>'; }
-};
-$("acctForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  $("acctErr").textContent = "";
-  const role = $("acctRole").value, store = $("acctStore").value;
-  const email = $("acctEmail").value.trim(), pw = $("acctPw").value;
-  if (pw.length < 6) { $("acctErr").textContent = "비밀번호는 6자 이상이어야 해요."; return; }
-  $("acctSave").disabled = true;
+$("#newEntry").addEventListener("click", () => openEntry());
+
+/* ---------- 엑셀 일괄 등록 ---------- */
+let importItems = [];
+const FNB_SHORT = { owner: "운영", staff: "근무", none: "없음" };
+function openImport() {
+  if (mode && dirty && !confirm("저장하지 않은 변경 내용이 있습니다. 이동할까요?")) return;
+  mode = "import"; openId = null; dirty = false; importItems = [];
+  $("#dTitle").textContent = "엑셀 일괄 등록";
+  $("#dSub").textContent = "엑셀로 관리하던 문의를 한 번에 등록합니다.";
+  $("#dBody").innerHTML = `
+    <section class="d-sec">
+      <h3>1. 엑셀 표 붙여넣기</h3>
+      <p class="hint" style="margin:0 0 8px">엑셀에서 <b>제목 행(접수일, 성명 …)부터 마지막 행까지</b> 선택해 복사(Ctrl+C)한 뒤 아래에 붙여넣으세요(Ctrl+V). 엑셀 파일을 직접 선택해도 됩니다(첫 번째 시트).</p>
+      <textarea class="raw" id="iRaw" placeholder="여기에 붙여넣기"></textarea>
+      <div class="e-row">
+        <button type="button" class="btn primary" id="iPreview">미리보기</button>
+        <button type="button" class="btn" id="iPick">엑셀 파일 선택</button><input type="file" id="iFile" accept=".xlsx,.xls,.csv" hidden>
+        <span class="muted" id="iMsg"></span>
+      </div>
+    </section>
+    <section class="d-sec" id="iResult" hidden>
+      <h3>2. 등록할 내용 확인 <span class="muted">체크한 행만 등록됩니다. 등록 후 상세 화면 [응답 수정]으로 고칠 수 있습니다.</span></h3>
+      <p class="hint" id="iCols" style="margin:0 0 8px"></p>
+      <div class="e-row" style="margin:0 0 10px"><label style="font-weight:600;color:var(--ink-2)">구분 일괄 지정
+        <select id="iSrcAll" style="height:32px;border:1px solid var(--line);border-radius:7px;margin-left:6px">
+          <option value="">행마다 선택</option>${C.SOURCE.map(o => `<option value="${o.v}">${esc(o.t)}</option>`).join("")}</select></label>
+        <span class="muted">엑셀에 '구분' 열이 있으면 그 값을 먼저 읽습니다.</span></div>
+      <div class="table-wrap" style="max-height:none">
+        <table class="tbl imp-tbl">
+          <thead><tr><th><input type="checkbox" id="iAll" checked aria-label="전체 선택"></th><th>접수일</th><th>성명</th><th>연락처</th>
+            <th>구분</th><th>희망 지역</th><th class="r">투자</th><th>경험</th><th class="c">예상 등급</th></tr></thead>
+          <tbody id="iRows"></tbody>
+        </table>
+      </div>
+    </section>`;
+  $("#dFoot").innerHTML = `<div class="e-prev" id="iSum"></div>
+    <div class="acts"><button type="button" class="btn" id="iCancel">취소</button>
+      <button type="button" class="btn primary" id="iSave" disabled>등록</button></div>
+    <p class="e-err" id="iErr" role="alert"></p>`;
+  $("#dFoot").hidden = false;
+  $("#iPreview").addEventListener("click", () => {
+    const raw = $("#iRaw").value;
+    if (!raw.trim()) { $("#iMsg").textContent = "붙여넣은 내용이 없습니다."; return; }
+    runImportPreview(P.parseTSV(raw));
+  });
+  $("#iPick").addEventListener("click", () => $("#iFile").click());
+  $("#iFile").addEventListener("change", async e => {
+    const f = e.target.files[0]; if (!f) return;
+    if (!window.XLSX) { $("#iMsg").textContent = "엑셀 라이브러리를 불러오지 못했습니다. 붙여넣기를 이용해 주세요."; return; }
+    try {
+      const wb = XLSX.read(await f.arrayBuffer(), { type: "array" });
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: false, defval: "" });
+      runImportPreview(rows.map(r => r.map(c => String(c ?? ""))));
+    } catch (err) { $("#iMsg").textContent = `파일을 읽지 못했습니다. (${err.message})`; }
+    e.target.value = "";
+  });
+  $("#iRows").addEventListener("change", e => {
+    const sel = e.target.closest(".i-src");
+    if (sel) { importItems[Number(sel.closest("tr").dataset.i)].src = sel.value; $("#iSrcAll").value = ""; return; }
+    const cb = e.target.closest(".i-on"); if (!cb) return;
+    importItems[Number(cb.closest("tr").dataset.i)].on = cb.checked;
+    const i = cb.closest("tr").dataset.i;
+    $$(`#iRows tr[data-i="${i}"], #iRows tr[data-w="${i}"]`).forEach(tr => tr.classList.toggle("off", !cb.checked));
+    updateImportSum();
+  });
+  $("#iSrcAll").addEventListener("change", e => {
+    if (!e.target.value) return;
+    importItems.forEach(it => { it.src = e.target.value; });
+    $$("#iRows .i-src").forEach(s => { s.value = e.target.value; });
+  });
+  $("#iAll").addEventListener("change", e => { importItems.forEach(it => { it.on = e.target.checked; }); renderImportRows(); });
+  $("#iCancel").addEventListener("click", () => closeDrawer());
+  $("#iSave").addEventListener("click", saveImport);
+  showDrawer(true); $("#drawer").classList.add("xwide"); markSel();
+  $("#iRaw").focus();
+}
+
+function runImportPreview(rows) {
+  const res = P.tableToInquiries(rows);
+  if (res.error) { $("#iMsg").textContent = res.error; $("#iResult").hidden = true; return; }
+  if (!res.items.length) { $("#iMsg").textContent = "등록할 행이 없습니다. 성명이 있는 행만 읽습니다."; $("#iResult").hidden = true; return; }
+  const phones = new Set(ALL.map(r => digits(r.phone)).filter(Boolean));
+  const now = Date.now();
+  importItems = res.items.map(it => {
+    const dup = !!it.data.phone && phones.has(digits(it.data.phone));
+    const exp = C.expiryOf(it.date), expired = exp && exp.getTime() < now;
+    const warnings = [
+      ...(dup ? ["같은 연락처의 문의가 이미 있어 체크를 해제했습니다."] : []),
+      ...(expired ? [`접수일로부터 보관 기간이 지나 등록해도 바로 자동 삭제되므로 체크를 해제했습니다.`] : []),
+      ...it.warnings];
+    return { ...it, warnings, on: !dup && !expired, src: it.data.source || "etc" };
+  });
+  const known = res.columns.filter(c => c.key !== "extra").map(c => c.label);
+  const extra = res.columns.filter(c => c.key === "extra").map(c => c.label);
+  $("#iCols").textContent = `인식한 열: ${known.join(", ")}` + (extra.length ? ` / 메모에 넣는 열: ${extra.join(", ")}` : "")
+    + ". 회신 기록은 접촉 이력으로, 비고는 메모로 들어갑니다. 전화 회신 기록이 있으면 진행 단계를 '유선 상담', 그 밖의 회신만 있으면 '1차 검토 완료'로 넣습니다.";
+  $("#iMsg").textContent = `${importItems.length}건을 읽었습니다.`;
+  $("#iResult").hidden = false;
+  dirty = true;
+  renderImportRows();
+}
+
+function renderImportRows() {
+  $("#iRows").innerHTML = importItems.map((it, i) => {
+    const d = it.data, g = C.computeGrade(d, CFG);
+    const regions = d.regions.map(C.regionLabel).join(", ");
+    const off = it.on ? "" : " off";
+    return `<tr data-i="${i}" class="${it.warnings.length ? "has-w" : ""}${off}">
+      <td><input type="checkbox" class="i-on"${it.on ? " checked" : ""} aria-label="${esc(d.name)} 등록"></td>
+      <td>${fmtFull(it.date).slice(0, 10)}</td>
+      <td class="who">${esc(d.name)}</td>
+      <td>${esc(d.phone || "-")}</td>
+      <td><select class="i-src" aria-label="${esc(d.name)} 구분">${C.SOURCE.map(o => `<option value="${o.v}"${it.src === o.v ? " selected" : ""}>${esc(o.s || o.t)}</option>`).join("")}</select></td>
+      <td class="region" style="max-width:220px" title="${esc(d.regionNote)}">${esc(regions || d.regionNote || "-")}</td>
+      <td class="r">${d.investment ? esc(C.manToShort(d.investment)) : "-"}</td>
+      <td>${d.fnbExp ? FNB_SHORT[d.fnbExp] : `<span class="muted">미분류</span>`}</td>
+      <td class="c"><span class="badge ${g.grade}">${g.grade}</span> <span class="muted">${g.total}점</span></td>
+    </tr>${it.warnings.length ? `<tr class="w-row${off}" data-w="${i}"><td></td><td colspan="8">${it.warnings.map(w => "· " + esc(w)).join("<br>")}</td></tr>` : ""}`;
+  }).join("");
+  updateImportSum();
+}
+function updateImportSum() {
+  const n = importItems.filter(it => it.on).length;
+  $("#iSum").textContent = importItems.length ? `등록 ${n}건, 제외 ${importItems.length - n}건` : "";
+  $("#iSave").textContent = n ? `${n}건 등록` : "등록";
+  $("#iSave").disabled = !n;
+  $("#iAll").checked = n === importItems.length;
+}
+
+async function saveImport() {
+  const list = importItems.filter(it => it.on); if (!list.length) return;
+  const by = DEMO ? "demo" : user.email;
+  const btn = $("#iSave"); btn.disabled = true; $("#iErr").textContent = "";
+  const who = whoAmI(), now = new Date();
+  const base = it => ({ ...it.data, consent: false, source: it.src || "etc", entry: "import", enteredBy: by, formVersion: C.FORM_VERSION,
+    contacts: (it.data.contacts || []).map(c => ({ id: newId(), ...c, at: ts(c.at), ...who, savedAt: ts(now) })) });
   try {
-    const sa = getSecondaryAuth();
-    const cred = await createUserWithEmailAndPassword(sa, email, pw);
-    await setDoc(doc(db, "staff", cred.user.uid), { role, store: role === "store" ? store : "", email, createdAt: serverTimestamp(), createdBy: me.email });
-    await signOut(sa);
-    $("acctEmail").value = ""; $("acctPw").value = "";
-    toast("계정을 만들었어요");
-    await loadStaff();
-  } catch (err) {
-    console.error(err);
-    $("acctErr").textContent =
-      err.code === "auth/email-already-in-use" ? "이미 사용 중인 이메일이에요." :
-      err.code === "auth/invalid-email" ? "이메일 형식이 올바르지 않아요." :
-      err.code === "auth/weak-password" ? "비밀번호는 6자 이상이어야 해요." :
-      err.code === "auth/operation-not-allowed" ? "Firebase 콘솔에서 이메일/비밀번호 로그인을 켜 주세요." :
-      "계정을 만들지 못했어요: " + (err.message || err.code);
-  } finally { $("acctSave").disabled = false; }
+    if (DEMO) list.forEach((it, k) => ALL.push({ id: `imp${Date.now()}${k}`, ...base(it), createdAt: it.date, enteredAt: new Date() }));
+    else {
+      for (let i = 0; i < list.length; i += 400) {
+        const batch = fb.F.writeBatch(fb.db);
+        list.slice(i, i + 400).forEach(it => batch.set(fb.F.doc(fb.F.collection(fb.db, "inquiries")),
+          { ...base(it), createdAt: fb.F.Timestamp.fromDate(it.date), enteredAt: fb.F.serverTimestamp() }));
+        await batch.commit();
+      }
+    }
+    dirty = false; closeDrawer(true); refresh();
+    toast(`${list.length}건을 등록했습니다.`);
+  } catch (e) {
+    btn.disabled = false;
+    $("#iErr").textContent = `등록하지 못했습니다. (${e.code || e.message})`;
+  }
+}
+$("#newImport").addEventListener("click", openImport);
+
+/* ---------- 등급 기준 ---------- */
+function optRows(el, key, list) {
+  el.innerHTML = list.map(o => `<div class="srow"><span>${esc(o.t)}</span>
+    <span class="num"><input type="number" min="0" max="100" data-k="${key}.${o.v}"> 점</span></div>`).join("");
+}
+optRows($("#setFnb"), "fnb", C.FNB);
+optRows($("#setOper"), "oper", C.OPER);
+optRows($("#setAge"), "age", C.AGE);
+
+function renderTiers(tiers) {
+  $("#tierRows").innerHTML = tiers.map(t => `<div class="srow tier">
+      <span class="num"><input type="number" min="0" step="500" class="t-min" value="${Number(t.min) || 0}"> 만원 이상이면</span>
+      <span class="num"><input type="number" min="0" max="100" class="t-score" value="${Number(t.score) || 0}"> 점</span>
+      <button type="button" class="btn small t-rm">삭제</button></div>`).join("")
+    || `<p class="muted" style="margin:6px 0">구간이 없으면 투자 여력 점수는 모두 0점입니다.</p>`;
+}
+const readTiers = () => $$("#tierRows .tier").map(r => ({ min: Number($(".t-min", r).value) || 0, score: Number($(".t-score", r).value) || 0 }));
+
+const getP = (o, p) => p.split(".").reduce((a, k) => a?.[k], o);
+function setP(o, p, v) { const ks = p.split("."); let a = o; ks.slice(0, -1).forEach(k => { a = a[k] ??= {}; }); a[ks.at(-1)] = v; }
+
+function fillSettings(cfg) {
+  $$("#tab-settings [data-k]").forEach(el => {
+    const k = el.dataset.k;
+    el.value = k.startsWith("kw.") ? (cfg.regionKeywords[k.slice(3)] || []).join(", ") : (getP(cfg, k) ?? "");
+  });
+  renderTiers(cfg.investTiers);
+  lockSettings();
+  setDirty = false;
+  updatePreview();
+}
+function readSettings() {
+  const raw = { regionKeywords: {} };
+  $$("#tab-settings [data-k]").forEach(el => {
+    const k = el.dataset.k;
+    if (k.startsWith("kw.")) raw.regionKeywords[k.slice(3)] = C.parseKeywords(el.value);
+    else setP(raw, k, el.value === "" ? null : Number(el.value));
+  });
+  raw.investTiers = readTiers();
+  return C.mergeGrading(raw);
+}
+function updatePreview() {
+  if ($("#tab-settings").hidden) return;
+  const cfg = readSettings();
+  const now = { A: 0, B: 0, C: 0 }, next = { A: 0, B: 0, C: 0 };
+  ALL.forEach(r => { now[r._final]++; next[r.gradeOverride || C.computeGrade(r, cfg).grade]++; });
+  $("#setPreview").innerHTML = `최고 점수 <b>${C.maxScore(cfg)}</b>점. 이 기준이면 A ${next.A}건, B ${next.B}건, C ${next.C}건
+    <span class="muted">(현재 A ${now.A}, B ${now.B}, C ${now.C})</span>`;
+}
+
+/* 2차 평가 기준 편집 */
+const i2RowHtml = it => `<div class="i2" data-iid="${esc(it.id)}">
+    <input class="i2-label" maxlength="40" value="${esc(it.label)}" aria-label="항목명">
+    <span class="num"><input type="number" min="0" max="100" class="i2-w" value="${Number(it.weight) || 0}"> 점</span>
+    <button type="button" class="btn small t-rm i2-rm">삭제</button>
+    <textarea class="i2-guide" maxlength="300" rows="2" placeholder="상담 확인 포인트 (상담 화면에 질문 가이드로 표시)" aria-label="확인 포인트">${esc(it.guide || "")}</textarea>
+  </div>`;
+const r2RowHtml = rk => `<div class="srow r2" data-rid="${esc(rk.id)}">
+    <input class="r2-label" maxlength="60" value="${esc(rk.label)}" aria-label="리스크 항목"><button type="button" class="btn small t-rm r2-rm">삭제</button></div>`;
+function fillSettings2(cfg) {
+  $("#i2Rows").innerHTML = cfg.items.map(i2RowHtml).join("");
+  $("#r2Rows").innerHTML = cfg.risks.map(r2RowHtml).join("");
+  $$("#tg2 input").forEach(el => { el.checked = cfg.targetGrades.includes(el.value); });
+  $("#b2Good").value = cfg.bands.good; $("#b2Ok").value = cfg.bands.ok;
+  updateI2Sum();
+}
+function readSettings2() {
+  return C.mergeInterview({
+    items: $$("#i2Rows .i2").map(el => ({ id: el.dataset.iid, label: $(".i2-label", el).value, weight: $(".i2-w", el).value, guide: $(".i2-guide", el).value.trim() })),
+    risks: $$("#r2Rows .r2").map(el => ({ id: el.dataset.rid, label: $(".r2-label", el).value })),
+    targetGrades: $$("#tg2 input:checked").map(el => el.value),
+    bands: { good: $("#b2Good").value, ok: $("#b2Ok").value }
+  });
+}
+function updateI2Sum() {
+  const sum = $$("#i2Rows .i2-w").reduce((a, el) => a + (Number(el.value) || 0), 0);
+  $("#i2Sum").textContent = `배점 합계 ${sum}점${sum !== 100 ? " (100점으로 환산)" : ""}`;
+}
+$("#i2Add").addEventListener("click", () => {
+  $("#i2Rows").insertAdjacentHTML("beforeend", i2RowHtml({ id: "i" + newId(), label: "", weight: 10, guide: "" }));
+  setDirty = true; updateI2Sum(); $("#i2Rows .i2:last-child .i2-label").focus();
 });
+$("#r2Add").addEventListener("click", () => {
+  $("#r2Rows").insertAdjacentHTML("beforeend", r2RowHtml({ id: "r" + newId(), label: "" }));
+  setDirty = true; $("#r2Rows .r2:last-child input").focus();
+});
+$("#i2Rows").addEventListener("click", e => {
+  const b = e.target.closest(".i2-rm"); if (!b) return;
+  if ($$("#i2Rows .i2").length <= 1) { toast("평가 항목은 1개 이상 있어야 합니다.", true); return; }
+  b.closest(".i2").remove(); setDirty = true; updateI2Sum();
+});
+$("#r2Rows").addEventListener("click", e => {
+  const b = e.target.closest(".r2-rm"); if (!b) return;
+  b.closest(".r2").remove(); setDirty = true;
+});
+$("#i2Reset").addEventListener("click", () => {
+  fillSettings2(C.mergeInterview()); lockSettings(); setDirty = true;
+  toast("2차 평가 기본값을 불러왔습니다. 저장해야 적용됩니다.");
+});
+
+const setTab = $("#tab-settings");
+setTab.addEventListener("input", () => { setDirty = true; updatePreview(); updateI2Sum(); });
+$("#tierRows").addEventListener("click", e => {
+  const b = e.target.closest(".t-rm"); if (!b) return;
+  b.closest(".tier").remove();
+  renderTiers(readTiers()); setDirty = true; updatePreview();
+});
+$("#addTier").addEventListener("click", () => { renderTiers([...readTiers(), { min: 0, score: 0 }]); setDirty = true; updatePreview(); });
+$("#setReset").addEventListener("click", () => {
+  const keepKw = readSettings().regionKeywords;
+  fillSettings({ ...C.mergeGrading(), regionKeywords: keepKw });
+  setDirty = true;
+  toast("기본 점수를 불러왔습니다. 상권 키워드는 유지했습니다. 저장해야 적용됩니다.");
+});
+$("#setSave").addEventListener("click", async () => {
+  if (!isMaster()) return;
+  const cfg = readSettings(), cfg2 = readSettings2();
+  if (cfg.cut.A <= cfg.cut.B) { toast("A 기준 점수는 B 기준보다 높아야 합니다.", true); return; }
+  if (cfg2.bands.good <= cfg2.bands.ok) { toast("2차 '우수' 기준은 '보통' 기준보다 높아야 합니다.", true); return; }
+  if (!cfg2.items.some(i => i.weight > 0)) { toast("2차 평가 항목 중 배점이 0보다 큰 항목이 있어야 합니다.", true); return; }
+  if ($$("#r2Rows .r2-label").some(el => !el.value.trim())) { toast("이름이 빈 리스크 항목이 있습니다. 이름을 넣거나 삭제하세요.", true); return; }
+  const btn = $("#setSave"); btn.disabled = true;
+  try {
+    if (!DEMO) await Promise.all([
+      fb.F.setDoc(fb.F.doc(fb.db, "settings", "grading"), { ...cfg, updatedAt: fb.F.serverTimestamp(), updatedBy: user.email }),
+      fb.F.setDoc(fb.F.doc(fb.db, "settings", "interview"), { ...cfg2, updatedAt: fb.F.serverTimestamp(), updatedBy: user.email })
+    ]);
+    CFG = cfg; CFG2 = cfg2; setDirty = false; refresh();
+    toast("평가 기준을 저장했습니다. 모든 문의를 새 기준으로 다시 계산했습니다.");
+  } catch (e) { toast(`저장하지 못했습니다. (${e.code || e.message})`, true); }
+  finally { btn.disabled = false; }
+});
+
+$$(".tabs button").forEach(b => b.addEventListener("click", () => switchTab(b.dataset.tab)));
+function switchTab(t) {
+  if (t === "list" && setDirty && !confirm("저장하지 않은 기준 변경이 있습니다. 목록으로 이동할까요? (변경 내용은 이 화면에 남아 있습니다)")) return;
+  $$(".tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
+  $("#tab-list").hidden = t !== "list";
+  $("#tab-settings").hidden = t !== "settings";
+  $("#tab-accounts").hidden = t !== "accounts";
+  if (t === "settings" && !setDirty) { fillSettings2(CFG2); fillSettings(CFG); }
+  else updatePreview();
+  if (t === "accounts") renderAdmins();
+}
+
+/* ---------- 관리자 계정 (마스터 전용) ---------- */
+function subscribeAdmins() {
+  if (unsubAdmins) unsubAdmins();
+  unsubAdmins = fb.F.onSnapshot(fb.F.collection(fb.db, "admins"),
+    snap => { ADMINS = snap.docs.map(d => ({ uid: d.id, ...d.data() })); renderAdmins(); },
+    err => toast(`관리자 목록을 불러오지 못했습니다. (${err.code})`, true));
+}
+
+function renderAdmins() {
+  const rows = [...ADMINS].sort((a, b) => (a.active === false) - (b.active === false)
+    || String(a.name || "").localeCompare(String(b.name || ""), "ko"));
+  $("#accRows").innerHTML = rows.map(a => {
+    const self = me && a.uid === me.uid, active = a.active !== false, role = a.role === "admin" ? "admin" : "master";
+    const roleCell = self ? esc(ROLE[role])
+      : `<select class="a-role" aria-label="권한"><option value="admin"${role === "admin" ? " selected" : ""}>일반 관리자</option><option value="master"${role === "master" ? " selected" : ""}>마스터</option></select>`;
+    const acts = self ? `<span class="muted">본인 계정</span>`
+      : `<button type="button" class="btn small a-toggle">${active ? "접근 해제" : "다시 허용"}</button>`
+        + (a.email ? `<button type="button" class="btn small a-reset">비밀번호 재설정 메일</button>` : "");
+    return `<tr data-uid="${esc(a.uid)}">
+      <td class="who">${esc(a.name || "-")}${self ? `<span class="tag me">나</span>` : ""}</td>
+      <td>${esc(a.email || "-")}</td>
+      <td>${roleCell}</td>
+      <td>${active ? `<span class="st consult">사용 중</span>` : `<span class="st hold">접근 해제</span>`}</td>
+      <td>${fmtFull(C.toDate(a.lastLoginAt))}</td>
+      <td><div class="acts-cell">${acts}</div></td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="6" class="muted">등록된 계정이 없습니다.</td></tr>`;
+}
+
+async function updateAdmin(uid, patch, msg) {
+  try {
+    if (DEMO) Object.assign(ADMINS.find(a => a.uid === uid), patch);
+    else await fb.F.updateDoc(fb.F.doc(fb.db, "admins", uid), { ...patch, updatedAt: fb.F.serverTimestamp(), updatedBy: me.email });
+    toast(msg);
+  } catch (e) { toast(`변경하지 못했습니다. (${e.code || e.message})`, true); }
+  renderAdmins();
+}
+
+$("#accRows").addEventListener("change", e => {
+  const sel = e.target.closest(".a-role"); if (!sel) return;
+  const uid = sel.closest("tr").dataset.uid, a = ADMINS.find(x => x.uid === uid);
+  if (!confirm(`${a.name || "이 계정"}의 권한을 '${ROLE[sel.value]}'(으)로 바꿀까요?`)) { renderAdmins(); return; }
+  updateAdmin(uid, { role: sel.value }, "권한을 변경했습니다.");
+});
+$("#accRows").addEventListener("click", async e => {
+  const tr = e.target.closest("tr[data-uid]"); if (!tr) return;
+  const a = ADMINS.find(x => x.uid === tr.dataset.uid); if (!a) return;
+  if (e.target.closest(".a-toggle")) {
+    const active = a.active !== false;
+    if (!confirm(active ? `${a.name || "이 계정"}의 접근을 해제할까요? 로그인해도 데이터를 볼 수 없게 됩니다.` : `${a.name || "이 계정"}의 접근을 다시 허용할까요?`)) return;
+    updateAdmin(a.uid, { active: !active }, active ? "접근을 해제했습니다." : "접근을 다시 허용했습니다.");
+  }
+  if (e.target.closest(".a-reset")) {
+    if (!confirm(`${a.email}로 비밀번호 재설정 메일을 보낼까요?`)) return;
+    try {
+      if (!DEMO) await fb.A.sendPasswordResetEmail(fb.auth, a.email);
+      toast("재설정 메일을 보냈습니다. 스팸함도 확인하도록 안내해 주세요.");
+    } catch (err) { toast(`메일을 보내지 못했습니다. (${err.code || err.message})`, true); }
+  }
+});
+
+function genPw() {
+  const cs = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+  const n = new Uint32Array(10); crypto.getRandomValues(n);
+  return Array.from(n, x => cs[x % cs.length]).join("");
+}
+$("#aGen").addEventListener("click", () => { $("#aPw").value = genPw(); });
+
+/* 로그인 계정 만들기: 보조 앱에서 만들어 현재 로그인 상태를 유지 */
+async function createAuthUser(email, password) {
+  const sec = fb.appM.initializeApp(C.firebaseConfig, `account-${Date.now()}`);
+  try {
+    const secAuth = fb.A.initializeAuth(sec, { persistence: fb.A.inMemoryPersistence });
+    const cred = await fb.A.createUserWithEmailAndPassword(secAuth, email, password);
+    const uid = cred.user.uid;
+    await fb.A.signOut(secAuth).catch(() => {});
+    return uid;
+  } finally {
+    await fb.appM.deleteApp(sec).catch(() => {});
+  }
+}
+async function writeAdmin(uid, data) {
+  if (DEMO) { ADMINS.push({ uid, ...data, createdAt: new Date() }); renderAdmins(); return; }
+  await fb.F.setDoc(fb.F.doc(fb.db, "admins", uid), { ...data, createdAt: fb.F.serverTimestamp(), createdBy: me.email });
+}
+const emailOk = v => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
+
+let pendingAdmin = null;   // 로그인 계정은 만들었지만 등록에 실패한 경우 재시도용
+$("#aCreate").addEventListener("click", async () => {
+  if (!isMaster()) return;
+  const name = $("#aName").value.trim(), email = $("#aEmail").value.trim(), pw = $("#aPw").value, role = $("#aRole").value;
+  const err = $("#aErr"); err.textContent = ""; $("#aDone").hidden = true;
+  if (!name) { err.textContent = "이름을 입력하세요."; return; }
+  if (!emailOk(email)) { err.textContent = "이메일 형식을 확인하세요."; return; }
+  if (pw.length < 8) { err.textContent = "임시 비밀번호는 8자 이상으로 정하세요. [자동 생성]을 눌러도 됩니다."; return; }
+  if (ADMINS.some(a => (a.email || "").toLowerCase() === email.toLowerCase())) {
+    err.textContent = "이미 등록된 이메일입니다. 계정 목록에서 상태를 확인하세요."; return;
+  }
+  const btn = $("#aCreate"); btn.disabled = true;
+  let uid;
+  try {
+    uid = DEMO ? `demo-${Date.now()}` : await createAuthUser(email, pw);
+  } catch (e) {
+    btn.disabled = false;
+    err.textContent = {
+      "auth/email-already-in-use": "이미 Firebase에 가입된 이메일입니다. 오른쪽 '기존 계정 UID로 등록'을 이용하세요.",
+      "auth/invalid-email": "이메일 형식을 확인하세요.",
+      "auth/weak-password": "비밀번호가 너무 단순합니다. [자동 생성]을 이용하세요.",
+      "auth/operation-not-allowed": "Firebase 콘솔에서 이메일/비밀번호 로그인을 사용 설정하세요.",
+      "auth/admin-restricted-operation": "Firebase 콘솔 Authentication 설정에서 계정 생성(가입)이 허용되어 있는지 확인하세요."
+    }[e.code] || `계정을 만들지 못했습니다. (${e.code || e.message})`;
+    return;
+  }
+  pendingAdmin = { uid, data: { name, email, role, active: true } };
+  await finishCreate(pw);
+  btn.disabled = false;
+});
+async function finishCreate(pw) {
+  const err = $("#aErr");
+  try {
+    await writeAdmin(pendingAdmin.uid, pendingAdmin.data);
+  } catch (e) {
+    err.innerHTML = `로그인 계정은 만들었지만 관리자 등록에 실패했습니다. (${esc(e.code || e.message)}) <button type="button" class="btn small" id="aRetry">다시 등록</button>`;
+    $("#aRetry").addEventListener("click", () => finishCreate(pw));
+    return;
+  }
+  err.textContent = "";
+  const d = pendingAdmin.data; pendingAdmin = null;
+  const url = new URL("./admin.html", location.href).href.replace(/\?.*$/, "");
+  const box = $("#aDone");
+  box.innerHTML = `<b>계정을 만들었습니다.</b> 아래 정보를 전달하고, 첫 로그인 후 [비밀번호 변경]으로 바꾸도록 안내해 주세요.
+    <dl><dt>관리자 주소</dt><dd>${esc(url)}</dd><dt>이메일</dt><dd>${esc(d.email)}</dd>
+      <dt>임시 비밀번호</dt><dd>${esc(pw)}</dd><dt>권한</dt><dd>${esc(ROLE[d.role])}</dd></dl>
+    <div><button type="button" class="btn small" id="aCopy">안내 내용 복사</button></div>`;
+  box.hidden = false;
+  $("#aCopy").addEventListener("click", () => copy(
+    `[벤슨 가맹문의 DB 관리자 계정]\n주소: ${url}\n이메일: ${d.email}\n임시 비밀번호: ${pw}\n첫 로그인 후 오른쪽 위 [비밀번호 변경]에서 비밀번호를 바꿔 주세요.`,
+    "안내 내용을 복사했습니다."));
+  ["aName", "aEmail", "aPw"].forEach(id => { $("#" + id).value = ""; });
+  $("#aRole").value = "admin";
+  toast("관리자 계정을 만들었습니다.");
+}
+
+$("#uAdd").addEventListener("click", async () => {
+  if (!isMaster()) return;
+  const uid = $("#uUid").value.trim(), name = $("#uName").value.trim(), email = $("#uEmail").value.trim(), role = $("#uRole").value;
+  const err = $("#uErr"); err.textContent = "";
+  if (!uid || /[\/\s]/.test(uid)) { err.textContent = "UID를 정확히 입력하세요. (공백·슬래시 없이)"; return; }
+  if (!name) { err.textContent = "이름을 입력하세요."; return; }
+  if (email && !emailOk(email)) { err.textContent = "이메일 형식을 확인하세요."; return; }
+  if (ADMINS.some(a => a.uid === uid)) { err.textContent = "이미 등록된 UID입니다. 계정 목록에서 상태를 확인하세요."; return; }
+  const btn = $("#uAdd"); btn.disabled = true;
+  try {
+    await writeAdmin(uid, { name, email, role, active: true });
+    ["uUid", "uName", "uEmail"].forEach(id => { $("#" + id).value = ""; });
+    toast("관리자로 등록했습니다.");
+  } catch (e) { err.textContent = `등록하지 못했습니다. (${e.code || e.message})`; }
+  finally { btn.disabled = false; }
+});
+
+/* ---------- 내 비밀번호 변경 ---------- */
+function openPw() {
+  if (mode && dirty && !confirm("저장하지 않은 변경 내용이 있습니다. 이동할까요?")) return;
+  mode = "pw"; openId = null; dirty = false;
+  $("#dTitle").textContent = "비밀번호 변경";
+  $("#dSub").textContent = me ? me.email : "";
+  $("#dBody").innerHTML = `<section class="d-sec"><div class="eg" style="grid-template-columns:1fr">
+      <label>현재 비밀번호<input type="password" id="pCur" autocomplete="current-password"></label>
+      <label><span>새 비밀번호 <span class="opt">8자 이상</span></span><input type="password" id="pNew" autocomplete="new-password"></label>
+      <label>새 비밀번호 확인<input type="password" id="pNew2" autocomplete="new-password"></label>
+    </div></section>`;
+  $("#dFoot").innerHTML = `<div></div>
+    <div class="acts"><button type="button" class="btn" id="pCancel">취소</button><button type="button" class="btn primary" id="pSave">변경</button></div>
+    <p class="e-err" id="pErr" role="alert"></p>`;
+  $("#dFoot").hidden = false;
+  $("#pCancel").addEventListener("click", () => closeDrawer(true));
+  $("#pSave").addEventListener("click", savePw);
+  showDrawer(false); markSel();
+  $("#pCur").focus();
+}
+async function savePw() {
+  const cur = $("#pCur").value, nw = $("#pNew").value, nw2 = $("#pNew2").value, err = $("#pErr");
+  err.textContent = "";
+  if (!cur) { err.textContent = "현재 비밀번호를 입력하세요."; return; }
+  if (nw.length < 8) { err.textContent = "새 비밀번호는 8자 이상으로 정하세요."; return; }
+  if (nw !== nw2) { err.textContent = "새 비밀번호 확인이 일치하지 않습니다."; return; }
+  if (nw === cur) { err.textContent = "현재 비밀번호와 다른 비밀번호로 정하세요."; return; }
+  if (DEMO) { closeDrawer(true); toast("데모 화면에서는 실제로 바뀌지 않습니다."); return; }
+  const btn = $("#pSave"); btn.disabled = true;
+  try {
+    await fb.A.reauthenticateWithCredential(user, fb.A.EmailAuthProvider.credential(user.email, cur));
+    await fb.A.updatePassword(user, nw);
+    closeDrawer(true); toast("비밀번호를 변경했습니다.");
+  } catch (e) {
+    btn.disabled = false;
+    err.textContent = {
+      "auth/invalid-credential": "현재 비밀번호가 맞지 않습니다.",
+      "auth/wrong-password": "현재 비밀번호가 맞지 않습니다.",
+      "auth/weak-password": "새 비밀번호가 너무 단순합니다.",
+      "auth/too-many-requests": "시도가 많아 잠시 막혔습니다. 몇 분 뒤 다시 시도하세요."
+    }[e.code] || `변경하지 못했습니다. (${e.code || e.message})`;
+  }
+}
+$("#pwBtn").addEventListener("click", openPw);
+
+/* ---------- 데모 ---------- */
+function demoData() {
+  const at = (days, h, m = 12) => { const t = new Date(); t.setDate(t.getDate() - days); t.setHours(h, m, 0, 0); return t; };
+  const day = n => toInputDate(new Date(Date.now() + n * 86400000));
+  const who = { by: "demo@example.com", byName: "데모 마스터" };
+  return [
+    { id: "d1", name: "김지훈", phone: "010-2345-6789", email: "jihoon@example.com", ageBand: "40",
+      regions: [{ sido: "경기", sigungu: "성남시 분당구", area: "서현역 상권" }], investment: 26000,
+      fnbExp: "owner", fnbDetail: "커피 전문점 2개점 운영 5년", motive: "디저트 카페 운영 경험을 살려 아이스크림 전문점을 하고 싶습니다.",
+      openTiming: "m6", operation: "self", operationNote: "", store: "reviewing", storeAddress: "성남시 분당구 서현동 일대", storeArea: "15",
+      etc: "", consent: true, source: "mail", createdAt: at(6, 10), affinity: "high", status: "consult",
+      contacts: [
+        { id: "c1a", at: at(5, 11), method: "call", noAnswer: false, ...who,
+          summary: "유선 상담. 서현역 상권 희망, 커피 전문점 2개점 운영 중. 원가율·로열티·예상 투자비 안내.", next: "대면 상담 일정 잡기", nextAt: day(-3) },
+        { id: "c1b", at: at(2, 15), method: "sms", noAnswer: false, ...who,
+          summary: "본사 대면 상담 일정 안내 문자 발송, 일정 수락.", next: "본사 대면 상담 (2차 평가)", nextAt: day(2) }
+      ] },
+    { id: "d2", name: "박서연", phone: "010-8765-4321", email: "seoyeon@example.com", ageBand: "30",
+      regions: [{ sido: "경기", sigungu: "용인시 수지구", area: "" }, { sido: "서울", sigungu: "송파구", area: "잠실" }], investment: 20000,
+      fnbExp: "staff", fnbDetail: "베이커리 매니저 3년", motive: "매장 근무 경험을 바탕으로 직접 운영하고 싶습니다.",
+      openTiming: "m12", operation: "self", operationNote: "", store: "none", storeAddress: "", storeArea: "",
+      etc: "교육 기간이 궁금합니다.", consent: true, source: "homepage", createdAt: at(4, 15, 40), affinity: "mid", status: "consult",
+      contacts: [
+        { id: "c2a", at: at(3, 10), method: "call", noAnswer: false, ...who,
+          summary: "가맹 조건 안내. 교육 기간 문의 → 추후 안내하기로 함.", next: "교육 일정 안내 후 재통화", nextAt: day(-1) },
+        { id: "c2b", at: at(0, 9, 40), method: "call", noAnswer: true, ...who, summary: "", next: "", nextAt: "" }
+      ] },
+    { id: "d3", name: "이도윤", phone: "010-1111-2222", email: "doyun@example.com", ageBand: "50",
+      regions: [{ sido: "인천", sigungu: "연수구", area: "송도" }], investment: 15000,
+      fnbExp: "none", fnbDetail: "", motive: "퇴직 후 창업을 준비하고 있습니다.",
+      openTiming: "nego", operation: "manager", operationNote: "", store: "none", storeAddress: "", storeArea: "",
+      etc: "", consent: true, source: "br", sourceNote: "배스킨라빈스 송도점 6년 운영", createdAt: at(2, 11), status: "hold", gradeAtReview: "C", scoreAtReview: 24 },
+    { id: "d4", name: "최유진", phone: "010-3333-4444", email: "yujin@example.com", ageBand: "40",
+      regions: [{ sido: "경기", sigungu: "성남시 분당구", area: "판교" }], investment: 32000,
+      fnbExp: "none", fnbDetail: "", motive: "판교 오피스 상권에서 디저트 매장을 찾고 있습니다.",
+      openTiming: "m3", operation: "manager", operationNote: "", store: "secured", storeAddress: "성남시 분당구 삼평동 1층 상가", storeArea: "18",
+      etc: "", consent: true, source: "mail", createdAt: at(10, 9, 5), status: "interview", gradeAtReview: "A", scoreAtReview: 79,
+      contacts: [
+        { id: "c4a", at: at(9, 14), method: "call", noAnswer: false, ...who, summary: "유선 상담. 판교 삼평동 점포 확보 완료.", next: "", nextAt: "" },
+        { id: "c4b", at: at(3, 16), method: "meet", noAnswer: false, ...who,
+          summary: "본사 대면 상담. 본인은 직장 유지, 매장은 관리자 채용 예정.", next: "운영 계획서 받기", nextAt: day(4) }
+      ],
+      eval2: { date: day(-3), method: "대면", evaluator: "데모 마스터", savedBy: "demo", savedAt: at(3, 18),
+        scores: { store: 2, career: 4, selfemp: 1, pnl: 3, staff: 2, area: 4 }, notes: { staff: "주말에만 매장 근무 가능" },
+        risks: { auto: true }, riskNote: "본인 근무 주 1~2일, 관리자 1인에게 운영 위임 계획",
+        opinion: "투자 여력과 점포 조건은 좋으나 오토운영 형태로 계획 중. 직접 근무 계획을 보완해 재상담 필요.", verdict: "recheck", scoreAtSave: 54 } },
+    { id: "d5", name: "김지훈", phone: "010-2345-6789", email: "jihoon@example.com", ageBand: "40",
+      regions: [{ sido: "경기", sigungu: "성남시 분당구", area: "" }], investment: 25000,
+      fnbExp: "owner", fnbDetail: "커피 전문점 운영", motive: "상담을 다시 요청드립니다.",
+      openTiming: "m6", operation: "self", operationNote: "", store: "none", storeAddress: "", storeArea: "",
+      etc: "", consent: true, source: "homepage", createdAt: at(9, 17, 30), status: "reviewed" },
+    { id: "d6", name: "한수빈", phone: "010-5555-6666", email: "subin@example.com", ageBand: "30",
+      regions: [{ sido: "부산", sigungu: "해운대구", area: "" }], investment: 19000,
+      fnbExp: "staff", fnbDetail: "패스트푸드 매장 근무 1년", motive: "부산 지역 출점 계획이 있는지 궁금합니다.",
+      openTiming: "y1", operation: "other", operationNote: "가족과 공동 운영", store: "none", storeAddress: "", storeArea: "",
+      etc: "", consent: true, source: "network", sourceNote: "해운대점 예비 점주 소개", createdAt: at(12, 14), affinity: "low", status: "deliberation",
+      contacts: [
+        { id: "c6a", at: at(11, 11), method: "call", noAnswer: false, ...who, summary: "유선 상담, 부산 출점 가능 여부 문의.", next: "", nextAt: "" },
+        { id: "c6b", at: at(6, 14), method: "meet", noAnswer: false, ...who, summary: "본사 대면 상담 진행.", next: "출점 심의 결과 안내", nextAt: day(5) }
+      ],
+      eval2: { date: day(-6), method: "대면", evaluator: "데모 마스터", savedBy: "demo", savedAt: at(6, 17),
+        scores: { store: 4, career: 4, selfemp: 3, pnl: 4, staff: 5, area: 4 }, notes: {}, risks: {}, riskNote: "",
+        opinion: "매장 근무 경험이 충분하고 본인 상주 운영 계획이 구체적임. 해운대 상권 이해도 높음.", verdict: "pass", scoreAtSave: 82 } },
+    { id: "d7", name: "오승민", phone: "010-7777-8888", email: "seungmin@example.com", ageBand: "30",
+      regions: [{ sido: "경기", sigungu: "수원시 영통구", area: "광교" }], investment: 22000,
+      fnbExp: "staff", fnbDetail: "카페 매니저 2년", motive: "광교 상권 출점을 희망합니다.",
+      openTiming: "m12", operation: "self", operationNote: "", store: "none", storeAddress: "", storeArea: "",
+      etc: "", consent: true, source: "homepage", createdAt: at(350, 13), status: "hold" },
+    { id: "d8", name: "윤가람", phone: "010-9999-0000", email: "garam@example.com", ageBand: "40",
+      regions: [{ sido: "서울", sigungu: "마포구", area: "" }], investment: 20000,
+      fnbExp: "none", fnbDetail: "", motive: "창업을 준비하고 있습니다.",
+      openTiming: "nego", operation: "self", operationNote: "", store: "none", storeAddress: "", storeArea: "",
+      etc: "", consent: true, source: "mail", createdAt: at(400, 10), status: "hold" }
+  ];
+}
+
+/* ---------- 시작 ---------- */
+if (DEMO) {
+  $("#demoBanner").hidden = false;
+  CFG = C.mergeGrading({ regionKeywords: { p1: ["성남시 분당구", "판교"], p2: ["용인시 수지구", "서울 송파구"] } });
+  ALL = demoData();
+  me = { uid: "demo-me", email: "demo@example.com", name: "데모 마스터", role: "master" };
+  const ago = d => { const t = new Date(); t.setDate(t.getDate() - d); return t; };
+  ADMINS = [
+    { uid: "demo-me", name: "데모 마스터", email: "demo@example.com", role: "master", active: true, lastLoginAt: new Date() },
+    { uid: "demo-2", name: "최민영", email: "minyoung@example.com", role: "admin", active: true, lastLoginAt: ago(2) },
+    { uid: "demo-3", name: "정하늘", email: "haneul@example.com", role: "admin", active: false, lastLoginAt: ago(40) }
+  ];
+  showApp();
+  refresh();
+  purgeExpired();
+} else if (!C.firebaseConfig.apiKey) {
+  showLogin("config.js에 Firebase 설정값을 먼저 입력하세요.\n화면 구성은 주소 뒤에 ?demo 를 붙여 미리 볼 수 있습니다.");
+  $("#lBtn").disabled = true;
+} else {
+  init();
+}
 </script>
 </body>
 </html>

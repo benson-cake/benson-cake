@@ -1,192 +1,291 @@
-// =====================================================================
-//  벤슨 케이크 사전예약 — 설정 파일
-//  이 파일 하나만 고치면 예약 페이지·확인 페이지·관리자 페이지에 모두 반영됩니다.
-//  [필수] 표시된 항목은 배포 전에 반드시 채워 주세요.
-// =====================================================================
+/* ================================================================
+   벤슨 가맹문의 DB — 공통 설정
+   접수폼(index.html)과 관리자 화면(admin.html)이 함께 사용합니다.
+   ================================================================ */
 
-// [필수] Firebase 콘솔 > 프로젝트 설정 > 내 앱(웹) > SDK 구성 및 구성에서 복사
+/* ① Firebase 웹 앱 설정값
+   Firebase 콘솔 > 프로젝트 설정 > 일반 > 내 앱 > SDK 설정 및 구성(Config) 값을 붙여넣으세요.
+   이 값은 공개되어도 되는 식별값이고, 데이터 보호는 firestore.rules(보안 규칙)가 담당합니다. */
 export const firebaseConfig = {
-  apiKey: "AIzaSyCyMzGasfMzq5tfDPwVWEZvKDWzgI7wwIk",
-  authDomain: "benson-cake-preorder.firebaseapp.com",
-  projectId: "benson-cake-preorder",
-  storageBucket: "benson-cake-preorder.firebasestorage.app",
-  messagingSenderId: "780596595296",
-  appId: "1:780596595296:web:3e74f4164f73350e175105"
+  apiKey: "AIzaSyC_PdN4OWBEAQAXbowvdZArM9gp-J7dS-0",
+  authDomain: "benson-franchise.firebaseapp.com",
+  projectId: "benson-franchise",
+  storageBucket: "benson-franchise.firebasestorage.app",
+  messagingSenderId: "583183052933",
+  appId: "1:583183052933:web:4b9f4c16f60ea3da6439ec"
 };
 
-// 메타 픽셀: 넥스트픽 전달 기본 코드가 index.html의 <head>에 설치되어 있습니다 (데이터세트 1686148093182564).
-//           ID를 바꿀 때는 index.html <head>의 숫자(주석·init·noscript 3곳)를 함께 바꿔 주세요.
+export const FIREBASE_SDK = "https://www.gstatic.com/firebasejs/10.12.2";
 
-// 브랜드 이미지 (같은 저장소에 올린 파일 이름 또는 전체 주소). 비워 두면 글자로 표시합니다.
-export const BRAND = {
-  logoUrl: "logo-benson-white.svg",   // 빨간 배경용 흰색 로고. 하늘색 원본은 "logo-benson-blue.svg"
-  heroImageUrl: ""    // 예: "cake.png" (배경이 투명한 케이크 사진 권장)
-};
-
-// 참여 매장 (직영 전 매장). 이름을 바꾸면 매장 계정의 매장명도 같이 바꿔야 합니다.
-export const STORES = [
-  "벤슨 63빌딩", "벤슨 서울대입구역점", "벤슨 을지로3가점", "벤슨 크리머리 서울",
-  "벤슨 서현점", "벤슨 위례점", "벤슨 강남역점", "벤슨 잠실새내점", "벤슨 둔촌점",
-  "벤슨 청량리역", "벤슨 미사점", "벤슨 반포점", "벤슨 화곡점", "벤슨 그랑서울",
-  "벤슨 신림점", "벤슨 대치점", "벤슨 동부이촌점", "벤슨 마포점", "벤슨 목동점",
-  "벤슨 이태원점", "벤슨 스타필드 수원", "벤슨 갤러리아 명품관", "벤슨 천호역점",
-  "벤슨 롯데월드몰", "벤슨 용산역", "벤슨 서울역", "벤슨 선릉역",
-  "벤슨 방배점"
-];
-
-// 매장 전화번호 (고객 화면의 '매장에 전화하기' 버튼, 확정 문자의 {storePhone}에 사용)
-export const STORE_PHONES = {
-  "벤슨 63빌딩": "070-4156-1848",
-  "벤슨 서울대입구역점": "070-4160-9545",
-  "벤슨 을지로3가점": "02-6365-8005",
-  "벤슨 크리머리 서울": "070-4129-0588",
-  "벤슨 서현점": "070-4101-4690",
-  "벤슨 위례점": "070-4164-5364",
-  "벤슨 강남역점": "070-4111-5169",
-  "벤슨 잠실새내점": "070-8672-3200",
-  "벤슨 둔촌점": "070-4111-5171",
-  "벤슨 청량리역": "070-4280-0590",
-  "벤슨 미사점": "070-4155-8636",
-  "벤슨 반포점": "070-4110-3801",
-  "벤슨 화곡점": "070-4140-6046",
-  "벤슨 그랑서울": "02-2158-7549",
-  "벤슨 신림점": "070-4122-9328",
-  "벤슨 대치점": "070-4122-6958",
-  "벤슨 동부이촌점": "070-4165-9694",
-  "벤슨 마포점": "070-4109-0786",
-  "벤슨 목동점": "070-4159-8210",
-  "벤슨 이태원점": "070-4103-4068",
-  "벤슨 스타필드 수원": "031-690-1197",
-  "벤슨 갤러리아 명품관": "070-4270-0591",
-  "벤슨 천호역점": "070-4167-4655",
-  "벤슨 롯데월드몰": "070-4122-5470",
-  "벤슨 용산역": "070-8648-3534",
-  "벤슨 서울역": "070-4231-0589",
-  "벤슨 선릉역": "070-4172-6092",
-  "벤슨 방배점": "070-4104-2236"
-};
-
-// ---------------------------------------------------------------------
-// 크리스마스 아이스크림 케이크 사전예약 (2026)
-// ---------------------------------------------------------------------
-// 예약 구분값 — 지금부터 들어오는 예약에 자동으로 붙습니다. 다음 행사 때는 이름만 바꾸면 됩니다.
-export const CAMPAIGN = "크리스마스 사전예약";
-// 구분값 없이 들어온 이전 예약(5,000원 할인 사전예약 등)을 관리자 화면·CSV에서 부르는 이름
-export const LEGACY_CAMPAIGN = "이전 사전예약";
-
-// 메인 화면에 보이는 행사 기간 문구 (표시용 — 신청은 기간 제한 없이 계속 받습니다)
-export const RESERVE_PERIOD = { label: "11.20 ~ 12.13" };
-
-// 픽업 가능 날짜: 12월 21일(월) ~ 12월 25일(금) 중에서만 선택 (시작일·마지막날 포함)
-// 오늘 기준 '내일'보다 이른 날짜는 자동으로 빠지고, 고를 날짜가 하나도 없으면 신청 버튼이 '마감'으로 바뀝니다.
-export const PICKUP_DATES = { first: "2026-12-21", last: "2026-12-25" };
-
-// 사전예약 할인율(%) — 화면 안내 문구용. 실제 표시 금액은 아래 각 케이크의 sale 값을 그대로 씁니다.
-export const PREORDER_DISCOUNT_RATE = 30;
-
-// 예약 가능 케이크 7종 (정가 price → 사전예약가 sale). image는 저장소에 올린 사진 파일 이름.
-export const CAKES = [
-  { name: "홀리데이 스트로베리 기프트박스",   price: 39000, sale: 27300, image: "xmas-holiday-strawberry-giftbox.jpg" },
-  { name: "초콜릿무스 원더랜드",             price: 43000, sale: 30100, image: "xmas-chocolate-mousse-wonderland.jpg" },
-  { name: "피스타치오 베리가든",             price: 39000, sale: 27300, image: "xmas-pistachio-berry-garden.jpg" },
-  { name: "초콜릿 기프트박스",               price: 39000, sale: 27300, image: "xmas-chocolate-giftbox.jpg" },
-  { name: "위시트리 저지밀크 쁘띠 케이크",     price: 15000, sale: 10500, image: "xmas-wishtree-petit.jpg" },
-  { name: "시크릿산타 스트로베리 쁘띠 케이크", price: 15000, sale: 10500, image: "xmas-secretsanta-petit.jpg" },
-  { name: "디어마이 초코무스 쁘띠 케이크",     price: 15000, sale: 10500, image: "xmas-dearmy-petit.jpg" }
-];
-
-export const MAX_QTY = 5;            // 케이크 1종당 최대 수량 (여러 종류를 함께 담을 수 있음)
-export const MIN_DAYS_AHEAD = 1;     // 최소 1일 전 예약 → 내일부터 선택 가능
-export const MAX_DAYS_AHEAD = 30;    // PICKUP_DATES.last를 비웠을 때만 사용 (오늘 + N일까지)
-
-// 픽업 시간 선택 범위. 매장별 운영시간이 달라도 매장이 확인 후 확정하는 구조라 공통 범위로 둡니다.
-export const PICKUP_TIME = { start: "11:00", end: "21:00", stepMin: 30 };
-
-// ---------------------------------------------------------------------
-// 개인정보 동의 (맘스터치 가맹문의 동의서 양식 기준: 수집·이용 / 제3자 제공 / 마케팅 수신)
-// 문구를 바꾸면 version 날짜도 바꿔 주세요. 고객이 어느 버전에 동의했는지 예약 데이터에 함께 남습니다.
-// ---------------------------------------------------------------------
-const COMPANY = "㈜베러스쿱크리머리";
-// [필수] 보유 기간 — 사내 개인정보 담당자 확인 후 확정
-const RETENTION = "예약 처리 완료(픽업·취소) 후 1년. 단, 관계 법령에 따라 보존이 필요한 경우 해당 기간까지";
-
+/* ② 개인정보 수집·이용 동의 문구 — 회사 개인정보 처리방침 기준으로 확인 후 수정하세요. */
 export const PRIVACY = {
-  version: "2026-10-30.2",   // 제3자 제공 항목에 ㈜베러스쿱크리머리 추가
-  company: COMPANY,
-  intro: `${COMPANY}는 「개인정보 보호법」에 따라 고객님의 개인정보를 수집·이용하기 전에 동의를 받고 있습니다. 아래 내용을 자세히 읽어 보신 후 동의 여부를 선택해 주세요. 개인정보는 ${COMPANY}가 수집·이용합니다.`,
+  purpose: "가맹 상담 검토, 상담 진행 여부 및 후속 절차 안내",
+  items: "성함, 연락처, 이메일, 연령대, 희망 출점 지역, 투자 가능 금액, 외식업 경험, 지원 사유, 희망 오픈 시기, 운영 참여 계획, 점포 정보, 기타 문의 내용",
+  retention: "접수일로부터 1년 (기간이 지나거나 삭제를 요청하시면 지체 없이 파기)"
+};
 
-  // 1) 개인정보 수집·이용 (필수)
-  collect: {
-    items: "이름, 휴대폰번호, 픽업 매장, 픽업 희망 일시, 주문 상품·수량, 요청사항",
-    purpose: "케이크 픽업 사전예약 접수·확인, 예약 확정·변경 안내 연락, 매장 픽업 시 본인 확인, 분쟁 처리",
-    retention: RETENTION
-  },
+export const FORM_VERSION = 1;
 
-  // 2) 개인정보 제3자 제공 (필수)
-  thirdParty: [
-    {
-      recipient: COMPANY,   // ㈜베러스쿱크리머리 (넥스트픽 요청으로 추가)
-      purpose: "케이크 사전예약 접수·확인, 예약 확정·변경 안내 및 매장 픽업 처리",
-      items: "이름, 휴대폰번호, 픽업 매장, 픽업 희망 일시, 주문 상품·수량",
-      retention: RETENTION
-    },
-    {
-      recipient: "㈜넥스트픽",
-      purpose: "사전예약 프로모션 운영 지원 및 광고 성과 분석",   // [확인 필요] 넥스트픽의 실제 업무 범위
-      items: "이름, 휴대폰번호, 픽업 매장, 픽업 희망 일시, 주문 상품·수량",
-      retention: RETENTION
-    }
+/* ③-1 보관 기간: 접수일로부터 이 기간이 지난 문의는 관리자 화면을 열 때 자동 삭제됩니다. */
+export const RETENTION_MONTHS = 12;
+
+/* ③ 선택 항목 — 값(v)은 보안 규칙·등급 기준과 연결되어 있으니 문구(t)만 수정하세요. */
+export const AGE = [
+  { v: "20", t: "20대" }, { v: "30", t: "30대" }, { v: "40", t: "40대" },
+  { v: "50", t: "50대" }, { v: "60", t: "60대 이상" }
+];
+export const FNB = [
+  { v: "owner", t: "외식업 매장을 운영(점주)한 경험이 있음" },
+  { v: "staff", t: "외식업 매장에서 근무한 경험이 있음" },
+  { v: "none",  t: "경험 없음" }
+];
+export const OPEN = [
+  { v: "m3", t: "3개월 이내" }, { v: "m6", t: "3~6개월" }, { v: "m12", t: "6개월~1년" },
+  { v: "y1", t: "1년 이후" }, { v: "nego", t: "협의 가능" }
+];
+export const OPER = [
+  { v: "self", t: "본인 직접 운영" }, { v: "manager", t: "관리자 채용" }, { v: "other", t: "기타" }
+];
+export const STORE = [
+  { v: "none", t: "미확보" }, { v: "reviewing", t: "검토 중" }, { v: "secured", t: "확보 완료" }
+];
+/* 진행 단계 — 가맹문의 응대 프로세스(STEP 1~5) 기준 */
+export const STATUS = [
+  { v: "new", t: "미확인" },
+  { v: "reviewed", t: "1차 검토 완료" },
+  { v: "consult", t: "유선 상담 (STEP 2)" },
+  { v: "interview", t: "대면 상담·2차 평가 (STEP 3)" },
+  { v: "deliberation", t: "출점 심의 (STEP 4)" },
+  { v: "contract", t: "가맹계약 진행 (STEP 5)" },
+  { v: "hold", t: "보류 안내 · DB 보관" },
+  { v: "closed", t: "종료 (탈락·포기)" }
+];
+export const STAGES = [                 // 상세 화면 상단 진행 표시
+  { t: "1차 평가", vs: ["new", "reviewed"] },
+  { t: "유선 상담", vs: ["consult"] },
+  { t: "대면·2차 평가", vs: ["interview"] },
+  { t: "출점 심의", vs: ["deliberation"] },
+  { t: "가맹계약", vs: ["contract"] }
+];
+export const INACTIVE = ["hold", "closed"];   // 연락 예정·2차 평가 대기 집계에서 제외
+
+/* 접촉 이력 — 접촉 방법 */
+export const CONTACT_METHODS = [
+  { v: "call", t: "전화" }, { v: "sms", t: "문자·카톡" }, { v: "mail", t: "메일" },
+  { v: "meet", t: "대면 상담" }, { v: "visit", t: "매장·점포 방문" }, { v: "etc", t: "기타" }
+];
+
+/* ⑥ 2차 심층 상담평가 기본값 (초안)
+   관리자 화면 > 평가 기준에서 항목·배점·확인 포인트를 수정·저장하면 저장된 값이 우선 적용됩니다.
+   항목별로 상담 담당자가 1~5점을 매기고, (점수/5 × 배점)의 합을 100점 만점으로 환산합니다. */
+export const SCALE = [
+  { v: 1, t: "매우 미흡" }, { v: 2, t: "미흡" }, { v: 3, t: "보통" }, { v: 4, t: "우수" }, { v: 5, t: "매우 우수" }
+];
+export const VERDICT = [
+  { v: "pass", t: "심의 상정 (적합)" }, { v: "recheck", t: "보완 후 재상담" }, { v: "fail", t: "부적합 (종료)" }
+];
+export const DEFAULT_INTERVIEW = {
+  targetGrades: ["A", "B"],             // 2차 평가 대상: 1차 등급
+  items: [
+    { id: "store", label: "실제 매장 운영 경험", weight: 20,
+      guide: "운영·근무한 매장의 업종·규모·기간, 본인이 직접 맡은 업무(오픈·마감, 발주·재고, 위생, 고객 응대)" },
+    { id: "career", label: "과거 경력", weight: 10,
+      guide: "직무·조직 경험, 서비스·관리 경험, 경력 공백과 그 사유" },
+    { id: "selfemp", label: "자영업 경험", weight: 10,
+      guide: "사업자 운영 기간·업종, 폐업 경험과 사유, 세무·노무 처리 경험" },
+    { id: "pnl", label: "매출·손익 관리 능력", weight: 20,
+      guide: "매출·원가·인건비·임대료 구조 이해, 손익분기 개념, 자기자본·대출 비중 등 자금 계획" },
+    { id: "staff", label: "인력 운영 계획", weight: 20,
+      guide: "본인 주당 근무 시간과 오픈 초기 직접 근무 여부(오토운영 여부), 직원 채용·교육·근무표 계획" },
+    { id: "area", label: "희망 상권 이해도", weight: 20,
+      guide: "상권의 유동 인구·주 고객층·시간대, 경쟁점 파악, 후보 점포 조건(면적·임대료·가시성) 이해" }
   ],
-
-  // 3) 마케팅 정보 수신 (선택)
-  marketing: {
-    items: "이름, 휴대폰번호",
-    purpose: "벤슨 신제품·이벤트·프로모션 정보 안내",
-    channels: "전화, 문자, 카카오톡 등",
-    retention: "동의 철회 시까지 (철회 요청 시 지체 없이 파기)"
-  },
-
-  // 개인정보 처리 위탁 (안내)
-  outsourcing: [
-    { vendor: "Google LLC (Firebase)", task: "예약 정보 저장 및 서버 운영 (저장 위치: 대한민국 서울 리전)" }
+  risks: [
+    { id: "auto", label: "오토운영 우려 (본인 근무 계획 불명확)" },
+    { id: "debt", label: "자금·채무 우려 (차입 비중 과다, 자금 출처 불명확)" },
+    { id: "qsc", label: "운영 기준(QSC)·본사 방침 수용 의지 부족" }
   ],
+  bands: { good: 70, ok: 50 }           // 100점 환산: 70 이상 우수, 50 이상 보통, 미만 미흡
+};
+export const AFFINITY = [            // 우호도: 담당자가 상담·통화 후 직접 표시 (점수에는 반영 안 함)
+  { v: "high", t: "높음" }, { v: "mid", t: "보통" }, { v: "low", t: "낮음" }
+];
+/* 구분 (문의 경로·출처) — 문의마다 관리자 화면에서 바꿀 수 있음
+   접수폼 링크로 제출된 문의는 '메일 접수', 링크 뒤에 ?src=homepage 가 붙은 경우만 '홈페이지 접수'로 들어옵니다. */
+export const SOURCE = [
+  { v: "mail", t: "메일 접수", s: "메일 접수" },
+  { v: "network", t: "기존 네트워크 기반 점주", s: "네트워크 점주", hint: "소개자·관계 (예: ○○점 점주 소개)" },
+  { v: "br", t: "배스킨라빈스 전환점", s: "BR 전환점", hint: "운영 중인 배스킨라빈스 매장명·운영 기간" },
+  { v: "homepage", t: "홈페이지 접수", s: "홈페이지" },
+  { v: "etc", t: "기타", s: "기타" }
+];
 
-  refusalRequired: "위 동의를 거부할 권리가 있습니다. 다만 동의하지 않으시면 사전예약 신청이 불가능합니다.",
-  refusalMarketing: "동의하지 않으셔도 사전예약은 신청할 수 있습니다. 다만 제품 소개, 이벤트 등의 소식을 받으실 수 없습니다.",
-
-  policyUrl: ""   // 벤슨 개인정보처리방침 전문 주소가 있으면 입력 (예: 공식 홈페이지 처리방침 페이지)
+/* ④ 시·도 / 시·군·구 (2026년 11월 기준: 인천 제물포·영종·서해·검단구, 화성시 4개 구 반영)
+   일반구가 있는 시는 '시 + 구'로 나눴습니다. 목록에 없으면 신청자가 직접 입력할 수 있습니다. */
+export const REGIONS = {
+  "서울": ["강남구","강동구","강북구","강서구","관악구","광진구","구로구","금천구","노원구","도봉구","동대문구","동작구","마포구","서대문구","서초구","성동구","성북구","송파구","양천구","영등포구","용산구","은평구","종로구","중구","중랑구"],
+  "부산": ["강서구","금정구","기장군","남구","동구","동래구","부산진구","북구","사상구","사하구","서구","수영구","연제구","영도구","중구","해운대구"],
+  "대구": ["군위군","남구","달서구","달성군","동구","북구","서구","수성구","중구"],
+  "인천": ["강화군","검단구","계양구","남동구","미추홀구","부평구","서해구","연수구","영종구","옹진군","제물포구"],
+  "광주": ["광산구","남구","동구","북구","서구"],
+  "대전": ["대덕구","동구","서구","유성구","중구"],
+  "울산": ["남구","동구","북구","울주군","중구"],
+  "세종": ["세종시"],
+  "경기": ["가평군","고양시 덕양구","고양시 일산동구","고양시 일산서구","과천시","광명시","광주시","구리시","군포시","김포시","남양주시","동두천시","부천시 소사구","부천시 오정구","부천시 원미구","성남시 분당구","성남시 수정구","성남시 중원구","수원시 권선구","수원시 영통구","수원시 장안구","수원시 팔달구","시흥시","안산시 단원구","안산시 상록구","안성시","안양시 동안구","안양시 만안구","양주시","양평군","여주시","연천군","오산시","용인시 기흥구","용인시 수지구","용인시 처인구","의왕시","의정부시","이천시","파주시","평택시","포천시","하남시","화성시 동탄구","화성시 만세구","화성시 병점구","화성시 효행구"],
+  "강원": ["강릉시","고성군","동해시","삼척시","속초시","양구군","양양군","영월군","원주시","인제군","정선군","철원군","춘천시","태백시","평창군","홍천군","화천군","횡성군"],
+  "충북": ["괴산군","단양군","보은군","영동군","옥천군","음성군","제천시","증평군","진천군","청주시 상당구","청주시 서원구","청주시 청원구","청주시 흥덕구","충주시"],
+  "충남": ["계룡시","공주시","금산군","논산시","당진시","보령시","부여군","서산시","서천군","아산시","예산군","천안시 동남구","천안시 서북구","청양군","태안군","홍성군"],
+  "전북": ["고창군","군산시","김제시","남원시","무주군","부안군","순창군","완주군","익산시","임실군","장수군","전주시 덕진구","전주시 완산구","정읍시","진안군"],
+  "전남": ["강진군","고흥군","곡성군","광양시","구례군","나주시","담양군","목포시","무안군","보성군","순천시","신안군","여수시","영광군","영암군","완도군","장성군","장흥군","진도군","함평군","해남군","화순군"],
+  "경북": ["경산시","경주시","고령군","구미시","김천시","문경시","봉화군","상주시","성주군","안동시","영덕군","영양군","영주시","영천시","예천군","울릉군","울진군","의성군","청도군","청송군","칠곡군","포항시 남구","포항시 북구"],
+  "경남": ["거제시","거창군","고성군","김해시","남해군","밀양시","사천시","산청군","양산시","의령군","진주시","창녕군","창원시 마산합포구","창원시 마산회원구","창원시 성산구","창원시 의창구","창원시 진해구","통영시","하동군","함안군","함양군","합천군"],
+  "제주": ["서귀포시","제주시"]
 };
 
-// 매장에서 보내는 문자 문구. {중괄호} 부분은 예약 정보로 자동으로 바뀝니다.
-// 사용 가능: {name} {store} {storePhone} {datetime} {items}(줄바꿈 목록) {cake}(한 줄 요약) {qty}(총 수량) {code} {link}
-export const MESSAGES = {
-  confirmed:
-`[벤슨] {name}님, 크리스마스 케이크 픽업 예약이 확정되었습니다.
-
-픽업 매장: {store}
-픽업 일시: {datetime}
-주문 상품 (총 {qty}개)
-{items}
-예약번호: {code}
-
-방문하셔서 휴대폰 번호 뒷자리를 말씀해 주시면 사전예약가(30% 할인)로 결제해 드립니다.
-취소 또는 제품 변경 필요 시, 매장({storePhone})으로 직접 연락 부탁드립니다.
-예약 확인: {link}`,
-
-  reschedule:
-`[벤슨] {name}님, 요청하신 {datetime} 픽업이 어려워 연락드립니다.
-가능하신 픽업 날짜와 시간을 이 번호로 답장해 주시면 다시 확정해 드리겠습니다.
-예약번호: {code}`
+/* ⑤ 등급 분류 기본값 (초안)
+   관리자 화면 > 등급 기준에서 수정·저장하면 저장된 값이 우선 적용됩니다.
+   점포 확보·오픈 시기는 점수에 넣지 않고 참고용으로만 보여 줍니다. */
+export const DEFAULT_GRADING = {
+  minInvest: 18000,                                   // 만원. 미만이면 점수와 관계없이 C
+  investTiers: [ { min: 25000, score: 30 }, { min: 18000, score: 20 } ],
+  regionScore: { p1: 30, p2: 20, other: 10 },
+  regionKeywords: { p1: [], p2: [] },                 // 2027 우선 출점 1·2순위 상권
+  fnb:   { owner: 15, staff: 8, none: 0 },
+  oper:  { self: 10, manager: 4, other: 4 },
+  age:   { "20": 10, "30": 15, "40": 15, "50": 10, "60": 5 },   // 임시 초안 — 내부 기준으로 수정
+  cut:   { A: 75, B: 50 }
 };
 
-// ---------------------------------------------------------------------
-// 아래는 계산용입니다 (수정하지 않아도 됩니다)
-// ---------------------------------------------------------------------
-export const cakeByName = (name) => CAKES.find((c) => c.name === name) || null;
-// 사전예약가: sale 값이 있으면 그대로, 없으면 할인율로 계산(10원 단위 반올림)
-export const salePriceOf = (name) => {
-  const c = cakeByName(name);
-  if (!c || !c.price) return null;
-  if (Number.isFinite(c.sale)) return c.sale;
-  return Math.round((c.price * (100 - PREORDER_DISCOUNT_RATE)) / 100 / 10) * 10;
-};
+/* ---------------- 공통 함수 ---------------- */
+
+export const esc = s => String(s ?? "").replace(/[&<>"']/g, c =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+export const label = (list, v) => (list.find(o => o.v === v) || {}).t || "-";
+
+export const toDate = t => !t ? null : typeof t.toDate === "function" ? t.toDate() : t instanceof Date ? t : null;
+
+/* 만원 → "1억 8,000만원" */
+export function manToText(v) {
+  v = Math.round(Number(v) || 0);
+  const e = Math.floor(v / 10000), m = v % 10000;
+  if (!e) return `${m.toLocaleString("ko-KR")}만원`;
+  return m ? `${e}억 ${m.toLocaleString("ko-KR")}만원` : `${e}억원`;
+}
+
+/* 만원 → "1.8억" (목록용) */
+export function manToShort(v) {
+  v = Number(v) || 0;
+  if (v < 10000) return `${v.toLocaleString("ko-KR")}만`;
+  return (v / 10000).toFixed(2).replace(/\.?0+$/, "") + "억";
+}
+
+/* 희망 지역 → "경기 성남시 분당구 (서현역 상권)" */
+export function regionLabel(r = {}) {
+  const base = [r.sido, r.sigungu].filter(Boolean).join(" ");
+  if (!r.area) return base;
+  return r.sigungu ? `${base} (${r.area})` : `${base} ${r.area}`;
+}
+const regionText = (r = {}) => [r.sido, r.sigungu, r.area].filter(Boolean).join(" ").replace(/\s+/g, " ");
+
+export const parseKeywords = text =>
+  String(text || "").split(/[,\n]/).map(s => s.trim().replace(/\s+/g, " ")).filter(Boolean);
+
+/* 저장된 기준을 기본값과 합쳐 빠진 값이 없게 정리 */
+export function mergeGrading(src = {}) {
+  const d = DEFAULT_GRADING;
+  const num = (v, f) => (v === null || v === undefined || v === "" || !Number.isFinite(Number(v))) ? f : Number(v);
+  const map = (def, s = {}) => Object.fromEntries(Object.keys(def).map(k => [k, num(s?.[k], def[k])]));
+  const kws = v => Array.isArray(v) ? v.map(String).map(s => s.trim()).filter(Boolean) : parseKeywords(v);
+  return {
+    minInvest: num(src.minInvest, d.minInvest),
+    investTiers: Array.isArray(src.investTiers)
+      ? src.investTiers.map(t => ({ min: num(t?.min, 0), score: num(t?.score, 0) }))
+      : d.investTiers.map(t => ({ ...t })),
+    regionScore: map(d.regionScore, src.regionScore),
+    regionKeywords: { p1: kws(src.regionKeywords?.p1), p2: kws(src.regionKeywords?.p2) },
+    fnb: map(d.fnb, src.fnb),
+    oper: map(d.oper, src.oper),
+    age: map(d.age, src.age),
+    cut: { A: num(src.cut?.A, d.cut.A), B: num(src.cut?.B, d.cut.B) }
+  };
+}
+
+const maxOf = obj => Math.max(0, ...Object.values(obj).map(Number));
+export function maxScore(cfg) {
+  return Math.max(0, ...cfg.investTiers.map(t => t.score)) + maxOf(cfg.regionScore)
+    + maxOf(cfg.fnb) + maxOf(cfg.oper) + maxOf(cfg.age);
+}
+
+/* 2차 평가 기준: 저장된 값을 기본값과 합쳐 정리 */
+export function mergeInterview(src = {}) {
+  const d = DEFAULT_INTERVIEW;
+  const n = (v, f) => (v === null || v === undefined || v === "" || !Number.isFinite(Number(v))) ? f : Number(v);
+  const items = Array.isArray(src.items) && src.items.length
+    ? src.items.filter(it => it && it.id).map(it => ({ id: String(it.id), label: String(it.label || "").trim() || "(이름 없음)",
+        weight: Math.max(0, n(it.weight, 0)), guide: String(it.guide || "") }))
+    : d.items.map(it => ({ ...it }));
+  const risks = Array.isArray(src.risks)
+    ? src.risks.filter(r => r && r.id && String(r.label || "").trim()).map(r => ({ id: String(r.id), label: String(r.label).trim() }))
+    : d.risks.map(r => ({ ...r }));
+  const tg = Array.isArray(src.targetGrades) ? src.targetGrades.filter(g => ["A", "B", "C"].includes(g)) : [...d.targetGrades];
+  return { targetGrades: tg, items, risks,
+    bands: { good: n(src.bands?.good, d.bands.good), ok: n(src.bands?.ok, d.bands.ok) } };
+}
+
+export const bandOf = (score, cfg) => score >= cfg.bands.good ? "good" : score >= cfg.bands.ok ? "ok" : "low";
+export const BAND = { good: "우수", ok: "보통", low: "미흡" };
+
+/* 2차 평가 계산: 항목별 (점수/5 × 배점) 합계를 100점 만점으로 환산 */
+export function computeEval2(ev, cfg) {
+  if (!ev) return null;
+  const scores = ev.scores || {};
+  const items = cfg.items.map(it => {
+    const s = Number(scores[it.id]) || 0;
+    return { ...it, s, pts: s ? it.weight * s / 5 : 0 };
+  });
+  const sumW = items.reduce((a, i) => a + i.weight, 0);
+  const total = sumW ? Math.round(items.reduce((a, i) => a + i.pts, 0) / sumW * 100) : 0;
+  const unscored = items.filter(i => !i.s).length;
+  const risks = cfg.risks.filter(r => ev.risks?.[r.id]);
+  return { items, total, unscored, band: bandOf(total, cfg), risks,
+    verdict: VERDICT.some(v => v.v === ev.verdict) ? ev.verdict : "" };
+}
+
+/* 보관 기한: 접수일 + RETENTION_MONTHS */
+export function expiryOf(createdAt) {
+  const d = toDate(createdAt);
+  if (!d) return null;
+  const e = new Date(d); e.setMonth(e.getMonth() + RETENTION_MONTHS);
+  return e;
+}
+
+/* 등급 계산: 항목별 점수 → 합계 → 필수 조건 확인 → A/B/C */
+export function computeGrade(inq, cfg) {
+  const items = [];
+  const inv = Number(inq.investment) || 0;
+
+  const tiers = [...cfg.investTiers].sort((a, b) => b.min - a.min);
+  const tier = tiers.find(t => inv >= t.min);
+  items.push({ label: "투자 여력", score: tier ? tier.score : 0,
+    max: Math.max(0, ...tiers.map(t => t.score)), note: manToText(inv) });
+
+  const texts = (inq.regions || []).map(regionText).concat(inq.regionNote ? [String(inq.regionNote)] : []);
+  const hit = list => list.find(k => texts.some(t => t.includes(k))) || null;
+  const k1 = hit(cfg.regionKeywords.p1), k2 = k1 ? null : hit(cfg.regionKeywords.p2);
+  const rs = cfg.regionScore, noRegion = !texts.some(t => t.trim());
+  items.push({ label: "희망 지역", max: maxOf(rs),
+    score: k1 ? rs.p1 : k2 ? rs.p2 : noRegion ? 0 : rs.other,
+    note: k1 ? `1순위 상권 (${k1})` : k2 ? `2순위 상권 (${k2})` : noRegion ? "미입력" : "우선 출점 상권 외" });
+
+  const opt = (lbl, map, list, v) => items.push({ label: lbl, score: Number(map[v] ?? 0), max: maxOf(map), note: label(list, v) });
+  opt("외식업 경험", cfg.fnb, FNB, inq.fnbExp);
+  opt("운영 참여", cfg.oper, OPER, inq.operation);
+  opt("연령대", cfg.age, AGE, inq.ageBand);
+
+  const total = items.reduce((s, i) => s + i.score, 0);
+  const mustFail = inv < cfg.minInvest;
+  const grade = mustFail ? "C" : total >= cfg.cut.A ? "A" : total >= cfg.cut.B ? "B" : "C";
+  return { items, total, maxTotal: items.reduce((s, i) => s + i.max, 0), grade, mustFail,
+           regionTier: k1 ? "p1" : k2 ? "p2" : "other" };
+}
