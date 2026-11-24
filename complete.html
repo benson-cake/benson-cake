@@ -35,10 +35,16 @@
   .summary li { display: flex; justify-content: space-between; gap: 16px; padding: 12px 2px; border-bottom: 1px solid var(--line); font-size: 15px; }
   .summary li span:first-child { color: var(--mute); flex: none; }
   .summary li span:last-child { font-weight: 600; text-align: right; white-space: pre-line; }
-  .link-box { padding: 16px; border-radius: 14px; background: #F6F2EA; font-size: 14px; line-height: 1.6; color: var(--navy); }
+  .pay-box { margin: 0 0 16px; padding: 14px 16px; border-radius: 14px; background: #FBE9EA; color: #7A1A24; font-size: 14px; line-height: 1.6; }
+  .pay-box b { display: block; margin-bottom: 2px; font-size: 15px; font-weight: 800; color: #A91F2C; }
+  .save-box { padding: 18px 16px; border-radius: 16px; background: #F6F2EA; color: var(--navy); }
+  .save-box h2 { margin: 0 0 6px; font-size: 17px; font-weight: 800; letter-spacing: -0.02em; }
+  .save-box p { margin: 0; font-size: 14px; line-height: 1.6; color: #4A5562; }
+  .save-box .save-note { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: #fff; color: var(--navy); font-size: 13px; font-weight: 600; }
   .link-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
   .ghost { display: flex; align-items: center; justify-content: center; min-height: 48px; border-radius: 12px; border: 1.5px solid var(--navy); background: #fff; color: var(--navy); font: 700 15px/1 var(--font); text-decoration: none; cursor: pointer; }
   .ghost.fill { background: var(--navy); color: #fff; }
+  .ghost.wide { grid-column: 1 / -1; }
   .ghost:focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
   .contact { margin: 22px 0 0; padding: 18px 16px; border-radius: 16px; border: 1.5px solid var(--line); background: #fff; }
   .contact h2 { margin: 0 0 6px; font-size: 17px; font-weight: 800; color: var(--navy); letter-spacing: -0.02em; }
@@ -84,13 +90,27 @@ src="https://www.facebook.com/tr?id=1686148093182564&ev=PageView&noscript=1"
       <svg viewBox="0 0 24 24" fill="none" stroke="#22364A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
     </div>
     <h1 id="title">예약 신청이 접수되었어요</h1>
-    <p>매장에서 확인한 뒤 문자로 확정을 알려 드려요.<br>결제는 픽업하실 때 매장에서 해요.</p>
+    <p>매장에서 확인하면 ‘예약 상태 보기’에서<br><b>예약 확정</b>으로 바뀌어요.</p>
   </header>
   <main>
     <p class="loading" id="loading">예약 내용을 불러오는 중이에요.</p>
     <div id="content" hidden>
       <div class="code-box"><small>예약번호</small><strong id="code"></strong></div>
       <ul class="summary" id="summary"></ul>
+      <div class="pay-box" id="payBox">
+        <b>픽업할 때 결제해 주세요</b>
+        <span id="payNote"></span>
+      </div>
+      <section class="save-box" aria-labelledby="saveTitle">
+        <h2 id="saveTitle">예약 내용을 저장해 두세요</h2>
+        <p>확정 문자는 따로 보내 드리지 않아요. 아래 버튼으로 저장해 두시고, 확정 여부는 ‘예약 상태 보기’에서 언제든 확인하세요.</p>
+        <div class="link-actions">
+          <button type="button" class="ghost" id="shareBtn">예약 내용 공유</button>
+          <button type="button" class="ghost" id="copyLink">링크 복사</button>
+          <a class="ghost fill wide" id="openStatus" href="#">예약 상태 보기</a>
+        </div>
+        <p class="save-note" id="saveNote" hidden></p>
+      </section>
       <section class="contact" id="contact" hidden aria-labelledby="contactTitle">
         <h2 id="contactTitle">취소 시, 매장으로 연락해 주세요</h2>
         <p>취소 또는 제품 변경 필요 시, 매장으로 직접 연락 부탁드립니다.</p>
@@ -99,13 +119,6 @@ src="https://www.facebook.com/tr?id=1686148093182564&ev=PageView&noscript=1"
           <span><strong id="callStore"></strong><small id="callNumber"></small></span>
         </a>
       </section>
-      <div class="link-box">
-        아래 링크에서 확정 여부를 언제든 확인할 수 있어요. 링크를 저장해 두세요.
-        <div class="link-actions">
-          <button type="button" class="ghost" id="copyLink">링크 복사</button>
-          <a class="ghost fill" id="openStatus" href="#">예약 상태 보기</a>
-        </div>
-      </div>
     </div>
     <p class="foot"><a href="./">처음 화면으로</a></p>
   </main>
@@ -115,6 +128,7 @@ src="https://www.facebook.com/tr?id=1686148093182564&ev=PageView&noscript=1"
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig, BRAND, STORE_PHONES, salePriceOf } from "./config.js";
+import { payNote, wireSaveButtons } from "./customer-tools.js";
 
 const $ = (id) => document.getElementById(id);
 const WEEK = ["일", "월", "화", "수", "목", "금", "토"];
@@ -175,6 +189,8 @@ if (!id) {
         li.append(a, b); return li;
       }));
       showContact(r.store);
+      $("payNote").textContent = payNote();
+      wireSaveButtons({ shareBtn: $("shareBtn"), noteEl: $("saveNote"), getRow: () => r, statusUrl, id });
       $("openStatus").href = statusUrl;
       $("copyLink").onclick = async () => {
         try { await navigator.clipboard.writeText(statusUrl); }

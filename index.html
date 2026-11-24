@@ -3,546 +3,741 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="robots" content="noindex, nofollow">
-<title>벤슨 가맹 상담 사전 확인서</title>
+<title>벤슨 크리스마스 케이크 사전예약</title>
+<meta name="description" content="파티시에가 손수 만든 벤슨 크리스마스 아이스크림 케이크, 사전예약 30% 할인 (11.20 ~ 12.13). 원하는 날 매장에서 픽업하세요.">
+<meta property="og:title" content="벤슨 크리스마스 아이스크림 케이크 사전예약 30% 할인">
+<meta property="og:description" content="파티시에가 손수 만든 크리스마스 아이스크림 케이크. 11.20 ~ 12.13 사전예약 시 30% 할인.">
+<meta name="theme-color" content="#A91F2C">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@600&display=swap">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap">
 <style>
-:root{
-  --ink:#1B2A44; --ink-2:#4A5770; --ink-3:#7D879B;
-  --sky:#7CA5D7;              /* 벤슨 로고 하늘색 */
-  --brand:#3E6FB2;            /* 버튼·선택 표시: 하늘색 계열 진한 톤 (흰 글자 대비 확보) */
-  --brand-ink:#2D5793; --brand-tint:#EAF1FA;
-  --yellow:#ECC884;           /* 벤슨 포스터 노란 브러시 */
-  --paper:#FFFFFF; --ground:#EAF1FA; --line:#D8E2EF;
-  --danger:#B42318;
-  --num:"Oswald","Pretendard",sans-serif;
-  --sans:"Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
-}
-*{box-sizing:border-box}
-html{color-scheme:light;-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--ground);color:var(--ink);font:16px/1.65 var(--sans);word-break:keep-all;
-  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-.sheet{max-width:720px;margin:0 auto;background:var(--paper);min-height:100vh}
-@media (min-width:760px){.sheet{margin:48px auto 72px;min-height:0;border:1px solid var(--line);border-radius:16px;overflow:hidden}}
+  :root {
+    color-scheme: light;
+    --sky: #7EA9DB;
+    --sky-soft: #A6C4E8;
+    --cream: #F3E2B3;
+    --navy: #22364A;
+    --ink: #1E2B38;
+    --mute: #5E6E7F;
+    --line: #D6E0EC;
+    --field: #F5F8FC;
+    --paper: #FFFFFF;
+    --error: #C0392B;
+    --sale: #D9473B;
+    --xmas: #A91F2C;          /* 크리스마스 레드 */
+    --xmas-hi: #C42E3B;
+    --xmas-deep: #84141F;
+    --pine: #1E4A35;          /* 전나무 그린 */
+    --pine-deep: #153626;
+    --warm: #F6F2EA;
+    --font: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+    box-sizing: border-box;
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; }
+  body {
+    font-family: var(--font);
+    color: var(--ink);
+    background: var(--xmas-deep);
+    -webkit-font-smoothing: antialiased;
+    word-break: keep-all;
+  }
+  .wrap { max-width: 480px; margin: 0 auto; }
 
-.setup{margin:0;padding:12px 32px;background:#FFF6E5;color:#7A4B00;font-size:14px;border-bottom:1px solid #F1DDB4}
+  /* ---------- Hero (크리스마스) ---------- */
+  .hero {
+    position: relative;
+    overflow: hidden;
+    padding: calc(env(safe-area-inset-top, 0px) + 22px) 24px 0;
+    text-align: center;
+    color: #fff;
+    background: radial-gradient(130% 75% at 50% 0%, var(--xmas-hi) 0%, var(--xmas) 48%, var(--xmas-deep) 100%);
+  }
+  /* 눈 덮인 언덕 — 아래 흰 신청서와 이어지는 눈밭 */
+  .hero::after {
+    content: "";
+    position: absolute;
+    left: 50%; bottom: -690px;
+    width: 1100px; height: 760px;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 -10px 0 rgba(255,255,255,.18);
+    z-index: 0;
+  }
+  .hero > * { position: relative; z-index: 1; }
+  /* 내리는 눈 (두 겹, 속도 다르게) */
+  .hero > .snow { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .snow::before, .snow::after {
+    content: ""; position: absolute; left: 0; right: 0; top: -260px; bottom: 0;
+    background-repeat: repeat;
+    animation: snowfall linear infinite;
+  }
+  .snow::before {
+    background-image:
+      radial-gradient(circle at 18px 26px, rgba(255,255,255,.9) 0 1.6px, transparent 2.2px),
+      radial-gradient(circle at 96px 64px, rgba(255,255,255,.75) 0 1.3px, transparent 1.9px),
+      radial-gradient(circle at 150px 12px, rgba(255,255,255,.85) 0 1.8px, transparent 2.4px),
+      radial-gradient(circle at 60px 132px, rgba(255,255,255,.7) 0 1.2px, transparent 1.8px),
+      radial-gradient(circle at 128px 150px, rgba(255,255,255,.8) 0 1.5px, transparent 2.1px);
+    background-size: 180px 180px;
+    --fall: 180px; animation-duration: 13s;
+  }
+  .snow::after {
+    background-image:
+      radial-gradient(circle at 40px 70px, rgba(255,255,255,.95) 0 2.6px, transparent 3.3px),
+      radial-gradient(circle at 190px 180px, rgba(255,255,255,.85) 0 2.2px, transparent 2.9px),
+      radial-gradient(circle at 230px 40px, rgba(255,255,255,.8) 0 2px, transparent 2.7px);
+    background-size: 260px 260px;
+    --fall: 260px; animation-duration: 21s;
+  }
+  @keyframes snowfall { to { transform: translateY(var(--fall)); } }
+  @media (prefers-reduced-motion: reduce) { .snow::before, .snow::after { animation: none; } }
 
-.head{border-bottom:1px solid var(--line)}
-.band{background:var(--sky);padding:26px 32px 24px}
-.band .logo{display:block;width:150px;height:auto}
-.intro{position:relative;padding:32px 230px 32px 32px}
-h1{font-weight:800;font-size:clamp(27px,6vw,34px);line-height:1.3;letter-spacing:-.02em;margin:0 0 14px}
-.hl{background:linear-gradient(transparent 58%,var(--yellow) 58%,var(--yellow) 92%,transparent 92%);padding:0 4px;
-  -webkit-box-decoration-break:clone;box-decoration-break:clone}
-.lead{margin:0;color:var(--ink-2);max-width:30em}
-.meta{margin:12px 0 0;font-size:14px;color:var(--ink-3)}
-.badger{position:absolute;right:30px;bottom:0;width:184px;height:auto;display:block;pointer-events:none;user-select:none}
+  /* 눈밭 위 전나무 */
+  .tree { position: absolute; z-index: 1; bottom: 38px; width: auto; pointer-events: none; }
+  .tree.t1 { left: 10px; height: 74px; }
+  .tree.t2 { left: 58px; height: 46px; bottom: 34px; }
+  .tree.t3 { right: 14px; height: 60px; }
 
-.q{display:grid;grid-template-columns:64px minmax(0,1fr);padding:30px 32px 30px 24px;border-bottom:1px solid var(--line)}
-.q-no{font-family:var(--num);font-weight:600;font-size:32px;line-height:1;color:var(--brand);font-variant-numeric:lining-nums tabular-nums;transition:color .15s}
-.q.has-err .q-no{color:var(--danger)}
-.q-title{font-size:17px;font-weight:700;line-height:1.4;margin:4px 0 6px}
-.opt{font-size:13px;font-weight:500;color:var(--ink-3);margin-left:6px}
-.q-help{margin:0 0 16px;font-size:14.5px;color:var(--ink-3)}
-.q-title + .fields,.q-title + .choices{margin-top:14px}
+  .logo { display: block; text-align: left; height: 30px; margin-bottom: 14px; }
+  .logo img { display: block; height: 30px; width: auto; }
+  .pill {
+    display: inline-block; margin: 0;
+    padding: 9px 28px; border-radius: 999px;
+    background: var(--cream); color: var(--xmas-deep);
+    font-size: 17px; font-weight: 800; letter-spacing: -0.02em;
+  }
+  .hand {
+    margin: 18px 0 4px;
+    font-family: "Nanum Pen Script", var(--font);
+    font-size: clamp(22px, 6.8vw, 28px); line-height: 1.2;
+    color: var(--cream);
+  }
+  .hero h1 { margin: 0; font-weight: 900; letter-spacing: -0.045em; }
+  .hero h1 .sub {
+    display: block;
+    font-size: clamp(23px, 7vw, 31px); line-height: 1.25; font-weight: 800; letter-spacing: -0.035em;
+  }
+  .hero h1 .main {
+    display: block; margin-top: 4px;
+    font-size: clamp(36px, 11vw, 52px); line-height: 1.1;
+  }
+  .period {
+    display: inline-block; margin: 16px 0 0;
+    padding: 6px 16px; border-radius: 999px;
+    border: 1.5px solid rgba(255,255,255,.55);
+    font-size: 18px; font-weight: 700; letter-spacing: .02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .hero-img { display: block; width: 78%; max-width: 340px; margin: 18px auto -6px; }
+  .hero-spacer { height: 96px; }
 
-.fields{display:grid;gap:12px}
-.fields.two{grid-template-columns:1fr 1fr}
-.fields .full{grid-column:1/-1}
-.field{display:grid;gap:6px}
-.field > span{font-size:14px;font-weight:600;color:var(--ink-2)}
+  /* ---------- Form sheet ---------- */
+  .sheet {
+    position: relative; z-index: 2;
+    margin-top: -28px;
+    background: var(--paper);
+    border-radius: 28px 28px 0 0;
+    padding: 12px 22px calc(120px + env(safe-area-inset-bottom, 0px));
+    min-height: 60vh;
+  }
+  .notice {
+    margin: 0 0 26px; padding: 14px 16px;
+    border-radius: 14px; background: var(--warm);
+    font-size: 14px; line-height: 1.65; color: var(--ink);
+  }
+  .notice ul { margin: 0; padding-left: 18px; }
+  .notice li + li { margin-top: 2px; }
+  .notice b { font-weight: 800; color: var(--xmas-deep); }
 
-input[type=text],input[type=tel],input[type=email],select,textarea{
-  width:100%;min-height:48px;padding:11px 13px;font:inherit;font-size:16px;color:var(--ink);
-  background:#fff;border:1px solid var(--line);border-radius:9px;transition:border-color .15s}
-input::placeholder,textarea::placeholder{color:#A3ABBC}
-input:hover,select:hover,textarea:hover{border-color:var(--sky)}
-textarea{min-height:104px;resize:vertical;line-height:1.55}
-select{appearance:none;-webkit-appearance:none;padding-right:36px;cursor:pointer;
-  background:#fff url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%2347526B' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 13px center}
-select:disabled{background-color:#F6F8FB;color:#A3ABBC;cursor:not-allowed}
-:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(124,165,215,.32)}
+  fieldset { border: 0; margin: 0 0 28px; padding: 0; }
+  legend { padding: 0; margin-bottom: 12px; font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
+  .field { margin-bottom: 14px; }
+  .field > label, .label { display: block; margin-bottom: 7px; font-size: 14px; font-weight: 600; color: var(--mute); }
+  .opt { font-weight: 500; color: #8A98A8; }
+  input[type=text], input[type=tel], input[type=date], select, textarea {
+    width: 100%; min-height: 52px;
+    padding: 13px 14px;
+    border: 1.5px solid var(--line); border-radius: 12px;
+    background: var(--field); color: var(--ink);
+    font: 500 16px/1.4 var(--font);
+    appearance: none; -webkit-appearance: none;
+  }
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2322364A' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 16px center; padding-right: 40px;
+  }
+  textarea { min-height: 84px; resize: vertical; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--navy); background: #fff; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .cake-list { display: grid; gap: 8px; }
+  .cake-row {
+    display: grid; grid-template-columns: 1fr auto; grid-template-areas: "nm nm" "pr st";
+    align-items: end; gap: 8px 12px;
+    padding: 14px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--field);
+    transition: border-color .15s, background-color .15s;
+  }
+  .cake-row.has-img { grid-template-columns: 84px 1fr auto; grid-template-areas: "im nm nm" "im pr st"; align-items: center; }
+  .cake-row .thumb {
+    grid-area: im; display: block; width: 84px; height: 84px;
+    object-fit: cover; border-radius: 10px; background: #fff;
+    border: 1px solid var(--line);
+  }
+  .cake-row.on { border-color: var(--navy); background: #FBF4E1; }
+  .cake-row .nm { grid-area: nm; font-size: 16px; font-weight: 700; line-height: 1.35; }
+  .cake-row .pr { grid-area: pr; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; }
+  .cake-row .stepper { grid-area: st; }
+  .pr .was { font-size: 13px; color: #8A98A8; white-space: nowrap; }
+  .pr .was s { text-decoration-thickness: 1.5px; }
+  .pr .off { margin-right: 5px; font-weight: 800; color: var(--sale); }
+  .pr .now { font-size: 17px; font-weight: 800; color: var(--navy); white-space: nowrap; }
+  .price-note {
+    display: flex; align-items: center; gap: 8px;
+    margin: -2px 0 12px; font-size: 14px; color: var(--mute);
+  }
+  .price-note b {
+    padding: 4px 10px; border-radius: 999px;
+    background: var(--xmas); color: #fff; font-size: 13px; font-weight: 800;
+  }
+  .order-sum {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    margin-top: 12px; padding: 14px 16px; border-radius: 12px;
+    background: var(--pine); color: #fff; font-size: 14px;
+  }
+  .order-sum b { font-size: 17px; font-weight: 800; }
+  .order-sum .total b { color: var(--cream); }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
-.choices{display:flex;flex-wrap:wrap;gap:8px}
-.choices.stack{flex-direction:column;align-items:stretch}
-.choice{position:relative;display:block}
-.choice input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer}
-.choice span{display:flex;align-items:center;min-height:44px;padding:9px 18px;border:1px solid var(--line);border-radius:999px;
-  font-size:15px;color:var(--ink-2);background:#fff;transition:background .15s,border-color .15s,color .15s}
-.choices.stack .choice span{border-radius:10px;padding:11px 16px}
-.choice:hover span{border-color:var(--sky);background:var(--brand-tint)}
-.choice input:checked + span{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
-.choice input:focus-visible + span{outline:2px solid var(--brand);outline-offset:2px}
+  .stepper { display: flex; align-items: center; height: 44px; border: 1.5px solid var(--line); border-radius: 12px; background: #fff; }
+  .stepper button {
+    width: 42px; height: 100%; border: 0; background: none;
+    font: 700 22px/1 var(--font); color: var(--navy); cursor: pointer;
+  }
+  .stepper button:disabled { color: #B8C4D2; cursor: default; }
+  .stepper output { min-width: 26px; text-align: center; font-weight: 700; font-size: 17px; }
+  .hint { margin: 6px 2px 0; font-size: 13px; color: var(--mute); }
+  .err { margin: 6px 2px 0; font-size: 13px; color: var(--error); font-weight: 600; min-height: 0; }
+  .err:empty { display: none; }
+  .invalid { border-color: var(--error) !important; }
 
-.reveal{margin-top:12px}
-.reveal[hidden]{display:none}
+  .consent { border-top: 1px solid var(--line); padding-top: 20px; }
+  .check { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; font-weight: 600; cursor: pointer; line-height: 1.45; }
+  .check input { width: 22px; height: 22px; margin: 0; flex: none; accent-color: var(--navy); }
+  .check.all { padding: 14px; border-radius: 12px; background: var(--warm); font-size: 16px; font-weight: 800; color: var(--navy); }
+  .consent-item { padding: 14px 2px 0; }
+  .consent-item + .consent-item { margin-top: 2px; }
+  details { margin: 8px 0 0 32px; font-size: 13px; color: var(--mute); }
+  summary { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; width: fit-content; }
+  .terms-intro { margin: 10px 0 0; line-height: 1.6; }
+  .terms-wrap { overflow-x: auto; margin-top: 10px; }
+  .terms { width: 100%; min-width: 300px; border-collapse: collapse; }
+  .terms th, .terms td { text-align: left; vertical-align: top; padding: 8px 6px; border-top: 1px solid var(--line); line-height: 1.5; }
+  .terms th { width: 84px; font-weight: 600; color: var(--navy); }
+  .terms-note { margin: 8px 0 0; line-height: 1.6; }
+  .outsourcing { margin: 16px 0 0; font-size: 12px; line-height: 1.6; color: var(--mute); }
+  .outsourcing a { color: var(--navy); }
 
-.region{border:1px solid var(--line);border-radius:12px;padding:12px 14px 14px;display:grid;grid-template-columns:120px minmax(0,1fr);gap:8px}
-.region + .region{margin-top:10px}
-.region-h{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;font-size:13.5px;font-weight:600;color:var(--ink-2)}
-.region .area{grid-column:1/-1}
-.rm{border:0;background:none;font:inherit;font-size:13.5px;color:var(--ink-3);cursor:pointer;padding:4px 6px;border-radius:6px}
-.rm:hover{color:var(--danger)}
-.add-region{margin-top:10px;width:100%;min-height:46px;border:1px dashed var(--sky);border-radius:12px;background:#fff;
-  font:inherit;font-size:15px;font-weight:600;color:var(--brand);cursor:pointer}
-.add-region:hover{background:var(--brand-tint);border-color:var(--brand)}
-.add-region[hidden]{display:none}
+  /* ---------- Sticky CTA ---------- */
+  .cta-bar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+    background: var(--pine);
+    padding: 12px 18px calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+  .cta-bar .wrap { display: block; }
+  .btn {
+    display: block; width: 100%; min-height: 56px;
+    border: 0; border-radius: 999px;
+    background: var(--cream); color: var(--xmas-deep);
+    font: 800 18px/1 var(--font); letter-spacing: -0.02em;
+    cursor: pointer;
+  }
+  .btn:disabled { opacity: .6; cursor: wait; }
+  .btn.closed, .btn.closed:disabled { opacity: 1; cursor: not-allowed; background: rgba(255,255,255,.16); color: #fff; font-size: 16px; }
 
-.money{position:relative;max-width:320px}
-.money input{padding-right:56px;text-align:right;font-size:19px;font-weight:700;font-variant-numeric:tabular-nums}
-.money .unit{position:absolute;right:15px;top:50%;transform:translateY(-50%);color:var(--ink-2);font-weight:600;pointer-events:none}
-.money-read{margin:8px 0 0;min-height:1.5em;font-size:15px;font-weight:600;color:var(--brand-ink)}
+  .btn:focus-visible, .stepper button:focus-visible, .check input:focus-visible, summary:focus-visible {
+    outline: 3px solid var(--sky); outline-offset: 2px;
+  }
+  .form-error { margin: 0 0 10px; color: #FFD8D2; font-size: 14px; text-align: center; font-weight: 600; }
+  .form-error:empty { display: none; }
 
-.err{margin:10px 0 0;font-size:14px;font-weight:600;color:var(--danger)}
-.err:empty{display:none}
+  .recent { display: none; margin: 0 0 22px; font-size: 14px; text-align: center; }
+  .recent.show { display: block; }
+  .recent a { color: var(--navy); font-weight: 700; }
+  .setup-warning { margin: 0 0 20px; padding: 12px 14px; border-radius: 12px; background: #FFF1E6; color: #8A3B12; font-size: 14px; font-weight: 600; }
 
-.consent{padding:30px 32px;border-bottom:1px solid var(--line);background:#F5F9FD}
-.consent h2{font-size:16px;margin:0 0 12px}
-.consent dl{display:grid;grid-template-columns:100px minmax(0,1fr);gap:6px 14px;margin:0 0 10px;font-size:14px;color:var(--ink-2)}
-.consent dt{font-weight:600;color:var(--ink)}
-.consent dd{margin:0}
-.consent .note{margin:0;font-size:13.5px;color:var(--ink-3)}
-.check{display:flex;gap:10px;align-items:flex-start;margin-top:16px;font-weight:600;cursor:pointer}
-.check input{flex:none;width:20px;height:20px;margin:2px 0 0;accent-color:var(--brand)}
-.consent.has-err .check{color:var(--danger)}
-
-.submit{padding:28px 32px 36px}
-.btn-submit{width:100%;min-height:56px;border:0;border-radius:12px;background:var(--brand);color:#fff;
-  font:inherit;font-size:17px;font-weight:700;cursor:pointer;transition:background .15s}
-.btn-submit:hover{background:var(--brand-ink)}
-.btn-submit:disabled{opacity:.65;cursor:progress}
-.form-err{margin:12px 0 0;color:var(--danger);font-weight:600;font-size:14.5px}
-.form-err:empty{display:none}
-.submit-note{margin:12px 0 0;font-size:13.5px;color:var(--ink-3);text-align:center}
-
-.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
-
-.done{padding:64px 32px 72px}
-.done .mark{width:52px;height:52px;border-radius:50%;background:var(--brand-tint);display:grid;place-items:center;margin-bottom:22px}
-.done h2{font-weight:800;font-size:clamp(24px,5.4vw,30px);line-height:1.35;letter-spacing:-.02em;margin:0 0 12px}
-.done p{margin:0;color:var(--ink-2);max-width:32em}
-.done[hidden],form[hidden]{display:none}
-
-@media (max-width:560px){
-  .band{padding:20px 20px 18px}
-  .band .logo{width:118px}
-  .intro{padding:26px 20px 0}
-  .intro-foot{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
-  .intro-foot .meta{padding-bottom:22px}
-  .badger{position:static;width:116px;flex:none}
-  .setup{padding:12px 20px}
-  .q{grid-template-columns:42px minmax(0,1fr);padding:26px 20px 26px 16px}
-  .q-no{font-size:25px}
-  .fields.two{grid-template-columns:1fr}
-  .consent,.submit{padding-left:20px;padding-right:20px}
-  .consent dl{grid-template-columns:1fr;gap:2px}
-  .consent dd{margin-bottom:8px}
-  .done{padding:48px 20px 56px}
-}
-@media (max-width:400px){.region{grid-template-columns:1fr}}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
+
+<!-- Meta Pixel Code (넥스트픽 전달 · 데이터세트 1686148093182564) -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '1686148093182564');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=1686148093182564&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
 </head>
 <body>
-<div class="sheet">
-  <p class="setup" id="setup" hidden>설정 전 상태입니다. config.js에 Firebase 설정값을 넣어야 제출 내용이 저장됩니다.</p>
-
-  <header class="head">
-    <div class="band"><img class="logo" src="benson-logo.png" alt="Benson" width="236" height="64"></div>
-    <div class="intro">
-      <h1><span class="hl">가맹 상담 사전 확인서</span></h1>
-      <p class="lead">벤슨 가맹에 관심을 가져 주셔서 감사합니다. 아래 항목을 작성해 주시면 내부 검토 후 상담 진행 여부와 다음 절차를 안내드리겠습니다.</p>
-      <div class="intro-foot">
-        <p class="meta">10개 문항, 약 3분 소요</p>
-        <img class="badger" src="benson-badger.png" alt="" aria-hidden="true" width="269" height="169">
-      </div>
-    </div>
+<div class="wrap">
+  <header class="hero">
+    <div class="snow" aria-hidden="true"></div>
+    <div class="logo" id="logo"><img src="logo-benson-white.svg" alt="Benson" width="111" height="30"></div>
+    <p class="pill">픽업 사전예약 혜택</p>
+    <p class="hand">파티시에가 손수 만든</p>
+    <h1><span class="sub">크리스마스 아이스크림 케이크</span><span class="main" id="heroDiscount">사전예약 30% 할인</span></h1>
+    <p class="period" id="periodLabel">11.20 ~ 12.13</p>
+    <img class="hero-img" id="heroImg" alt="" hidden>
+    <div class="hero-spacer"></div>
+    <svg class="tree t1" viewBox="0 0 40 62" aria-hidden="true"><path fill="#F3E2B3" d="M20 0l1.6 3.4 3.7.4-2.8 2.5.8 3.7L20 8.2 16.7 10l.8-3.7-2.8-2.5 3.7-.4z"/><path fill="#1E4A35" d="M20 7l11 15H9zM20 15l14 18H6zM20 25l17 22H3z"/><path fill="#fff" d="M9 22c3-1.6 5 .6 7-.6s4 1.2 6 0 4 .8 9 .6l-1.6 2.2c-3 .3-5-1-7 .2s-4-.8-6 .2-4-.6-6.2.4zM6 33c4-1.6 6 .7 8.4-.4s4.8 1.2 7.2 0 5 .8 12.4.4L32 35.4c-4 .4-6.6-1-9 .2s-5-.8-7.4.2-5-.6-7.6.4zM3 47c5-1.6 7.2.8 10.2-.4s6 1.2 9 0 6 .8 14.8.4L35 49.5c-5 .4-8-1-11 .2s-6-.8-9 .2-6-.6-9.5.4z"/><path fill="#5B3A29" d="M17.5 47h5v9h-5z"/></svg>
+    <svg class="tree t2" viewBox="0 0 40 62" aria-hidden="true"><path fill="#24573F" d="M20 4l11 16H9zM20 13l14 19H6zM20 24l17 23H3z"/><path fill="#fff" d="M20 4l3.4 5c-2-.8-4.8-.8-6.8 0z"/><path fill="#5B3A29" d="M17.5 47h5v9h-5z"/></svg>
+    <svg class="tree t3" viewBox="0 0 40 62" aria-hidden="true"><path fill="#1E4A35" d="M20 2l11 17H9zM20 12l14 19H6zM20 23l17 24H3z"/><path fill="#fff" d="M20 2l3.6 5.6c-2.2-.9-5-.9-7.2 0zM9 19c3-1.4 5 .6 7-.5s4 1.1 6 0 4 .7 9 .5l-1.6 2c-3 .3-5-.9-7 .2s-4-.7-6 .2-4-.5-6.2.4zM6 31c4-1.5 6 .7 8.4-.4s4.8 1.1 7.2 0 5 .8 12.4.4L32 33.3c-4 .4-6.6-.9-9 .2s-5-.7-7.4.2-5-.6-7.6.4z"/><path fill="#5B3A29" d="M17.5 47h5v9h-5z"/></svg>
   </header>
 
-  <form id="form" novalidate>
-    <section class="q" data-q="q1">
-      <div class="q-no">1</div>
-      <div>
-        <h2 class="q-title">성함 및 연락처</h2>
-        <p class="q-help">상담 안내를 받으실 연락처와 이메일을 적어 주세요.</p>
-        <div class="fields two">
-          <label class="field"><span>성함</span><input type="text" id="name" maxlength="30" autocomplete="name"></label>
-          <label class="field"><span>연락처</span><input type="tel" id="phone" maxlength="13" inputmode="numeric" autocomplete="tel" placeholder="010-0000-0000"></label>
-          <label class="field full"><span>이메일</span><input type="email" id="email" maxlength="120" autocomplete="email" placeholder="name@example.com"></label>
+  <main class="sheet">
+    <div id="setupWarning" class="setup-warning" hidden></div>
+    <p class="recent" id="recent">이전에 신청하신 예약이 있어요. <a id="recentLink" href="#">예약 상태 보기</a></p>
+
+    <form id="form" novalidate>
+      <div class="notice">
+        <ul>
+          <li><b id="pickupRangeNote">픽업은 12월 21일(월) ~ 25일(금), 정해진 날짜에만 가능해요.</b></li>
+          <li>신청 후 받는 <b>예약 확인 링크</b>에서 확정 여부를 볼 수 있어요. (확정 문자는 따로 보내지 않아요)</li>
+          <li>결제는 픽업하실 때 매장에서 해요. 휴대폰 번호 뒷자리를 말씀해 주시면 사전예약가로 결제해 드려요.</li>
+          <li><b>예약 후 취소하실 경우, 예약한 매장으로 꼭 연락 부탁드립니다.</b> 제품 변경도 매장으로 연락해 주세요.</li>
+        </ul>
+      </div>
+
+      <fieldset>
+        <legend>어느 매장에서 받으시나요?</legend>
+        <div class="field">
+          <label for="store">픽업 매장</label>
+          <select id="store" name="store" required><option value="">매장을 선택해 주세요</option></select>
+          <p class="hint" id="storeTel" hidden></p>
+          <p class="err" data-for="store"></p>
         </div>
-        <p class="err"></p>
-      </div>
-    </section>
+      </fieldset>
 
-    <section class="q" data-q="q2">
-      <div class="q-no">2</div>
-      <div>
-        <h2 class="q-title">연령대</h2>
-        <div class="choices" id="ageChoices" role="radiogroup" aria-label="연령대"></div>
-        <p class="err"></p>
-      </div>
-    </section>
-
-    <section class="q" data-q="q3">
-      <div class="q-no">3</div>
-      <div>
-        <h2 class="q-title">희망 출점 지역</h2>
-        <p class="q-help">최대 3곳까지 고를 수 있습니다. 생각해 둔 상권이 있으면 함께 적어 주세요.</p>
-        <div id="regionList"></div>
-        <button type="button" class="add-region" id="addRegion">지역 추가</button>
-        <p class="err"></p>
-      </div>
-    </section>
-
-    <section class="q" data-q="q4">
-      <div class="q-no">4</div>
-      <div>
-        <h2 class="q-title">총 투자 가능 금액</h2>
-        <p class="q-help">보증금·권리금 등을 포함한 총예산을 만원 단위로 적어 주세요.</p>
-        <div class="money">
-          <input type="text" id="investment" inputmode="numeric" maxlength="9" placeholder="예: 18,000" aria-label="총 투자 가능 금액(만원)">
-          <span class="unit">만원</span>
+      <fieldset>
+        <legend>어떤 케이크를 예약하시나요?</legend>
+        <div id="cakeSlot"></div>
+        <div class="order-sum" id="orderSum" hidden aria-live="polite">
+          <span>선택 <b id="sumQty">0</b>개</span>
+          <span class="total" id="sumPriceWrap">사전예약가 합계 <b id="sumPrice">0원</b></span>
         </div>
-        <p class="money-read" id="investRead" aria-live="polite"></p>
-        <p class="err"></p>
-      </div>
-    </section>
+        <p class="err" data-for="cake"></p>
+      </fieldset>
 
-    <section class="q" data-q="q5">
-      <div class="q-no">5</div>
-      <div>
-        <h2 class="q-title">외식업(F&amp;B) 운영 또는 근무 경험</h2>
-        <div class="choices stack" id="fnbChoices" role="radiogroup" aria-label="외식업 경험"></div>
-        <div class="reveal" id="fnbDetailWrap" hidden>
-          <label class="field"><span>업종, 주요 업무, 기간</span>
-            <textarea id="fnbDetail" maxlength="1000" rows="3" placeholder="예: 커피 전문점 점장 2년, 매장 운영·인력 관리"></textarea></label>
-        </div>
-        <p class="err"></p>
-      </div>
-    </section>
-
-    <section class="q" data-q="q6">
-      <div class="q-no">6</div>
-      <div>
-        <h2 class="q-title">벤슨 가맹 지원 사유</h2>
-        <p class="q-help">벤슨을 선택하신 이유와 창업 동기를 간단히 적어 주세요.</p>
-        <textarea id="motive" maxlength="2000" rows="4" aria-label="벤슨 가맹 지원 사유"></textarea>
-        <p class="err"></p>
-      </div>
-    </section>
-
-    <section class="q" data-q="q7">
-      <div class="q-no">7</div>
-      <div>
-        <h2 class="q-title">희망 오픈 시기</h2>
-        <div class="choices" id="openChoices" role="radiogroup" aria-label="희망 오픈 시기"></div>
-        <p class="err"></p>
-      </div>
-    </section>
-
-    <section class="q" data-q="q8">
-      <div class="q-no">8</div>
-      <div>
-        <h2 class="q-title">운영 참여 계획</h2>
-        <div class="choices" id="operChoices" role="radiogroup" aria-label="운영 참여 계획"></div>
-        <div class="reveal" id="operNoteWrap" hidden>
-          <label class="field"><span>운영 계획</span>
-            <input type="text" id="operationNote" maxlength="200" placeholder="예: 가족과 공동 운영"></label>
-        </div>
-        <p class="err"></p>
-      </div>
-    </section>
-
-    <section class="q" data-q="q9">
-      <div class="q-no">9</div>
-      <div>
-        <h2 class="q-title">점포 확보 여부</h2>
-        <div class="choices" id="storeChoices" role="radiogroup" aria-label="점포 확보 여부"></div>
-        <div class="reveal" id="storeWrap" hidden>
-          <div class="fields two">
-            <label class="field full"><span>점포 소재지</span>
-              <input type="text" id="storeAddress" maxlength="200" placeholder="예: 경기 성남시 분당구 서현동 OO빌딩 1층"></label>
-            <label class="field"><span>면적(평) <span class="opt">선택</span></span>
-              <input type="text" id="storeArea" maxlength="10" inputmode="decimal" placeholder="예: 15"></label>
+      <fieldset>
+        <legend>언제 받으시나요?</legend>
+        <div class="row">
+          <div class="field">
+            <label for="date">픽업 날짜</label>
+            <select id="date" name="date" required><option value="">날짜 선택</option></select>
+          </div>
+          <div class="field">
+            <label for="time">픽업 시간</label>
+            <select id="time" name="time" required><option value="">시간 선택</option></select>
           </div>
         </div>
-        <p class="err"></p>
+        <p class="hint" id="dateHint">픽업은 12월 21일(월) ~ 25일(금) 중에서만 고를 수 있어요. 시간은 매장 운영시간 안에서 골라 주세요.</p>
+        <p class="err" data-for="date"></p>
+        <p class="err" data-for="time"></p>
+      </fieldset>
+
+      <fieldset>
+        <legend>예약하시는 분</legend>
+        <div class="field">
+          <label for="name">이름</label>
+          <input type="text" id="name" name="name" autocomplete="name" maxlength="20" required>
+          <p class="err" data-for="name"></p>
+        </div>
+        <div class="field">
+          <label for="phone">휴대폰 번호</label>
+          <input type="tel" id="phone" name="phone" inputmode="numeric" autocomplete="tel" placeholder="010-0000-0000" maxlength="13" required>
+          <p class="hint">픽업할 때 뒷자리 4개로 예약을 확인해요. 일정 조정이 필요하면 매장에서 이 번호로 연락드려요.</p>
+          <p class="err" data-for="phone"></p>
+        </div>
+        <div class="field">
+          <label for="memo">요청사항 <span class="opt">(선택)</span></label>
+          <textarea id="memo" name="memo" maxlength="200" placeholder="예: 초 2개 부탁드려요"></textarea>
+        </div>
+      </fieldset>
+
+      <div class="consent" id="consentBox">
+        <label class="check all">
+          <input type="checkbox" id="agreeAll">
+          <span>아래 내용에 모두 동의합니다</span>
+        </label>
+
+        <div class="consent-item">
+          <label class="check">
+            <input type="checkbox" id="consent" class="agree" required>
+            <span>[필수] 개인정보 수집·이용 동의</span>
+          </label>
+          <details><summary>내용 보기</summary><div id="termsCollect"></div></details>
+        </div>
+
+        <div class="consent-item">
+          <label class="check">
+            <input type="checkbox" id="consent3p" class="agree" required>
+            <span>[필수] 개인정보 제3자 제공 동의</span>
+          </label>
+          <details><summary>내용 보기</summary><div id="termsThird"></div></details>
+        </div>
+
+        <div class="consent-item">
+          <label class="check">
+            <input type="checkbox" id="consentMkt" class="agree">
+            <span>[선택] 마케팅 정보 수신 동의</span>
+          </label>
+          <details><summary>내용 보기</summary><div id="termsMkt"></div></details>
+        </div>
+
+        <p class="err" data-for="consent"></p>
+        <p class="outsourcing" id="outsourcing"></p>
       </div>
-    </section>
+    </form>
 
-    <section class="q" data-q="q10">
-      <div class="q-no">10</div>
-      <div>
-        <h2 class="q-title">기타 문의사항<span class="opt">선택</span></h2>
-        <textarea id="etc" maxlength="2000" rows="3" aria-label="기타 문의사항" placeholder="궁금하신 점이 있으면 적어 주세요."></textarea>
-        <p class="err"></p>
-      </div>
-    </section>
+  </main>
+</div>
 
-    <section class="consent" data-q="consent">
-      <h2>개인정보 수집·이용 동의</h2>
-      <dl>
-        <dt>수집 목적</dt><dd id="pvPurpose"></dd>
-        <dt>수집 항목</dt><dd id="pvItems"></dd>
-        <dt>보유 기간</dt><dd id="pvRetention"></dd>
-      </dl>
-      <p class="note">동의를 거부하실 수 있으며, 거부하시면 가맹 상담 접수가 어렵습니다.</p>
-      <label class="check"><input type="checkbox" id="consent"><span>위 내용을 확인했으며 개인정보 수집·이용에 동의합니다.</span></label>
-      <p class="err"></p>
-    </section>
-
-    <div class="hp" aria-hidden="true"><label>홈페이지 <input type="text" id="hp" tabindex="-1" autocomplete="off"></label></div>
-
-    <div class="submit">
-      <button type="submit" class="btn-submit" id="submitBtn">상담 신청서 제출</button>
-      <p class="form-err" id="formErr" role="alert"></p>
-      <p class="submit-note">제출 후 수정할 내용이 있으면 안내 메일에 회신해 주세요.</p>
-    </div>
-  </form>
-
-  <section class="done" id="done" hidden>
-    <div class="mark" aria-hidden="true">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="#3E6FB2" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </div>
-    <h2>신청서가 접수되었습니다</h2>
-    <p>작성해 주신 내용을 내부 검토한 뒤, 기재하신 연락처로 상담 진행 여부와 다음 절차를 안내드리겠습니다.</p>
-  </section>
+<div class="cta-bar" id="ctaBar">
+  <div class="wrap">
+    <p class="form-error" id="formError" role="alert"></p>
+    <button type="submit" form="form" class="btn" id="submitBtn">사전예약 신청하기</button>
+  </div>
 </div>
 
 <script type="module">
-import * as C from "./config.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, doc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { firebaseConfig, BRAND, STORES, STORE_PHONES, CAKES, MAX_QTY, MIN_DAYS_AHEAD, MAX_DAYS_AHEAD, PICKUP_TIME, PRIVACY, RESERVE_PERIOD, PICKUP_DATES, PREORDER_DISCOUNT_RATE, salePriceOf, CAMPAIGN } from "./config.js";
 
-const $  = (s, el = document) => el.querySelector(s);
-const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const $ = (id) => document.getElementById(id);
+const WEEK = ["일", "월", "화", "수", "목", "금", "토"];
 
-/* 구분: 접수폼 링크로 제출하면 '메일 접수'. 링크 뒤에 ?src=homepage 를 붙인 경우만 '홈페이지 접수' */
-const srcParam = new URLSearchParams(location.search).get("src");
-const SOURCE = (srcParam === "homepage" || srcParam === "hp") ? "homepage" : "mail";
+/* ---------- 브랜드 이미지 ---------- */
+if (BRAND.logoUrl) $("logo").innerHTML = `<img src="${BRAND.logoUrl}" alt="Benson">`;
+if (BRAND.heroImageUrl) { $("heroImg").src = BRAND.heroImageUrl; $("heroImg").alt = "벤슨 케이크"; $("heroImg").hidden = false; }
 
-if (!C.firebaseConfig.apiKey) $("#setup").hidden = false;
-
-/* Firebase는 화면을 먼저 그린 뒤 뒤에서 불러옵니다 */
-const firebaseReady = (async () => {
-  if (!C.firebaseConfig.apiKey) throw new Error("NO_CONFIG");
-  const [appM, fs] = await Promise.all([
-    import(`${C.FIREBASE_SDK}/firebase-app.js`),
-    import(`${C.FIREBASE_SDK}/firebase-firestore.js`)
-  ]);
-  const app = appM.initializeApp(C.firebaseConfig);
-  return { db: fs.getFirestore(app), addDoc: fs.addDoc, collection: fs.collection, serverTimestamp: fs.serverTimestamp };
-})();
-firebaseReady.catch(() => {});
-
-/* 선택지 */
-function choices(el, name, list) {
-  el.innerHTML = list.map(o =>
-    `<label class="choice"><input type="radio" name="${name}" value="${o.v}"><span>${C.esc(o.t)}</span></label>`).join("");
+/* ---------- 설정 확인 ---------- */
+const configured = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId);
+let db = null;
+if (configured) {
+  db = getFirestore(initializeApp(firebaseConfig));
+} else {
+  $("setupWarning").textContent = "config.js에 Firebase 설정이 비어 있어 신청이 저장되지 않습니다.";
+  $("setupWarning").hidden = false;
 }
-choices($("#ageChoices"), "ageBand", C.AGE);
-choices($("#fnbChoices"), "fnbExp", C.FNB);
-choices($("#openChoices"), "openTiming", C.OPEN);
-choices($("#operChoices"), "operation", C.OPER);
-choices($("#storeChoices"), "store", C.STORE);
 
-$("#pvPurpose").textContent = C.PRIVACY.purpose;
-$("#pvItems").textContent = C.PRIVACY.items;
-$("#pvRetention").textContent = C.PRIVACY.retention;
-
-/* 희망 지역 (최대 3곳) */
-const MAX_REGIONS = 3;
-const regionList = $("#regionList");
-const AREA_HINT = "희망 상권 (선택) 예: 서현역 상권";
-const sidoOptions = `<option value="">시·도</option>` + Object.keys(C.REGIONS).map(s => `<option>${s}</option>`).join("");
-
-function addRegion() {
-  if (regionList.children.length >= MAX_REGIONS) return;
-  const row = document.createElement("div");
-  row.className = "region";
-  row.innerHTML = `
-    <div class="region-h"><span class="region-label"></span><button type="button" class="rm">삭제</button></div>
-    <select class="sido" aria-label="시·도">${sidoOptions}</select>
-    <select class="sigungu" aria-label="시·군·구" disabled><option value="">시·군·구</option></select>
-    <input type="text" class="area" maxlength="60" placeholder="${AREA_HINT}" aria-label="희망 상권">`;
-  const sido = $(".sido", row), sg = $(".sigungu", row), area = $(".area", row);
-  sido.addEventListener("change", () => {
-    const list = C.REGIONS[sido.value] || [];
-    sg.innerHTML = `<option value="">시·군·구</option>` + list.map(x => `<option>${x}</option>`).join("")
-      + (sido.value ? `<option value="__etc">목록에 없음 (직접 입력)</option>` : "");
-    sg.disabled = !sido.value;
-    area.placeholder = AREA_HINT;
-  });
-  sg.addEventListener("change", () => {
-    area.placeholder = sg.value === "__etc" ? "지역·상권명을 직접 입력해 주세요" : AREA_HINT;
-    if (sg.value === "__etc") area.focus();
-  });
-  $(".rm", row).addEventListener("click", () => { row.remove(); relabel(); });
-  regionList.appendChild(row);
-  relabel();
+/* ---------- 날짜 (한국 시간 기준) ---------- */
+const kstDate = (offsetDays = 0) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" })
+    .format(new Date(Date.now() + offsetDays * 86400000));
+const prettyDate = (ymd) => {
+  const [y, m, d] = ymd.split("-").map(Number);
+  return `${m}월 ${d}일(${WEEK[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]})`;
+};
+const today = kstDate(0);
+const tomorrowish = kstDate(MIN_DAYS_AHEAD);
+const minDate = PICKUP_DATES.first && PICKUP_DATES.first > tomorrowish ? PICKUP_DATES.first : tomorrowish;
+const maxDate = PICKUP_DATES.last || kstDate(MAX_DAYS_AHEAD);
+const addDays = (ymd, n) => {
+  const [y, m, d] = ymd.split("-").map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d + n));
+  return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, "0")}-${String(t.getUTCDate()).padStart(2, "0")}`;
+};
+const pickupDays = [];
+for (let d = minDate; d <= maxDate && pickupDays.length < 62; d = addDays(d, 1)) pickupDays.push(d);
+pickupDays.forEach((d) => $("date").add(new Option(prettyDate(d), d)));
+if (PICKUP_DATES.first && PICKUP_DATES.last) {
+  const [, m1, d1] = PICKUP_DATES.first.split("-").map(Number);
+  const [, m2, d2] = PICKUP_DATES.last.split("-").map(Number);
+  const range = m1 === m2
+    ? `${m1}월 ${d1}일(${prettyDate(PICKUP_DATES.first).slice(-2, -1)}) ~ ${d2}일(${prettyDate(PICKUP_DATES.last).slice(-2, -1)})`
+    : `${prettyDate(PICKUP_DATES.first)} ~ ${prettyDate(PICKUP_DATES.last)}`;
+  $("pickupRangeNote").textContent = `픽업은 ${range}, 정해진 날짜에만 가능해요.`;
+  $("dateHint").textContent = `픽업은 ${range} 중에서만 고를 수 있어요. 시간은 매장 운영시간 안에서 골라 주세요.`;
 }
-function relabel() {
-  const rows = $$(".region", regionList);
-  rows.forEach((r, i) => {
-    $(".region-label", r).textContent = `희망 지역 ${i + 1}`;
-    $(".rm", r).hidden = rows.length === 1;
-  });
-  $("#addRegion").hidden = rows.length >= MAX_REGIONS;
-}
-$("#addRegion").addEventListener("click", addRegion);
-addRegion();
 
-/* 투자 금액: 쉼표 + 억 단위 읽기 */
-const inv = $("#investment");
-inv.addEventListener("input", () => {
-  const d = inv.value.replace(/\D/g, "").replace(/^0+/, "").slice(0, 7);
-  inv.value = d ? Number(d).toLocaleString("ko-KR") : "";
-  $("#investRead").textContent = d ? `${C.manToText(Number(d))}` : "";
+/* ---------- 사전예약 기간 ---------- */
+$("periodLabel").textContent = RESERVE_PERIOD.label;
+$("heroDiscount").textContent = `사전예약 ${PREORDER_DISCOUNT_RATE}% 할인`;
+const reserveOpen = pickupDays.length > 0;    // 신청 기간 제한 없음 — 고를 수 있는 픽업 날짜가 남아 있는 동안 계속 접수
+function lockForPeriod() {
+  if (reserveOpen) return;
+  const btn = $("submitBtn");
+  btn.disabled = true; btn.classList.add("closed");
+  btn.textContent = "크리스마스 케이크 사전예약이 마감되었어요";
+}
+lockForPeriod();
+
+/* ---------- 선택지 채우기 ---------- */
+const storeSel = $("store");
+[...STORES].sort((a, b) => a.localeCompare(b, "ko")).forEach((s) => {
+  storeSel.add(new Option(s.replace(/^벤슨\s*/, ""), s));
 });
 
-/* 연락처 하이픈 */
-function fmtPhone(v) {
-  const d = v.replace(/\D/g, "").slice(0, 11);
-  if (d.startsWith("02")) {
-    if (d.length <= 2) return d;
-    if (d.length <= 5) return `${d.slice(0, 2)}-${d.slice(2)}`;
-    if (d.length <= 9) return `${d.slice(0, 2)}-${d.slice(2, 5)}-${d.slice(5)}`;
-    return `${d.slice(0, 2)}-${d.slice(2, 6)}-${d.slice(6, 10)}`;
+storeSel.addEventListener("change", () => {
+  const tel = STORE_PHONES[storeSel.value];
+  $("storeTel").hidden = !tel;
+  if (tel) $("storeTel").innerHTML = `매장 연락처 <a href="tel:${tel.replace(/[^0-9]/g, "")}" style="color:var(--navy);font-weight:700">${tel}</a> · 취소·변경 시 연락해 주세요`;
+});
+
+const cakeName = (c) => (typeof c === "string" ? c : c.name);
+const cakePrice = (c) => (typeof c === "string" ? null : c.price);
+const won = (n) => `${n.toLocaleString("ko-KR")}원`;
+function priceTag(c) {
+  const pr = document.createElement("span"); pr.className = "pr";
+  const price = cakePrice(c), sale = salePriceOf(cakeName(c));
+  if (!sale || sale >= price) { pr.innerHTML = `<span class="now">${won(price)}</span>`; return pr; }
+  const off = Math.round((1 - sale / price) * 100);
+  pr.innerHTML =
+    `<span class="sr-only">정상가 ${won(price)}, 사전예약가 ${won(sale)}</span>` +
+    `<span class="was" aria-hidden="true"><span class="off">-${off}%</span><s>${won(price)}</s></span>` +
+    `<span class="now" aria-hidden="true">${won(sale)}</span>`;
+  return pr;
+}
+/* ---------- 케이크별 수량 선택 ---------- */
+const counts = new Map(CAKES.map((c) => [cakeName(c), 0]));
+const saleOf = (name) => salePriceOf(name);
+
+if (CAKES.length) {
+  if (PREORDER_DISCOUNT_RATE && CAKES.some(cakePrice)) {
+    const note = document.createElement("p"); note.className = "price-note";
+    note.innerHTML = `<b>사전예약가</b><span>1개당 ${PREORDER_DISCOUNT_RATE}% 할인된 가격이에요</span>`;
+    $("cakeSlot").appendChild(note);
   }
-  if (d.length <= 3) return d;
-  if (d.length <= 6) return `${d.slice(0, 3)}-${d.slice(3)}`;
-  if (d.length <= 10) return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`;
-  return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`;
-}
-$("#phone").addEventListener("input", e => { e.target.value = fmtPhone(e.target.value); });
-
-/* 조건부 항목 */
-const form = $("#form");
-form.addEventListener("change", e => {
-  const t = e.target;
-  if (t.name === "fnbExp") $("#fnbDetailWrap").hidden = t.value === "none";
-  if (t.name === "operation") $("#operNoteWrap").hidden = t.value !== "other";
-  if (t.name === "store") $("#storeWrap").hidden = t.value === "none";
-});
-
-/* 입력하면 해당 문항의 오류 표시 해제 */
-function clearErr(el) {
-  const sec = el.closest("[data-q]");
-  if (sec && sec.classList.contains("has-err")) { sec.classList.remove("has-err"); $(".err", sec).textContent = ""; }
-}
-form.addEventListener("input", e => clearErr(e.target));
-form.addEventListener("change", e => clearErr(e.target));
-
-/* 입력값 확인 */
-function collect() {
-  const e = {};
-  const val = id => $("#" + id).value.trim();
-  const pick = n => ($(`input[name="${n}"]:checked`) || {}).value || "";
-
-  const name = val("name"), phone = val("phone"), email = val("email");
-  const pd = phone.replace(/\D/g, "");
-  if (!name) e.q1 = "성함을 입력해 주세요.";
-  else if (pd.length < 9 || pd.length > 11) e.q1 = "연락처를 정확히 입력해 주세요.";
-  else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) e.q1 = "이메일 주소를 정확히 입력해 주세요.";
-
-  const ageBand = pick("ageBand");
-  if (!ageBand) e.q2 = "연령대를 선택해 주세요.";
-
-  let regions = $$(".region", regionList).map(r => {
-    const sg = $(".sigungu", r).value;
-    return { sido: $(".sido", r).value, sigungu: sg === "__etc" ? "" : sg, area: $(".area", r).value.trim(), etc: sg === "__etc" };
-  }).filter(r => r.sido || r.area);
-  if (!regions.length) e.q3 = "희망 출점 지역을 1곳 이상 선택해 주세요.";
-  else if (regions.some(r => !r.sido)) e.q3 = "시·도를 선택해 주세요.";
-  else if (regions.some(r => !r.sigungu && !r.etc)) e.q3 = "시·군·구를 선택해 주세요.";
-  else if (regions.some(r => r.etc && !r.area)) e.q3 = "목록에 없는 지역은 지역·상권명을 직접 입력해 주세요.";
-  regions = regions.map(({ etc, ...r }) => r);
-
-  const investment = Number(val("investment").replace(/\D/g, "")) || 0;
-  if (!investment) e.q4 = "총 투자 가능 금액을 만원 단위로 입력해 주세요.";
-
-  const fnbExp = pick("fnbExp"), fnbDetail = val("fnbDetail");
-  if (!fnbExp) e.q5 = "외식업 경험 여부를 선택해 주세요.";
-  else if (fnbExp !== "none" && !fnbDetail) e.q5 = "업종, 주요 업무, 기간을 적어 주세요.";
-
-  const motive = val("motive");
-  if (!motive) e.q6 = "지원 사유를 간단히 적어 주세요.";
-
-  const openTiming = pick("openTiming");
-  if (!openTiming) e.q7 = "희망 오픈 시기를 선택해 주세요.";
-
-  const operation = pick("operation"), operationNote = val("operationNote");
-  if (!operation) e.q8 = "운영 참여 계획을 선택해 주세요.";
-  else if (operation === "other" && !operationNote) e.q8 = "운영 계획을 간단히 적어 주세요.";
-
-  const store = pick("store"), storeAddress = val("storeAddress"), storeArea = val("storeArea");
-  if (!store) e.q9 = "점포 확보 여부를 선택해 주세요.";
-  else if (store === "secured" && !storeAddress) e.q9 = "확보한 점포의 소재지를 적어 주세요.";
-
-  if (!$("#consent").checked) e.consent = "개인정보 수집·이용에 동의해야 접수할 수 있습니다.";
-
-  return {
-    errors: e,
-    data: {
-      name, phone, email, ageBand, regions, investment,
-      fnbExp, fnbDetail: fnbExp === "none" ? "" : fnbDetail,
-      motive, openTiming,
-      operation, operationNote: operation === "other" ? operationNote : "",
-      store, storeAddress: store === "none" ? "" : storeAddress, storeArea: store === "none" ? "" : storeArea,
-      etc: val("etc"), consent: true, source: SOURCE, formVersion: C.FORM_VERSION
+  const list = document.createElement("div");
+  list.className = "cake-list"; list.id = "cake";
+  CAKES.forEach((c) => {
+    const name = cakeName(c);
+    const row = document.createElement("div"); row.className = "cake-row";
+    if (c.image) {
+      const img = document.createElement("img");
+      img.className = "thumb"; img.src = c.image; img.alt = name;
+      img.width = 400; img.height = 400; img.loading = "lazy"; img.decoding = "async";
+      img.onerror = () => { img.remove(); row.classList.remove("has-img"); };
+      row.classList.add("has-img"); row.appendChild(img);
     }
-  };
-}
-
-function showErrors(e) {
-  $$("[data-q]").forEach(sec => {
-    const m = e[sec.dataset.q] || "";
-    sec.classList.toggle("has-err", !!m);
-    $(".err", sec).textContent = m;
+    const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = name;
+    row.appendChild(nm);
+    if (cakePrice(c)) row.appendChild(priceTag(c));
+    const st = document.createElement("div"); st.className = "stepper"; st.setAttribute("role", "group"); st.setAttribute("aria-label", `${name} 수량`);
+    const minus = document.createElement("button"); minus.type = "button"; minus.textContent = "−"; minus.setAttribute("aria-label", `${name} 1개 빼기`);
+    const out = document.createElement("output"); out.textContent = "0"; out.setAttribute("aria-live", "polite");
+    const plus = document.createElement("button"); plus.type = "button"; plus.textContent = "+"; plus.setAttribute("aria-label", `${name} 1개 담기`);
+    st.append(minus, out, plus); row.appendChild(st);
+    const paint = () => {
+      const n = counts.get(name);
+      out.textContent = n; minus.disabled = n <= 0; plus.disabled = n >= MAX_QTY;
+      row.classList.toggle("on", n > 0);
+    };
+    minus.onclick = () => { counts.set(name, Math.max(counts.get(name) - 1, 0)); paint(); updateSum(); };
+    plus.onclick = () => { counts.set(name, Math.min(counts.get(name) + 1, MAX_QTY)); paint(); updateSum(); };
+    paint();
+    list.appendChild(row);
   });
+  $("cakeSlot").appendChild(list);
+} else {
+  $("cakeSlot").textContent = "config.js의 CAKES에 케이크 목록을 입력해 주세요.";
+}
+const getItems = () => CAKES.map(cakeName).filter((n) => counts.get(n) > 0).map((n) => ({ name: n, qty: counts.get(n) }));
+function updateSum() {
+  const items = getItems();
+  const total = items.reduce((a, i) => a + i.qty, 0);
+  $("orderSum").hidden = total === 0;
+  $("sumQty").textContent = total;
+  const priced = items.every((i) => saleOf(i.name) != null);
+  $("sumPriceWrap").hidden = !priced;
+  if (priced) $("sumPrice").textContent = won(items.reduce((a, i) => a + saleOf(i.name) * i.qty, 0));
+  if (total > 0) setErr("cake", "");
 }
 
-function showDone() {
-  form.hidden = true;
-  $("#done").hidden = false;
-  window.scrollTo(0, 0);
+const toMin = (hhmm) => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + m; };
+const pad = (n) => String(n).padStart(2, "0");
+for (let t = toMin(PICKUP_TIME.start); t <= toMin(PICKUP_TIME.end); t += PICKUP_TIME.stepMin) {
+  const v = `${pad(Math.floor(t / 60))}:${pad(t % 60)}`;
+  $("time").add(new Option(v, v));
 }
 
-let sending = false;
-form.addEventListener("submit", async ev => {
-  ev.preventDefault();
-  if (sending) return;
-  $("#formErr").textContent = "";
-  if ($("#hp").value) { showDone(); return; }          // 자동 입력 봇 차단
+/* ---------- 동의서 (config.js의 PRIVACY로 생성) ---------- */
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+function termsTable(rows) {
+  const wrap = el("div", "terms-wrap");
+  const t = el("table", "terms");
+  rows.forEach(([k, v]) => {
+    const tr = document.createElement("tr");
+    const th = el("th", null, k); th.scope = "row";
+    tr.append(th, el("td", null, v)); t.appendChild(tr);
+  });
+  wrap.appendChild(t); return wrap;
+}
+$("termsCollect").append(
+  el("p", "terms-intro", PRIVACY.intro),
+  termsTable([["수집 항목", PRIVACY.collect.items], ["수집·이용 목적", PRIVACY.collect.purpose], ["보유 기간", PRIVACY.collect.retention]]),
+  el("p", "terms-note", PRIVACY.refusalRequired)
+);
+$("termsThird").append(
+  ...PRIVACY.thirdParty.map((tp) => termsTable([["제공받는 자", tp.recipient], ["제공 목적", tp.purpose], ["제공 항목", tp.items], ["보유 기간", tp.retention]])),
+  el("p", "terms-note", PRIVACY.refusalRequired)
+);
+$("termsMkt").append(
+  termsTable([["수집 항목", PRIVACY.marketing.items], ["이용 목적", PRIVACY.marketing.purpose], ["연락 방법", PRIVACY.marketing.channels], ["보유 기간", PRIVACY.marketing.retention]]),
+  el("p", "terms-note", PRIVACY.refusalMarketing)
+);
+{
+  const o = $("outsourcing");
+  o.textContent = "개인정보 처리 위탁: " + PRIVACY.outsourcing.map((x) => `${x.vendor} – ${x.task}`).join(" / ");
+  if (PRIVACY.policyUrl) {
+    o.append(" ");
+    const a = el("a", null, "개인정보처리방침 전문 보기"); a.href = PRIVACY.policyUrl; a.target = "_blank"; a.rel = "noopener";
+    o.appendChild(a);
+  }
+}
 
-  const { errors, data } = collect();
-  showErrors(errors);
-  const first = Object.keys(errors)[0];
-  if (first) {
-    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    $(`[data-q="${first}"]`).scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+/* ---------- 전체 동의 ---------- */
+const agrees = [...document.querySelectorAll(".agree")];
+$("agreeAll").addEventListener("change", (e) => { agrees.forEach((c) => { c.checked = e.target.checked; }); setErr("consent", ""); });
+agrees.forEach((c) => c.addEventListener("change", () => { $("agreeAll").checked = agrees.every((x) => x.checked); }));
+
+/* ---------- 전화번호 자동 하이픈 ---------- */
+const digits = (s) => s.replace(/\D/g, "");
+const formatPhone = (d) => d.length < 4 ? d : d.length < 8 ? `${d.slice(0, 3)}-${d.slice(3)}` : `${d.slice(0, 3)}-${d.slice(3, d.length - 4)}-${d.slice(-4)}`;
+$("phone").addEventListener("input", (e) => { e.target.value = formatPhone(digits(e.target.value).slice(0, 11)); });
+
+/* ---------- 이전 신청 ---------- */
+const statusUrl = (id) => new URL(`status.html?r=${encodeURIComponent(id)}`, location.href).href;
+try {
+  const last = localStorage.getItem("benson_last_reservation");
+  if (last) { $("recentLink").href = statusUrl(last); $("recent").classList.add("show"); }
+} catch (_) {}
+
+/* ---------- 검증 ---------- */
+const setErr = (key, msg) => {
+  const p = document.querySelector(`.err[data-for="${key}"]`);
+  if (p) p.textContent = msg || "";
+  const el = $(key);
+  if (el) el.classList.toggle("invalid", Boolean(msg));
+};
+function validate() {
+  const v = {
+    store: storeSel.value,
+    items: getItems(),
+    date: $("date").value,
+    time: $("time").value,
+    name: $("name").value.trim(),
+    phone: digits($("phone").value),
+    memo: $("memo").value.trim(),
+    consent: $("consent").checked,
+    consent3p: $("consent3p").checked,
+    consentMkt: $("consentMkt").checked
+  };
+  const errs = {};
+  if (!v.store) errs.store = "픽업 매장을 선택해 주세요.";
+  if (!v.items.length) errs.cake = "케이크를 1개 이상 담아 주세요. (+ 버튼으로 수량 선택)";
+  if (!v.date) errs.date = "픽업 날짜를 선택해 주세요.";
+  else if (!pickupDays.includes(v.date)) errs.date = "픽업 가능한 날짜 중에서 다시 골라 주세요.";
+  if (!v.time) errs.time = "픽업 시간을 선택해 주세요.";
+  if (!v.name) errs.name = "이름을 적어 주세요.";
+  if (!/^01[016789]\d{7,8}$/.test(v.phone)) errs.phone = "휴대폰 번호를 정확히 적어 주세요.";
+  if (!v.consent || !v.consent3p) errs.consent = "[필수] 항목 2개에 모두 동의해야 신청할 수 있어요.";
+  ["store", "cake", "date", "time", "name", "phone", "consent"].forEach((k) => setErr(k, errs[k]));
+  return { v, ok: Object.keys(errs).length === 0, first: Object.keys(errs)[0] };
+}
+["store", "date", "time", "name", "phone", "consent"].forEach((k) =>
+  $(k).addEventListener("change", () => setErr(k, "")));
+$("consent3p").addEventListener("change", () => setErr("consent", ""));
+
+/* ---------- 저장 ---------- */
+const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const makeCode = () => {
+  const a = new Uint32Array(6); crypto.getRandomValues(a);
+  return [...a].map((n) => CODE_CHARS[n % CODE_CHARS.length]).join("");
+};
+const maskName = (n) => n.length <= 1 ? n : n.length === 2 ? n[0] + "*" : n[0] + "*".repeat(n.length - 2) + n.slice(-1);
+const utm = (() => {
+  const p = new URLSearchParams(location.search);
+  const g = (k) => (p.get(k) || "").slice(0, 100);
+  return { utmSource: g("utm_source"), utmMedium: g("utm_medium"), utmCampaign: g("utm_campaign"), utmContent: g("utm_content") };
+})();
+
+$("form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("formError").textContent = "";
+  if (!reserveOpen) { lockForPeriod(); return; }
+  const { v, ok, first } = validate();
+  if (!ok) {
+    const el = $(first);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      const target = first === "cake" ? el.querySelector("button:not([disabled])") : el;
+      if (target) target.focus({ preventScroll: true });
+    }
     return;
   }
+  if (!db) { $("formError").textContent = "아직 접수 준비 중이에요. 잠시 후 다시 시도해 주세요."; return; }
 
-  sending = true;
-  const btn = $("#submitBtn");
-  btn.disabled = true; btn.textContent = "제출하는 중…";
+  const btn = $("submitBtn");
+  btn.disabled = true; btn.textContent = "신청하는 중…";
   try {
-    const fb = await firebaseReady;
-    await fb.addDoc(fb.collection(fb.db, "inquiries"), { ...data, createdAt: fb.serverTimestamp() });
-    showDone();
+    const ref = doc(collection(db, "reservations"));
+    const code = makeCode();
+    const now = serverTimestamp();
+    const items = v.items;
+    const qty = items.reduce((a, i) => a + i.qty, 0);
+    const cake = items.map((i) => `${i.name} ${i.qty}개`).join(", ");
+    const batch = writeBatch(db);
+    batch.set(ref, {
+      code, name: v.name, phone: v.phone, phoneLast4: v.phone.slice(-4),
+      store: v.store, cake, qty, items, campaign: CAMPAIGN,
+      pickupDate: v.date, pickupTime: v.time,
+      memo: v.memo, consent: true, consentThirdParty: true,
+      consentMarketing: v.consentMkt, consentVersion: PRIVACY.version,
+      ...utm,
+      status: "requested", createdAt: now, updatedAt: now
+    });
+    batch.set(doc(db, "publicStatus", ref.id), {
+      code, nameMasked: maskName(v.name),
+      store: v.store, cake, qty, items, campaign: CAMPAIGN,
+      pickupDate: v.date, pickupTime: v.time,
+      status: "requested", createdAt: now, updatedAt: now
+    });
+    // 예약 신청 서버 전송 — commit이 오류 없이 끝나면 DB 저장 성공(response.success)
+    await batch.commit();
+
+    // 메타 전환 이벤트 (넥스트픽 가이드: DB 저장 성공 시점에 1회만, 개인정보 미전송)
+    if (typeof fbq === 'function') {
+      fbq('track', 'Lead');
+    }
+
+    // 신청 완료 메시지 → 완료 페이지로 이동 (이벤트가 전송될 시간을 위해 잠깐 대기)
+    try { localStorage.setItem("benson_last_reservation", ref.id); } catch (_) {}
+    btn.textContent = "신청이 완료되었습니다";
+    setTimeout(() => {
+      location.replace(new URL(`complete.html?r=${encodeURIComponent(ref.id)}`, location.href).href);
+    }, 700);
   } catch (err) {
     console.error(err);
-    $("#formErr").textContent = err.message === "NO_CONFIG"
-      ? "접수 시스템 설정이 끝나지 않았습니다. 안내 메일로 회신해 주세요."
-      : "제출하지 못했습니다. 네트워크 연결을 확인한 뒤 다시 눌러 주세요. 계속되면 안내 메일로 회신해 주세요.";
-    btn.disabled = false; btn.textContent = "상담 신청서 제출";
-  } finally {
-    sending = false;
+    $("formError").textContent = "신청이 접수되지 않았어요. 인터넷 연결을 확인하고 다시 눌러 주세요.";
+    btn.disabled = false; btn.textContent = "사전예약 신청하기";
+    lockForPeriod();
   }
 });
+
 </script>
 </body>
 </html>
