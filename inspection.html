@@ -70,6 +70,11 @@ p{margin:0 0 10px}
 .btn.ghost{border-color:transparent;background:transparent}
 .btn.sm{min-height:34px;padding:0 12px;font-size:13px;border-radius:8px}
 .btn.block{width:100%}
+.btn.big{min-height:54px;font-size:16px}
+.today{margin:6px 0 4px}
+.today-t{font-weight:700;font-size:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:2px}
+ol.steps{margin:6px 0 0;padding-left:18px}
+ol.steps li{margin:4px 0}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 label.f{display:block;font-size:13px;font-weight:600;color:var(--ink-2);margin:12px 0 6px}
 .in,select.in,textarea.in{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
@@ -93,6 +98,8 @@ textarea.in{min-height:72px;resize:vertical;line-height:1.5}
 .chip.done{background:var(--yes-bg);color:var(--yes)}
 .chip.back{background:var(--no-bg);color:var(--no)}
 .chip.wait{background:var(--warn-bg);color:var(--warn)}
+.chip.kind{background:#E8EEF9;color:#1E3A72}
+.chip.kind.store{background:#EFE8F8;color:#55307F}
 .hist{list-style:none;margin:0;padding:0;font-size:14px}
 .hist li{padding:6px 0;border-bottom:1px solid var(--line-2)}
 .hist li:last-child{border-bottom:0}
@@ -133,16 +140,21 @@ td.r,th.r{text-align:right}
 .cat{margin-top:22px}
 .cat-h{display:flex;align-items:center;gap:10px;margin:0 0 8px}
 .cat-h .k{width:28px;height:28px;border-radius:8px;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700;font-size:14px}
+.cat-h .k.sm{width:6px;height:22px;border-radius:3px;background:var(--ink-2)}
 .cat-h h2{margin:0;font-size:16px}
 .cat-h .c{margin-left:auto;font-size:13px;color:var(--muted)}
 .item{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:10px;scroll-margin-top:120px;border-left:4px solid var(--pending)}
 .item.y{border-left-color:var(--yes)}
 .item.n{border-left-color:var(--no)}
+.item.done{border-left-color:var(--ink-2)}
+.reqs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0 34px}
+.req{font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--warn-bg);color:var(--warn)}
+.req.ok{background:var(--yes-bg);color:var(--yes)}
 .item-top{display:flex;gap:10px;align-items:flex-start}
 .item-no{flex:none;width:24px;font-weight:700;color:var(--muted);font-size:14px;padding-top:1px}
 .item-t{font-weight:700;font-size:16px;line-height:1.35}
-.item-c{color:var(--ink-2);font-size:14px;margin:4px 0 12px 34px}
-.yn{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-left:34px}
+.item-c{color:var(--ink-2);font-size:14px;margin:4px 0 0 34px}
+.yn{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 0 34px}
 .yn button{min-height:46px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);font-weight:700;font-size:15px}
 .yn button[aria-pressed="true"].y{background:var(--yes);border-color:var(--yes);color:#fff}
 .yn button[aria-pressed="true"].n{background:var(--no);border-color:var(--no);color:#fff}
@@ -151,7 +163,7 @@ td.r,th.r{text-align:right}
 .item-body textarea{min-height:56px}
 .only-flag .item.plain{display:none}
 .ro-note{white-space:pre-wrap;font-size:14px;background:#F8F9FB;border-radius:8px;padding:8px 10px;margin-top:8px}
-.ro-result{margin-left:34px;font-weight:700}
+.ro-result{margin:10px 0 0 34px;font-weight:700;color:var(--muted)}
 .ro-result.y{color:var(--yes)}
 .ro-result.n{color:var(--no)}
 .photos{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
@@ -171,6 +183,7 @@ td.r,th.r{text-align:right}
 .rail button{flex:1;height:14px;border:0;border-radius:3px;background:var(--pending);padding:0}
 .rail button.y{background:var(--yes)}
 .rail button.n{background:var(--no)}
+.rail button.done{background:var(--ink-2)}
 .dock-row{display:flex;align-items:center;gap:12px}
 .dock-row .st{flex:1;font-size:13px;color:var(--muted);line-height:1.35}
 .dock-row .st b{color:var(--ink);font-weight:700}
@@ -218,8 +231,8 @@ td.r,th.r{text-align:right}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
 <script type="module">
 /* =====================================================================
-   1. 설정 — 세팅 후 이 두 곳만 채우면 됩니다.
-   firebaseConfig가 비어 있으면 '미리보기 모드'(저장 안 됨)로 열립니다.
+   1. 설정
+   firebaseConfig의 apiKey가 비어 있으면 '미리보기 모드'(저장 안 됨)로 열립니다.
    ===================================================================== */
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyDAtsKTCyJWH_f8coxlPUu8S-1uqPG8gVk",
@@ -233,38 +246,80 @@ const FIREBASE_CONFIG = {
 const PHOTO_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbx5h3LNUHfUzaGka3Cp_BN5AnfSZ4IY4xwWzCH4rQQ-ZZ25NGwsRFsa1OEkRD4zVgf5/exec";   // Apps Script 웹 앱 주소
 
 /* 사진·운영 기준 */
-const MAX_PHOTOS_PER_ITEM = 5;     // 항목당 최대 사진 수
-const PHOTO_MAX_SIDE = 1600;       // 업로드 전 긴 변 기준 축소(px)
-const PHOTO_QUALITY = 0.72;        // JPEG 압축 품질
+const MAX_PHOTOS_REQUIRED = 10;   // '사진 필수' 문항: 여러 장(최대 10장)
+const MAX_PHOTOS_OPTIONAL = 5;    // 그 밖의 문항: 최대 5장
+const PHOTO_MAX_SIDE = 1280;      // 업로드 전 긴 변 기준 축소(px) — 드라이브 용량 절약
+const PHOTO_QUALITY = 0.7;        // JPEG 압축 품질
 const FIREBASE_SDK = "10.12.2";
+const BULK_LIMIT = 90;            // 매장 계정 일괄 등록 1회 최대 수 (Firebase 제한: IP당 시간당 새 계정 100개)
+/* 매장 계정은 '아이디'로 로그인합니다. 아이디 뒤에 이 프로젝트 주소를 붙여 계정을 만듭니다.
+   (이 주소로는 메일을 받을 수 없어 비밀번호 재설정 메일이 밖으로 나가지 않습니다. 분실 시 마스터가 다시 발급) */
+const STORE_LOGIN_DOMAIN = FIREBASE_CONFIG.authDomain || "benson-inspect.firebaseapp.com";
 
 /* =====================================================================
-   2. 점검 문항 (QSC 체크리스트) — 문항이 바뀌면 여기만 고칩니다.
+   2. 점검 문항 — 문항이 바뀌면 여기만 고칩니다.
+   type: "yn"(Y/N 판정) | "record"(미점검: 기록·사진 등록)
+   note / photo: "required"(필수) — 비워 두면 선택
    ===================================================================== */
-const CHECKLIST_VERSION = "QSC-2026-10";
-const CATEGORIES = [
-  { key: "Q", label: "품질" },
-  { key: "S", label: "서비스" },
-  { key: "C", label: "청결" }
-];
-const CHECKLIST = [
-  { no: 1,  cat: "Q", title: "중량",        criteria: "싱글컵 100g, 더블컵 120g 중량을 준수하여 판매하고 있는가?" },
-  { no: 2,  cat: "Q", title: "기기관리",    criteria: "냉동고에 과도한 성에, 얼음 결정, 이물 등 이상이 없는가?" },
-  { no: 3,  cat: "Q", title: "제공 품질",   criteria: "정해진 스쿱 형태와 담음새를 준수하고, 다른 플레이버가 혼입되지 않도록 제공하는가?" },
-  { no: 4,  cat: "Q", title: "케이크",      criteria: "케이크에 파손, 균열, 녹음 및 변형, 장식 탈락 및 이물 등 이상이 없는가?" },
-  { no: 5,  cat: "Q", title: "보관 온도",   criteria: "쇼케이스 및 냉장·냉동고가 내부 기준 온도로 유지되고 있는가?" },
-  { no: 6,  cat: "S", title: "고객 응대",   criteria: "고객 입·퇴점 시 인사하고, 친절한 말투와 태도로 응대하고 있는가?" },
-  { no: 7,  cat: "S", title: "제공 속도",   criteria: "주문을 불필요한 지연 없이 제공하고, 지연 발생 시 고객에게 안내하고 있는가?" },
-  { no: 8,  cat: "C", title: "개인 위생",   criteria: "손 씻기, 복장 착용 등 내부 개인 위생 기준을 준수하고 있는가?" },
-  { no: 9,  cat: "C", title: "제조도구 위생", criteria: "스쿱, 디퍼, 블렌더 등 제조도구를 세척 및 소독하고 청결하게 관리하고 있는가?" },
-  { no: 10, cat: "C", title: "설비 청결",   criteria: "쇼케이스 및 냉장, 냉동고의 내·외부, 패킹, 선반을 오염없이 관리하고 있는가?" },
-  { no: 11, cat: "C", title: "작업 공간",   criteria: "작업대, 싱크대, 배수구를 오염 및 악취 없이 관리하고, 청소용품을 구분하여 보관하고 있는가?" },
-  { no: 12, cat: "C", title: "고객 공간",   criteria: "테이블, 의자, 바닥, 출입문, 키오스크 및 매장 전면이 청결하게 유지되고 있는가?" }
-];
-const SPECIAL_KEY = "special";   // 매장 특이사항(문항 외 자유 기록)
+const CHECKLISTS = {
+  /* SV 방문 점검 (기존 QSC) */
+  qsc: {
+    key: "qsc", label: "QSC 점검", short: "QSC", version: "QSC-2026-10", special: true,
+    yWord: "준수", nWord: "미흡", rateWord: "준수율",
+    cats: [
+      { key: "Q", label: "품질", badge: "Q" },
+      { key: "S", label: "서비스", badge: "S" },
+      { key: "C", label: "청결", badge: "C" }
+    ],
+    items: [
+      { no: 1,  cat: "Q", type: "yn", title: "중량",        criteria: "싱글컵 100g, 더블컵 120g 중량을 준수하여 판매하고 있는가?" },
+      { no: 2,  cat: "Q", type: "yn", title: "기기관리",    criteria: "냉동고에 과도한 성에, 얼음 결정, 이물 등 이상이 없는가?" },
+      { no: 3,  cat: "Q", type: "yn", title: "제공 품질",   criteria: "정해진 스쿱 형태와 담음새를 준수하고, 다른 플레이버가 혼입되지 않도록 제공하는가?" },
+      { no: 4,  cat: "Q", type: "yn", title: "케이크",      criteria: "케이크에 파손, 균열, 녹음 및 변형, 장식 탈락 및 이물 등 이상이 없는가?" },
+      { no: 5,  cat: "Q", type: "yn", title: "보관 온도",   criteria: "쇼케이스 및 냉장·냉동고가 내부 기준 온도로 유지되고 있는가?" },
+      { no: 6,  cat: "S", type: "yn", title: "고객 응대",   criteria: "고객 입·퇴점 시 인사하고, 친절한 말투와 태도로 응대하고 있는가?" },
+      { no: 7,  cat: "S", type: "yn", title: "제공 속도",   criteria: "주문을 불필요한 지연 없이 제공하고, 지연 발생 시 고객에게 안내하고 있는가?" },
+      { no: 8,  cat: "C", type: "yn", title: "개인 위생",   criteria: "손 씻기, 복장 착용 등 내부 개인 위생 기준을 준수하고 있는가?" },
+      { no: 9,  cat: "C", type: "yn", title: "제조도구 위생", criteria: "스쿱, 디퍼, 블렌더 등 제조도구를 세척 및 소독하고 청결하게 관리하고 있는가?" },
+      { no: 10, cat: "C", type: "yn", title: "설비 청결",   criteria: "쇼케이스 및 냉장, 냉동고의 내·외부, 패킹, 선반을 오염없이 관리하고 있는가?" },
+      { no: 11, cat: "C", type: "yn", title: "작업 공간",   criteria: "작업대, 싱크대, 배수구를 오염 및 악취 없이 관리하고, 청소용품을 구분하여 보관하고 있는가?" },
+      { no: 12, cat: "C", type: "yn", title: "고객 공간",   criteria: "테이블, 의자, 바닥, 출입문, 키오스크 및 매장 전면이 청결하게 유지되고 있는가?" }
+    ]
+  },
+  /* 점장·매니저 매장 자체 점검 (질문 리스트 2026-11) — Y=문제 없음, N=개선 필요 */
+  store: {
+    key: "store", label: "매장 자체 점검", short: "자체 점검", version: "STORE-2026-11", special: false,
+    yWord: "문제 없음", nWord: "개선 필요", rateWord: "문제 없음 비율",
+    cats: [
+      { key: "A", label: "2차 업무" }, { key: "B", label: "POS&키오스크" }, { key: "C", label: "고객응대" },
+      { key: "D", label: "마감 및 인계" }, { key: "E", label: "배달" }, { key: "F", label: "직원 근태" },
+      { key: "G", label: "상품, 품질" }, { key: "H", label: "설비" }
+    ],
+    items: [
+      { no: 1,  cat: "A", type: "yn",     photo: "required",                   short: "매장 정돈",        title: "매장 유리창, 매장 전면, 홀, 테이블이 정돈되어 있는가?" },
+      { no: 2,  cat: "A", type: "record", note: "required", photo: "required", short: "전일 특이사항",    title: "전일 특이사항 기재" },
+      { no: 3,  cat: "B", type: "yn",     photo: "required",                   short: "키오스크 화면",    title: "키오스크 노출 화면에 이상이 없는가?" },
+      { no: 4,  cat: "B", type: "yn",     photo: "required",                   short: "판매 제품 노출",   title: "판매 제품들이 잘 노출 되는가?" },
+      { no: 5,  cat: "B", type: "yn",                                          short: "미판매 제품",      title: "미판매 제품이 없는가?" },
+      { no: 6,  cat: "C", type: "yn",                                          short: "입퇴점 인사",      title: "입퇴점 인사를 잘 하고 있는가?" },
+      { no: 7,  cat: "C", type: "yn",                                          short: "프로모션 안내",    title: "프로모션 안내가 잘 나가고 있는가?" },
+      { no: 8,  cat: "D", type: "record", note: "required",                    short: "점장 특이사항",    title: "점장 특이사항 보고" },
+      { no: 9,  cat: "D", type: "record", note: "required",                    short: "배달 리뷰 클레임", title: "배달 리뷰 클레임 확인" },
+      { no: 10, cat: "D", type: "record", photo: "required",                   short: "온도 기록표",      title: "냉동고 온도 기록표, 쇼케이스 온도 기록표, 정상가동여부 사진 등록" },
+      { no: 11, cat: "E", type: "record", photo: "required",                   short: "배달 앱 영업상태", title: "배달 앱 영업상태, 운영시간 현황 캡쳐 등록" },
+      { no: 12, cat: "F", type: "record", photo: "required",                   short: "복장·위생",        title: "유니폼, 명찰, 신발, 머리망, 장신구 착용유무, 손톱등 사진 등록" },
+      { no: 13, cat: "F", type: "record", note: "required",                    short: "오픈/마감 보고",   title: "오픈/마감 점장 특이사항 보고 여부 (특이사항 기재)" },
+      { no: 14, cat: "F", type: "record", note: "required",                    short: "핸드폰·톤앤매너",  title: "바 내부 개인 핸드폰 사용여부, 톤앤 매너 여부 (특이사항기재)" },
+      { no: 15, cat: "G", type: "record", photo: "required",                   short: "아이스크림 표면",  title: "아이스크림 표면 (사진 등록)" },
+      { no: 16, cat: "G", type: "record", photo: "required",                   short: "케이크 진열",      title: "케이크 진열 외관 (사진 등록)" },
+      { no: 17, cat: "G", type: "record", photo: "required",                   short: "제공 현황",        title: "음료 및 아이스크림 제공 현황 (사진 등록)" },
+      { no: 18, cat: "H", type: "record", photo: "required",                   short: "영상 송출",        title: "영상 송출 사진 등록" }
+    ]
+  }
+};
+const SPECIAL_KEY = "special";   // QSC '매장 특이사항'(문항 외 자유 기록)
 
-/* 기본 매장 목록 [매장코드, 매장명, 담당 SV] — 마스터 화면 '매장 관리'에서 한 번에 등록합니다.
-   SV 계정을 같은 이름으로 만들면 담당 매장이 자동으로 연결됩니다. */
+/* 기본 매장 목록 [매장코드, 매장명, 담당 SV] — 마스터 화면 '매장 관리'에서 한 번에 등록합니다. */
 const STORE_SEED = [
   ["BSC0007", "스타필드수원", "안효철"], ["BSC0008", "그랑서울", "안효철"], ["BSC0025", "이태원점", "안효철"],
   ["BSC0023", "서현점", "안효철"], ["BSC0021", "목동점", "안효철"], ["BSC0027", "동부이촌점", "안효철"],
@@ -304,9 +359,27 @@ function monthRange(ym) {
   const [y, m] = ym.split("-").map(Number);
   return { from: `${ym}-01`, to: `${ym}-${pad(new Date(y, m, 0).getDate())}` };
 }
-function emptyItems() {
+/* 그 달에서 오늘까지 지난 날 수 (지난달은 그 달 전체, 다음 달은 0) */
+function daysElapsed(ym) {
+  const cur = thisMonth();
+  if (ym > cur) return 0;
+  if (ym === cur) return new Date().getDate();
+  const [y, m] = ym.split("-").map(Number);
+  return new Date(y, m, 0).getDate();
+}
+const monNum = ym => Number(ym.slice(5));
+const byDateDesc = (a, b) => (b.visitDate || "").localeCompare(a.visitDate || "") ||
+  (Number(b.updatedAt?.seconds || b.updatedAt || 0) - Number(a.updatedAt?.seconds || a.updatedAt || 0));
+
+/* --- 점검 문항 계산 --- */
+const kindOf = d => (d && d.kind) || "qsc";
+const CL = d => CHECKLISTS[kindOf(d)] || CHECKLISTS.qsc;
+const isYN = c => c.type !== "record";
+const shortOf = c => c.short || c.title;
+const maxPhotos = c => (c && c.photo === "required") ? MAX_PHOTOS_REQUIRED : MAX_PHOTOS_OPTIONAL;
+function emptyItems(cl) {
   const o = {};
-  CHECKLIST.forEach(c => { o[c.no] = { r: "", note: "", photos: [] }; });
+  cl.items.forEach(c => { o[c.no] = { r: "", note: "", photos: [] }; });
   return o;
 }
 function itemOf(doc, key) {
@@ -314,21 +387,44 @@ function itemOf(doc, key) {
   doc.items = doc.items || {};
   return doc.items[key] || (doc.items[key] = { r: "", note: "", photos: [] });
 }
-function summarize(items) {
-  let y = 0, n = 0;
-  CHECKLIST.forEach(c => { const v = items?.[c.no]?.r; if (v === "Y") y++; else if (v === "N") n++; });
-  return { y, n, answered: y + n, total: CHECKLIST.length, rate: Math.round((y / CHECKLIST.length) * 100) };
+/* 문항을 마치려면 무엇이 더 필요한지 */
+function missingOf(c, it = {}) {
+  const m = [];
+  if (isYN(c) && !it.r) m.push("Y/N 선택");
+  if (c.note === "required" && !String(it.note || "").trim()) m.push("내용 기재");
+  if (c.photo === "required" && !(it.photos || []).length) m.push("사진");
+  return m;
 }
+const itemDone = (c, it) => !missingOf(c, it || {}).length;
+/* 카드 테두리·진행 막대 색: 마친 문항만 색칠 (Y 초록, N 빨강, 기록 남색) */
+function itemClass(c, it = {}) {
+  if (!itemDone(c, it)) return "";
+  if (isYN(c)) return it.r === "Y" ? "y" : "n";
+  return "done";
+}
+function summarize(items, cl) {
+  let y = 0, n = 0, yn = 0, done = 0;
+  cl.items.forEach(c => {
+    const it = items?.[c.no] || {};
+    if (isYN(c)) { yn++; if (it.r === "Y") y++; else if (it.r === "N") n++; }
+    if (itemDone(c, it)) done++;
+  });
+  return { y, n, yn, done, answered: done, total: cl.items.length, rate: yn ? Math.round(y / yn * 100) : null };
+}
+const sumOf = d => summarize(d.items, CL(d));
 function photoCount(doc) {
   let k = (doc.special?.photos || []).length;
-  CHECKLIST.forEach(c => { k += (doc.items?.[c.no]?.photos || []).length; });
+  CL(doc).items.forEach(c => { k += (doc.items?.[c.no]?.photos || []).length; });
   return k;
 }
-function nTitles(doc) {
-  return CHECKLIST.filter(c => doc.items?.[c.no]?.r === "N").map(c => c.title);
-}
-/* 상태 흐름: 작성 중(draft) → 제출(submitted, 승인 대기) → 승인 완료(approved)
-   마스터는 승인·반려(수정 요청)·승인 취소·직접 수정·삭제를 할 수 있습니다. */
+const nTitles = doc => CL(doc).items.filter(c => isYN(c) && doc.items?.[c.no]?.r === "N").map(shortOf);
+const kindChip = d => `<span class="chip kind ${kindOf(d)}">${esc(CL(d).short)}</span>`;
+const avgRate = list => {
+  const r = list.map(d => sumOf(d).rate).filter(v => v !== null);
+  return r.length ? Math.round(r.reduce((a, b) => a + b, 0) / r.length) : null;
+};
+
+/* 상태 흐름: 작성 중(draft) → 제출(submitted, 승인 대기) → 승인 완료(approved) */
 function statusChip(doc) {
   if (doc.status === "approved") return `<span class="chip done">승인 완료</span>`;
   if (doc.status === "submitted") return `<span class="chip wait">승인 대기</span>`;
@@ -339,6 +435,13 @@ const statusLabel = d => d.status === "approved" ? "승인 완료" : d.status ==
 const isSubmitted = d => d.status === "submitted" || d.status === "approved";
 const withHist = (d, action, note = "") => [...(d.history || []), { at: Date.now(), by: S.me?.name || "", action, ...(note ? { note } : {}) }];
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+function genPassword(len = 8) {
+  const chars = "abcdefghjkmnpqrstuvwxyz23456789";
+  const a = new Uint32Array(len); crypto.getRandomValues(a);
+  return Array.from(a, v => chars[v % chars.length]).join("");
+}
+const toLoginEmail = v => { v = String(v || "").trim(); return v.includes("@") ? v : `${v.toLowerCase()}@${STORE_LOGIN_DOMAIN}`; };
+const loginIdOf = m => m?.loginId || (m?.email || "").replace("@" + STORE_LOGIN_DOMAIN, "");
 
 function toast(msg, ms = 2600) {
   $$(".toast").forEach(t => t.remove());
@@ -416,16 +519,17 @@ const blobToBase64 = blob => new Promise((res, rej) => {
 function friendlyError(e) {
   const code = e?.code || "";
   const map = {
-    "auth/invalid-credential": "이메일 또는 비밀번호가 맞지 않습니다.",
-    "auth/wrong-password": "이메일 또는 비밀번호가 맞지 않습니다.",
-    "auth/user-not-found": "이메일 또는 비밀번호가 맞지 않습니다.",
-    "auth/invalid-email": "이메일 형식이 맞지 않습니다.",
-    "auth/too-many-requests": "로그인 시도가 많아 잠시 막혔습니다. 몇 분 뒤 다시 시도해 주세요.",
-    "auth/email-already-in-use": "이미 계정이 있는 이메일입니다. 아래 '기존 계정 등록'에서 사용자 ID로 등록하세요.",
+    "auth/invalid-credential": "아이디(이메일) 또는 비밀번호가 맞지 않습니다.",
+    "auth/wrong-password": "아이디(이메일) 또는 비밀번호가 맞지 않습니다.",
+    "auth/user-not-found": "아이디(이메일) 또는 비밀번호가 맞지 않습니다.",
+    "auth/invalid-email": "아이디 또는 이메일 형식이 맞지 않습니다.",
+    "auth/too-many-requests": "요청이 많아 잠시 막혔습니다. 잠시 뒤 다시 시도해 주세요.",
+    "auth/email-already-in-use": "이미 계정이 있는 아이디(이메일)입니다.",
     "auth/weak-password": "비밀번호는 6자 이상이어야 합니다.",
     "auth/requires-recent-login": "보안을 위해 다시 로그인한 뒤 변경해 주세요.",
     "auth/network-request-failed": "인터넷 연결을 확인해 주세요.",
     "permission-denied": "권한이 없습니다. 관리자에게 계정 등록 상태를 확인해 주세요.",
+    "failed-precondition": "데이터 색인 설정이 필요합니다. 마스터에게 알려 주세요.",
     "unavailable": "서버에 연결할 수 없습니다. 인터넷 연결을 확인해 주세요."
   };
   return map[code] || e?.message || "알 수 없는 오류가 발생했습니다.";
@@ -448,6 +552,8 @@ async function createFirebaseApi() {
   const db = FS.getFirestore(app);
   const ts = () => FS.serverTimestamp();
   const asObj = d => ({ id: d.id, ...d.data() });
+  const col = () => FS.collection(db, "inspections");
+  const run = async (...filters) => (await FS.getDocs(FS.query(col(), ...filters))).docs.map(asObj);
 
   async function callPhotoServer(payload) {
     if (!PHOTO_UPLOAD_URL) throw new Error("사진 업로드 주소(PHOTO_UPLOAD_URL)가 설정되지 않았습니다.");
@@ -489,6 +595,25 @@ async function createFirebaseApi() {
         return uid;
       } finally { await A.deleteApp(sec); }
     },
+    /* 매장 계정 일괄 생성: 보조 로그인 창 하나로 차례대로 만들고, 마스터 로그인은 그대로 유지합니다. */
+    async createMembersBulk(rows, onEach) {
+      const sec = A.initializeApp(FIREBASE_CONFIG, "bulk-" + Date.now());
+      try {
+        const secAuth = AU.initializeAuth(sec, { persistence: AU.inMemoryPersistence });
+        for (const r of rows) {
+          try {
+            const cred = await AU.createUserWithEmailAndPassword(secAuth, r.email, r.password);
+            const uid = cred.user.uid;
+            await AU.signOut(secAuth);
+            await FS.setDoc(FS.doc(db, "members", uid), {
+              name: r.name, email: r.email, loginId: r.loginId, role: "store",
+              storeId: r.storeId, storeName: r.storeName, active: true, createdAt: ts()
+            });
+            await onEach(r, { ok: true, uid });
+          } catch (e) { await onEach(r, { ok: false, error: e }); }
+        }
+      } finally { await A.deleteApp(sec); }
+    },
     async registerMember(uid, { name, email, role }) {
       await FS.setDoc(FS.doc(db, "members", uid), { name, email, role, active: true, createdAt: ts() });
     },
@@ -505,21 +630,20 @@ async function createFirebaseApi() {
     async updateStore(id, patch) { await FS.updateDoc(FS.doc(db, "stores", id), patch); },
     async setStore(id, data) { await FS.setDoc(FS.doc(db, "stores", id), { ...data, createdAt: ts() }, { merge: true }); },
 
-    async listMyInspections(uid) {
-      const q = await FS.getDocs(FS.query(FS.collection(db, "inspections"), FS.where("svUid", "==", uid)));
-      return q.docs.map(asObj);
-    },
-    async listInspections(from, to) {
-      const q = await FS.getDocs(FS.query(FS.collection(db, "inspections"),
-        FS.where("visitDate", ">=", from), FS.where("visitDate", "<=", to), FS.orderBy("visitDate", "desc")));
-      return q.docs.map(asObj);
-    },
+    /* 조회는 역할별로 보안 규칙이 허용하는 조건(같음 조건만)으로만 합니다. */
+    listMyInspections: uid => run(FS.where("svUid", "==", uid)),
+    listMyDrafts: uid => run(FS.where("svUid", "==", uid), FS.where("status", "==", "draft")),
+    listStoreMonth: (storeId, ym) => run(FS.where("storeId", "==", storeId), FS.where("kind", "==", "store"), FS.where("visitMonth", "==", ym)),
+    listSvMonth: (uid, ym) => run(FS.where("storeSvUid", "==", uid), FS.where("visitMonth", "==", ym)),
+    listByStore: storeId => run(FS.where("storeId", "==", storeId)),
+    listAllInspections: () => run(),
+    listInspections: (from, to) => run(FS.where("visitDate", ">=", from), FS.where("visitDate", "<=", to), FS.orderBy("visitDate", "desc")),
     async getInspection(id) {
       const s = await FS.getDoc(FS.doc(db, "inspections", id));
       return s.exists() ? asObj(s) : null;
     },
     async createInspection(data) {
-      const r = await FS.addDoc(FS.collection(db, "inspections"), { ...data, createdAt: ts(), updatedAt: ts() });
+      const r = await FS.addDoc(col(), { ...data, createdAt: ts(), updatedAt: ts() });
       return r.id;
     },
     async updateInspection(id, patch, { stamp = "" } = {}) {
@@ -542,10 +666,11 @@ function createDemoApi() {
   const db = { members: {}, stores: {}, inspections: {} };
   let cb = () => {}, current = null, seq = 100;
   const nid = p => `${p}${++seq}`;
-  const wait = () => sleep(120);
+  const wait = () => sleep(100);
   const clone = o => JSON.parse(JSON.stringify(o));
   const svg = (label, color) => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="400" height="400" fill="${color}"/><text x="200" y="210" font-size="34" text-anchor="middle" fill="#fff" font-family="sans-serif">${label}</text></svg>`);
+  const ph = (label, color = "#7A8699") => ({ id: nid("p"), url: svg(label, color), thumb: svg(label, color) });
 
   [...new Set(STORE_SEED.map(x => x[2]))].forEach((n, i) => {
     db.members["demo-sv" + (i + 1)] = { name: n, email: `sv${i + 1}@example.com`, role: "sv", active: true };
@@ -553,35 +678,67 @@ function createDemoApi() {
   db.members["demo-master"] = { name: "마스터 예시", email: "master@example.com", role: "master", active: true };
   const uidByName = n => Object.keys(db.members).find(k => db.members[k].name === n) || "";
   STORE_SEED.forEach(([code, name, sv]) => { db.stores[code] = { code, name, svName: sv, svUid: uidByName(sv), active: true }; });
-
-  // 지난달·이번 달 예시 점검
-  const now = new Date();
-  const mk = (code, dayOffset, pattern, status = "submitted") => {
-    const d = new Date(now); d.setDate(now.getDate() - dayOffset);
+  [["demo-st1", "BSC0007"], ["demo-st2", "BSC0008"]].forEach(([uid, code]) => {
     const st = db.stores[code];
-    const items = emptyItems();
-    CHECKLIST.forEach((c, i) => { items[c.no].r = pattern[i] === "n" ? "N" : "Y"; });
-    const n1 = CHECKLIST.find((c, i) => pattern[i] === "n");
-    if (n1) {
-      items[n1.no].note = "기준 미달 확인, 점장에게 즉시 개선 요청함.";
-      items[n1.no].photos = [{ id: "p" + code + dayOffset, url: svg("예시 사진", "#7A8699"), thumb: svg("예시 사진", "#7A8699") }];
-    }
-    const id = nid("ins");
-    db.inspections[id] = {
-      storeId: code, storeCode: code, storeName: st.name, svUid: st.svUid, svName: db.members[st.svUid].name,
-      visitDate: ymd(d), status, returned: false, items, special: { note: code === "BSC0009" ? "출입문 자동문 센서 오작동, 시설팀 접수 필요." : "", photos: [] },
-      summary: summarize(items), checklistVersion: CHECKLIST_VERSION, createdAt: d.getTime(), updatedAt: d.getTime(), submittedAt: d.getTime(),
-      history: [{ at: d.getTime(), by: db.members[st.svUid].name, action: "제출" }],
-      ...(status === "approved" ? { approvedBy: "마스터 예시", approvedByUid: "demo-master", approvedAt: d.getTime() + 3600e3 } : {})
-    };
-    if (status === "approved") db.inspections[id].history.push({ at: d.getTime() + 3600e3, by: "마스터 예시", action: "승인" });
-  };
-  mk("BSC0007", 1, "yyyyyyyyyyyy"); mk("BSC0008", 3, "yyyyyyyyyyyn", "approved"); mk("BSC0021", 6, "yyyynyyyyyyy", "approved");
-  mk("BSC0005", 2, "yyyyyyyyyyyy"); mk("BSC0009", 4, "ynyyyyyyynyy", "approved"); mk("BSC0016", 7, "yyyyyynyyyyy", "approved");
-  mk("BSC0015", 2, "yyyyyyyynyyy"); mk("BSC0024", 5, "yyyyyyyyyyyy", "approved");
-  mk("BSC0013", 1, "yyyyyynyyyyn"); mk("BSC0014", 3, "yyyyyyyyyyyy", "approved"); mk("BSC0010", 8, "yyyynyyyyyyy", "approved");
-  mk("BSC0007", 33, "yyyyynyyyyyy", "approved"); mk("BSC0013", 36, "nyyyyyyyyyyy", "approved");
+    db.members[uid] = { name: `${st.name} 점장`, email: `${code.toLowerCase()}@${STORE_LOGIN_DOMAIN}`, loginId: code.toLowerCase(), role: "store", storeId: code, storeName: st.name, active: true };
+  });
 
+  const now = new Date();
+  const base = (code, d, author, kind, status) => {
+    const st = db.stores[code];
+    const cl = CHECKLISTS[kind];
+    return {
+      kind, storeId: code, storeCode: code, storeName: st.name, storeSvUid: st.svUid, svUid: author, svName: db.members[author].name,
+      authorRole: db.members[author].role, visitDate: ymd(d), visitMonth: ymd(d).slice(0, 7), status, returned: false,
+      special: { note: "", photos: [] }, checklistVersion: cl.version, createdAt: d.getTime(), updatedAt: d.getTime(),
+      ...(status !== "draft" ? { submittedAt: d.getTime(), history: [{ at: d.getTime(), by: db.members[author].name, action: "제출" }] } : { history: [] })
+    };
+  };
+  const approve = doc => {
+    doc.approvedBy = "마스터 예시"; doc.approvedByUid = "demo-master"; doc.approvedAt = doc.submittedAt + 3600e3;
+    doc.history.push({ at: doc.approvedAt, by: "마스터 예시", action: "승인" });
+  };
+  // QSC (SV 방문 점검)
+  const mkQ = (code, dayOffset, pattern, status = "submitted") => {
+    const d = new Date(now); d.setDate(now.getDate() - dayOffset);
+    const doc = base(code, d, db.stores[code].svUid, "qsc", status);
+    const cl = CHECKLISTS.qsc; const items = emptyItems(cl);
+    cl.items.forEach((c, i) => { items[c.no].r = pattern[i] === "n" ? "N" : "Y"; });
+    const n1 = cl.items.find((c, i) => pattern[i] === "n");
+    if (n1) { items[n1.no].note = "기준 미달 확인, 점장에게 즉시 개선 요청함."; items[n1.no].photos = [ph("예시 사진")]; }
+    doc.items = items; doc.summary = summarize(items, cl);
+    if (code === "BSC0009") doc.special.note = "출입문 자동문 센서 오작동, 시설팀 접수 필요.";
+    if (status === "approved") approve(doc);
+    db.inspections[nid("ins")] = doc;
+  };
+  // 매장 자체 점검 (점장·매니저)
+  const mkS = (code, author, dayOffset, status = "submitted", nNo = 0, partial = false) => {
+    const d = new Date(now); d.setDate(now.getDate() - dayOffset);
+    const doc = base(code, d, author, "store", status);
+    const cl = CHECKLISTS.store; const items = emptyItems(cl);
+    cl.items.forEach(c => {
+      if (partial && c.no > 6) return;
+      const it = items[c.no];
+      if (isYN(c)) it.r = c.no === nNo ? "N" : "Y";
+      if (c.note === "required") it.note = c.no === 9 ? "배민 리뷰 1건(토핑 누락) 확인, 사과 답글 등록" : "특이사항 없음";
+      if (c.photo === "required") it.photos = [ph(shortOf(c), "#5E6B80"), ...(c.no === 10 ? [ph("쇼케이스", "#5E6B80")] : [])];
+    });
+    if (nNo) items[nNo].note = "키오스크 품절 표시 오류, 본사 IT 접수";
+    doc.items = items; doc.summary = summarize(items, cl);
+    if (status === "approved") approve(doc);
+    db.inspections[nid("ins")] = doc;
+  };
+  mkQ("BSC0007", 1, "yyyyyyyyyyyy"); mkQ("BSC0008", 3, "yyyyyyyyyyyn", "approved"); mkQ("BSC0021", 6, "yyyynyyyyyyy", "approved");
+  mkQ("BSC0005", 2, "yyyyyyyyyyyy"); mkQ("BSC0009", 4, "ynyyyyyyynyy", "approved"); mkQ("BSC0016", 7, "yyyyyynyyyyy", "approved");
+  mkQ("BSC0015", 2, "yyyyyyyynyyy"); mkQ("BSC0024", 5, "yyyyyyyyyyyy", "approved");
+  mkQ("BSC0013", 1, "yyyyyynyyyyn"); mkQ("BSC0014", 3, "yyyyyyyyyyyy", "approved"); mkQ("BSC0010", 8, "yyyynyyyyyyy", "approved");
+  mkQ("BSC0007", 33, "yyyyynyyyyyy", "approved"); mkQ("BSC0013", 36, "nyyyyyyyyyyy", "approved");
+  mkS("BSC0007", "demo-st1", 1, "submitted", 3); mkS("BSC0007", "demo-st1", 2, "approved"); mkS("BSC0007", "demo-st1", 3, "approved");
+  mkS("BSC0007", "demo-st1", 5, "approved", 6);
+  mkS("BSC0008", "demo-st2", 0, "draft", 0, true); mkS("BSC0008", "demo-st2", 1, "submitted"); mkS("BSC0008", "demo-st2", 2, "approved", 4);
+
+  const all = () => Object.entries(db.inspections).map(([id, d]) => ({ id, ...clone(d) }));
+  const where = f => wait().then(() => all().filter(f));
   return {
     mode: "demo",
     onAuth(f) { cb = f; setTimeout(() => cb(current), 0); },
@@ -591,18 +748,28 @@ function createDemoApi() {
     async getMember(uid) { await wait(); return db.members[uid] ? { uid, ...clone(db.members[uid]) } : null; },
     async listMembers() { await wait(); return Object.entries(db.members).map(([uid, m]) => ({ uid, ...clone(m) })); },
     async createMember({ name, email, role }) { await wait(); const uid = nid("u"); db.members[uid] = { name, email, role, active: true }; return uid; },
+    async createMembersBulk(rows, onEach) {
+      for (const r of rows) {
+        await sleep(60);
+        if (Object.values(db.members).some(m => m.email === r.email && !m.__deletedAuth)) { await onEach(r, { ok: false, error: { code: "auth/email-already-in-use" } }); continue; }
+        const uid = nid("u");
+        db.members[uid] = { name: r.name, email: r.email, loginId: r.loginId, role: "store", storeId: r.storeId, storeName: r.storeName, active: true };
+        await onEach(r, { ok: true, uid });
+      }
+    },
     async registerMember(uid, { name, email, role }) { await wait(); db.members[uid] = { name, email, role, active: true }; },
     async updateMember(uid, patch) { await wait(); Object.assign(db.members[uid], patch); },
     async listStores() { await wait(); return Object.entries(db.stores).map(([id, s]) => ({ id, ...clone(s) })); },
     async addStore(data) { await wait(); const id = nid("st"); db.stores[id] = { ...data, active: true }; return id; },
     async setStore(id, data) { await wait(); db.stores[id] = { ...(db.stores[id] || {}), ...clone(data) }; },
     async updateStore(id, patch) { await wait(); Object.assign(db.stores[id], patch); },
-    async listMyInspections(uid) { await wait(); return Object.entries(db.inspections).filter(([, d]) => d.svUid === uid).map(([id, d]) => ({ id, ...clone(d) })); },
-    async listInspections(from, to) {
-      await wait();
-      return Object.entries(db.inspections).filter(([, d]) => d.visitDate >= from && d.visitDate <= to)
-        .map(([id, d]) => ({ id, ...clone(d) })).sort((a, b) => b.visitDate.localeCompare(a.visitDate));
-    },
+    listMyInspections: uid => where(d => d.svUid === uid),
+    listMyDrafts: uid => where(d => d.svUid === uid && d.status === "draft"),
+    listStoreMonth: (storeId, ym) => where(d => d.storeId === storeId && d.kind === "store" && d.visitMonth === ym),
+    listSvMonth: (uid, ym) => where(d => d.storeSvUid === uid && d.visitMonth === ym),
+    listByStore: storeId => where(d => d.storeId === storeId),
+    listAllInspections: () => where(() => true),
+    listInspections: (from, to) => where(d => d.visitDate >= from && d.visitDate <= to).then(r => r.sort((a, b) => b.visitDate.localeCompare(a.visitDate))),
     async getInspection(id) { await wait(); return db.inspections[id] ? { id, ...clone(db.inspections[id]) } : null; },
     async createInspection(data) { await wait(); const id = nid("ins"); db.inspections[id] = { ...clone(data), createdAt: Date.now(), updatedAt: Date.now() }; return id; },
     async updateInspection(id, patch, { stamp = "" } = {}) {
@@ -610,21 +777,44 @@ function createDemoApi() {
       Object.assign(db.inspections[id], clone(patch), { updatedAt: Date.now() }, stamp ? { [stamp]: Date.now() } : {});
     },
     async deleteInspection(id) { await wait(); delete db.inspections[id]; },
-    async uploadPhoto(blob) { await sleep(500); const u = URL.createObjectURL(blob); return { id: nid("ph"), url: u, thumb: u, big: u }; },
+    async uploadPhoto(blob) { await sleep(400); const u = URL.createObjectURL(blob); return { id: nid("ph"), url: u, thumb: u, big: u }; },
     async deletePhoto() { await wait(); }
   };
 }
 
 /* =====================================================================
    5. 앱 상태·화면 전환
+   역할: master(마스터) / sv(SV: QSC 점검, 담당 매장 조회) / store(점장·매니저: 매장 자체 점검)
    ===================================================================== */
 const S = { user: null, me: null, stores: [], members: [] };
-const isMaster = () => S.me?.role === "master";
+const ROLE_LABEL = { master: "마스터", sv: "SV", store: "매장" };
+const myRole = () => S.me?.role || "sv";
+const isMaster = () => myRole() === "master";
+const isSV = () => myRole() === "sv";
+const isStoreUser = () => myRole() === "store";
+const roleLabel = (m = S.me) => ROLE_LABEL[m?.role] || "SV";
+/* 이 점검을 내가 작성·수정할 수 있는 사람인가: 작성자 본인, 또는 같은 매장 계정(매장 자체 점검) */
+const ownsDoc = d => !!S.me && (d.svUid === S.me.uid || (isStoreUser() && kindOf(d) === "store" && d.storeId === S.me.storeId));
 const app = $("#app");
-let leaveGuard = null;   // 점검 작성 중 이탈 방지 { nav: () => 막아야 하면 true, unload: () => 막아야 하면 true }
+let leaveGuard = null;   // 점검 작성 중 이탈 방지 { nav, unload, flush }
 
-const roleLabel = () => isMaster() ? "마스터" : "SV";
+/* 한 달치 점검 목록은 1분 동안 재사용해 Firestore 읽기 횟수를 아낍니다(무료 한도 관리). 저장하면 바로 비웁니다. */
+let monthCache = {};
+async function monthRows(ym, force = false) {
+  const c = monthCache[ym];
+  if (!force && c && Date.now() - c.at < 60000) return c.rows;
+  const { from, to } = monthRange(ym);
+  const rows = await api.listInspections(from, to);
+  monthCache[ym] = { at: Date.now(), rows };
+  return rows;
+}
 
+function tabsFor() {
+  if (!S.me) return [];
+  if (isMaster()) return [["#/admin", "점검 내역"], ["#/admin/stats", "현황"], ["#/", "내 점검"], ["#/admin/stores", "매장 관리"], ["#/admin/users", "사용자 관리"]];
+  if (isSV()) return [["#/", "내 점검"], ["#/sv", "담당 매장"]];
+  return [];
+}
 /* 상단 바는 화면이 바뀌어도 그대로 두고(앱 설치·새로고침 버튼 유지), 이름·탭만 바꿉니다. */
 function setHeader(active = "") {
   $("#demoBar").hidden = api?.mode !== "demo";
@@ -632,10 +822,7 @@ function setHeader(active = "") {
   const acct = $("#acct");
   acct.hidden = !S.me;
   if (S.me) acct.innerHTML = `<b>${esc(S.me.name || "계정")}</b><span class="role"> ${roleLabel()}</span>`;
-  const tabs = S.me && isMaster() ? [
-    ["#/admin", "점검 내역"], ["#/admin/stats", "매장별 현황"], ["#/", "내 점검"],
-    ["#/admin/stores", "매장 관리"], ["#/admin/users", "사용자 관리"]
-  ] : [];
+  const tabs = tabsFor();
   const nav = $("#tabs");
   nav.hidden = !tabs.length;
   nav.innerHTML = tabs.map(([h, t]) => `<a href="${h}" ${h === active ? 'aria-current="page"' : ""}>${t}</a>`).join("");
@@ -646,6 +833,7 @@ function shell(inner, { active = "", narrow = false, dock = "" } = {}) {
   app.innerHTML = `<div id="view"><main class="${narrow ? "narrow" : ""} ${dock ? "has-dock" : ""}">${inner}</main>
     ${dock}</div>`;
 }
+const loading = (active, narrow = true) => shell(`<p class="muted">불러오는 중…</p>`, { active, narrow });
 
 /* '전체 메뉴'(벤슨 관리자 앱 홈)로 이동: 작성 중인 내용은 저장을 마친 뒤 이동합니다. */
 async function goHome(e) {
@@ -661,8 +849,9 @@ async function goHome(e) {
 async function accountMenu() {
   const bg = document.createElement("div");
   bg.className = "modal-bg";
+  const idLine = isStoreUser() ? `아이디 ${esc(loginIdOf(S.me) || S.user.email || "")} · ${esc(S.me.storeName || "")}` : esc(S.user.email || "");
   bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-label="계정">
-    <h3>${esc(S.me.name)}</h3><p class="muted small">${esc(S.user.email || "")} · ${roleLabel()}</p>
+    <h3>${esc(S.me.name)}</h3><p class="muted small">${idLine} · ${roleLabel()}</p>
     <div class="list" style="margin-top:12px">
       <button class="btn block" data-a="pw">비밀번호 변경</button>
       <button class="btn block" data-a="out">로그아웃</button>
@@ -719,9 +908,10 @@ async function router() {
   const h = location.hash || (isMaster() ? "#/admin" : "#/");
   const parts = h.replace(/^#\/?/, "").split("/");
   try {
-    if (parts[0] === "" ) return await viewHome();
-    if (parts[0] === "new") return await viewNew();
+    if (parts[0] === "") return isStoreUser() ? await viewStoreHome() : await viewHome();
+    if (parts[0] === "new") return isStoreUser() ? await viewStoreNew() : await viewNew();
     if (parts[0] === "i" && parts[1]) return await viewInspection(parts[1], parts[2] === "edit");
+    if (parts[0] === "sv" && isSV()) return await viewSvStores();
     if (parts[0] === "admin" && isMaster()) {
       if (!parts[1]) return await viewAdminList();
       if (parts[1] === "stats") return await viewAdminStats();
@@ -731,7 +921,10 @@ async function router() {
     location.hash = isMaster() ? "#/admin" : "#/";
   } catch (e) {
     console.error(e);
-    shell(`<div class="empty">${esc(friendlyError(e))}<br><br><a class="btn sm" href="#/">처음으로</a></div>`, { narrow: true });
+    const link = String(e?.message || "").match(/https:\/\/console\.firebase\.google\.com\/[^\s)"']+/)?.[0];
+    shell(`<div class="empty">${esc(friendlyError(e))}
+      ${link ? `<br><br><a class="btn sm" href="${esc(link)}" target="_blank" rel="noopener">색인 만들기 화면 열기</a><br><span class="small">Firebase 관리자 계정으로 열어 '저장'을 누르면 몇 분 뒤 해결됩니다.</span>` : ""}
+      <br><br><a class="btn sm" href="#/">처음으로</a></div>`, { narrow: true });
   }
 }
 window.addEventListener("hashchange", router);
@@ -742,15 +935,53 @@ async function loadStores() {
 async function loadMembers() { S.members = (await api.listMembers()).sort((a, b) => (a.name || "").localeCompare(b.name || "", "ko")); }
 const memberName = uid => S.members.find(m => m.uid === uid)?.name || "";
 // 담당 SV: 계정이 연결돼 있으면 계정, 아니면 매장 목록의 담당자 이름으로 찾습니다.
-const svUidOf = s => s.svUid || S.members.find(m => m.active !== false && m.name === s.svName)?.uid || "";
+const svUidOf = s => s.svUid || S.members.find(m => m.active !== false && m.role !== "store" && m.name === s.svName)?.uid || "";
 const svNameOf = s => memberName(s.svUid) || s.svName || "";
 const isMyStore = s => s.svUid ? s.svUid === S.me.uid : (!!s.svName && s.svName === S.me.name);
 const byName = arr => [...arr].sort((a, b) => a.name.localeCompare(b.name, "ko"));
+const storeById = id => S.stores.find(s => s.id === id);
+
+/* 담당 SV가 바뀌면, 그 매장의 지난 점검도 새 SV가 볼 수 있게 표시를 옮깁니다. */
+async function syncStoreSv(storeId, uid) {
+  const list = await api.listByStore(storeId);
+  let k = 0;
+  for (const d of list) {
+    if ((d.storeSvUid || "") !== (uid || "")) { await api.updateInspection(d.id, { storeSvUid: uid || "" }); k++; }
+  }
+  return k;
+}
 async function linkStoresTo(uid, name) {
   await loadStores();
   const targets = S.stores.filter(s => !s.svUid && s.svName === name);
-  for (const s of targets) await api.updateStore(s.id, { svUid: uid });
+  for (const s of targets) { await api.updateStore(s.id, { svUid: uid }); await syncStoreSv(s.id, uid); }
   return targets.length;
+}
+
+/* 이전 버전에서 만든 점검에 새 항목(종류·월·담당 SV)을 채워 넣습니다. 마스터가 들어올 때 기기마다 한 번만 실행합니다. */
+async function backfill(rows) {
+  if (!isMaster()) return 0;
+  if (!S.stores.length) await loadStores();
+  let k = 0;
+  for (const d of rows) {
+    const patch = {};
+    if (!d.kind) patch.kind = "qsc";
+    if (!d.visitMonth && d.visitDate) patch.visitMonth = d.visitDate.slice(0, 7);
+    if (d.storeSvUid === undefined) patch.storeSvUid = storeById(d.storeId)?.svUid || "";
+    if (Object.keys(patch).length) {
+      try { await api.updateInspection(d.id, patch); Object.assign(d, patch); k++; } catch (e) { console.warn("backfill", d.id, e); }
+    }
+  }
+  if (k) monthCache = {};
+  return k;
+}
+async function backfillAllOnce() {
+  const KEY = "benson_inspect_v3_backfill";
+  try { if (localStorage.getItem(KEY)) return; } catch (_) {}
+  try {
+    await loadStores();
+    await backfill(await api.listAllInspections());
+    try { localStorage.setItem(KEY, String(Date.now())); } catch (_) {}
+  } catch (e) { console.warn("backfill skipped", e); }
 }
 
 /* =====================================================================
@@ -761,7 +992,8 @@ function viewLogin() {
   if (api.mode === "demo") {
     app.innerHTML = `<div class="login"><h1>매장 점검</h1><p class="muted">어떤 화면을 볼지 고르세요.</p>
       <div class="panel list">
-        <button class="btn primary block" data-u="demo-sv1">SV 화면 보기 (${esc(STORE_SEED[0][2])})</button>
+        <button class="btn primary block" data-u="demo-st1">매장 화면 보기 (스타필드수원 점장)</button>
+        <button class="btn block" data-u="demo-sv1">SV 화면 보기 (${esc(STORE_SEED[0][2])})</button>
         <button class="btn block" data-u="demo-master">마스터 화면 보기</button>
       </div></div>`;
     $$("[data-u]").forEach(b => b.addEventListener("click", () => api.login(b.dataset.u)));
@@ -770,23 +1002,23 @@ function viewLogin() {
   app.innerHTML = `<div class="login">
     <h1>매장 점검</h1><p class="muted">점검 계정으로 로그인하세요. 케이크 예약 계정과는 별개이며, 이 기기에서 한 번만 로그인하면 됩니다.</p>
     <form class="panel" id="lf" novalidate>
-      <label class="f" for="em">이메일</label><input class="in" id="em" type="email" autocomplete="username" required>
+      <label class="f" for="em">아이디 또는 이메일</label><input class="in" id="em" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="매장 계정은 아이디 (예: bsc0007)" required>
       <label class="f" for="pw">비밀번호</label><input class="in" id="pw" type="password" autocomplete="current-password" required>
       <div class="err" id="le"></div>
       <button class="btn primary block" style="margin-top:6px">로그인</button>
     </form>
-    <p class="muted small" style="margin-top:14px">계정이 없거나 비밀번호를 잊었다면 관리자에게 요청하세요.</p></div>`;
+    <p class="muted small" style="margin-top:14px">계정이 없거나 비밀번호를 잊었다면 본사(마스터)에 요청하세요.</p></div>`;
   $("#lf").addEventListener("submit", async e => {
     e.preventDefault();
     const btn = $("#lf button"); btn.disabled = true; $("#le").textContent = "";
-    try { await api.login($("#em").value.trim(), $("#pw").value); }
+    try { await api.login(toLoginEmail($("#em").value), $("#pw").value); }
     catch (err) { $("#le").textContent = friendlyError(err); btn.disabled = false; }
   });
 }
 
 function viewNoAccess(reason) {
   setHeader();
-  app.innerHTML = `<div class="login"><h1>등록되지 않은 계정입니다</h1>
+  app.innerHTML = `<div class="login"><h1>사용할 수 없는 계정입니다</h1>
     <p class="muted">${esc(reason)}</p>
     <div class="panel"><label class="f" style="margin-top:0">내 사용자 ID</label>
       <div class="uid" id="uid">${esc(S.user.uid)}</div>
@@ -797,36 +1029,39 @@ function viewNoAccess(reason) {
 }
 
 /* =====================================================================
-   7. SV 홈 (내 점검)
+   7. SV·마스터: 내 점검 (QSC)
    ===================================================================== */
+const scoreBox = d => {
+  const sm = sumOf(d), cl = CL(d);
+  return isSubmitted(d) || sm.done === sm.total
+    ? `<div class="score num">${sm.y}/${sm.yn}<small>${esc(cl.yWord)}</small></div>`
+    : `<div class="score num">${sm.done}/${sm.total}<small>완료</small></div>`;
+};
+function inspRow(d, { showStore = true, showAuthor = false } = {}) {
+  const n = nTitles(d), cl = CL(d);
+  return `<a class="li" href="#/i/${esc(d.id)}">
+    <div class="main"><div class="t">${showStore ? esc(d.storeName) : fmtDate(d.visitDate)} ${kindOf(d) === "store" && showStore ? kindChip(d) : ""}</div>
+      <div class="s">${showStore ? fmtDate(d.visitDate) + " " : ""}${statusChip(d)}${showAuthor ? ` ${esc(d.svName || "")}` : ""}${n.length ? ` ${esc(cl.nWord)}: ${esc(n.join(", "))}` : ""}</div></div>
+    ${scoreBox(d)}</a>`;
+}
+
 async function viewHome() {
-  shell(`<p class="muted">불러오는 중…</p>`, { active: "#/", narrow: true });
-  const list = (await api.listMyInspections(S.me.uid))
-    .sort((a, b) => (b.visitDate || "").localeCompare(a.visitDate || "") || (Number(b.updatedAt?.seconds || b.updatedAt || 0) - Number(a.updatedAt?.seconds || a.updatedAt || 0)));
+  loading("#/");
+  const list = (await api.listMyInspections(S.me.uid)).sort(byDateDesc);
   const drafts = list.filter(d => !isSubmitted(d));
   const done = list.filter(isSubmitted);
   const monthDone = done.filter(d => d.visitDate?.startsWith(thisMonth())).length;
-  const row = d => {
-    const sm = d.summary || summarize(d.items);
-    const n = nTitles(d);
-    return `<a class="li" href="#/i/${esc(d.id)}">
-      <div class="main"><div class="t">${esc(d.storeName)}</div>
-        <div class="s">${fmtDate(d.visitDate)} ${statusChip(d)}${n.length ? ` 미흡: ${esc(n.join(", "))}` : ""}</div></div>
-      <div class="score num">${sm.y}/${sm.total}<small>준수</small></div></a>`;
-  };
   shell(`
     <h1>내 점검</h1>
-    <a class="btn primary block" href="#/new" style="min-height:52px;font-size:16px">새 점검 시작</a>
-    <p class="muted small" style="margin-top:10px">이번 달 제출 <b class="num">${monthDone}</b>건</p>
-    ${drafts.length ? `<h2>작성 중</h2><div class="list">${drafts.map(row).join("")}</div>` : ""}
+    <a class="btn primary block big" href="#/new">새 QSC 점검 시작</a>
+    <p class="muted small" style="margin-top:10px">이번 달 제출 <b class="num">${monthDone}</b>건${isSV() ? ` · 담당 매장의 점장 자체 점검은 <a href="#/sv">담당 매장</a>에서 볼 수 있습니다.` : ""}</p>
+    ${drafts.length ? `<h2>작성 중</h2><div class="list">${drafts.map(d => inspRow(d)).join("")}</div>` : ""}
     <h2>제출한 점검</h2>
-    ${done.length ? `<div class="list">${done.slice(0, 60).map(row).join("")}</div>` : `<div class="empty">아직 제출한 점검이 없습니다. 매장에 도착하면 '새 점검 시작'을 누르세요.</div>`}
+    ${done.length ? `<div class="list">${done.slice(0, 60).map(d => inspRow(d)).join("")}</div>` : `<div class="empty">아직 제출한 점검이 없습니다. 매장에 도착하면 '새 QSC 점검 시작'을 누르세요.</div>`}
   `, { active: "#/", narrow: true });
 }
 
-/* =====================================================================
-   8. 새 점검 시작
-   ===================================================================== */
+/* 새 QSC 점검 (SV·마스터) */
 async function viewNew() {
   await loadStores();
   const active = S.stores.filter(s => s.active !== false);
@@ -834,7 +1069,7 @@ async function viewNew() {
   const others = byName(active.filter(s => !isMyStore(s)));
   const opt = s => `<option value="${esc(s.id)}">${esc(s.name)}</option>`;
   shell(`
-    <h1>새 점검 시작</h1>
+    <h1>새 QSC 점검</h1>
     ${active.length ? `<div class="panel">
       <label class="f" for="st" style="margin-top:0">매장</label>
       <select class="in" id="st"><option value="">매장을 고르세요</option>
@@ -847,82 +1082,252 @@ async function viewNew() {
   `, { active: "#/", narrow: true });
   if (!active.length) return;
   $("#go").addEventListener("click", async () => {
-    const st = S.stores.find(s => s.id === $("#st").value);
+    const st = storeById($("#st").value);
     const vd = $("#vd").value;
     if (!st) return $("#ne").textContent = "매장을 골라 주세요.";
     if (!vd) return $("#ne").textContent = "방문일을 입력해 주세요.";
     $("#go").disabled = true;
     try {
       const mineList = await api.listMyInspections(S.me.uid);
-      const dup = mineList.find(d => d.storeId === st.id && d.visitDate === vd);
+      const dup = mineList.find(d => d.storeId === st.id && d.visitDate === vd && kindOf(d) === "qsc");
       if (dup) {
-        const open = await modal({ title: "같은 날 같은 매장 점검이 있습니다", body: `${st.name}, ${fmtDate(vd)} 점검을 이미 만들었습니다. 그 점검을 열까요?`, ok: "기존 점검 열기", cancel: "새로 만들기" });
+        const open = await modal({ title: "같은 날 같은 매장 점검이 있습니다", body: `${esc(st.name)}, ${fmtDate(vd)} 점검을 이미 만들었습니다. 그 점검을 열까요?`, ok: "기존 점검 열기", cancel: "새로 만들기" });
         if (open) { location.hash = "#/i/" + dup.id; return; }
       }
-      const id = await api.createInspection({
-        storeId: st.id, storeCode: st.code || st.id, storeName: st.name, svUid: S.me.uid, svName: S.me.name || S.user.email || "", visitDate: vd,
-        status: "draft", returned: false, items: emptyItems(), special: { note: "", photos: [] },
-        summary: summarize({}), checklistVersion: CHECKLIST_VERSION
-      });
+      const id = await createInspectionFor(st, vd, "qsc");
+      location.hash = "#/i/" + id;
+    } catch (e) { $("#ne").textContent = friendlyError(e); $("#go").disabled = false; }
+  });
+}
+
+function createInspectionFor(st, vd, kind) {
+  const cl = CHECKLISTS[kind];
+  return api.createInspection({
+    kind, storeId: st.id, storeCode: st.code || st.id, storeName: st.name, storeSvUid: st.svUid || "",
+    svUid: S.me.uid, svName: S.me.name || S.user.email || "", authorRole: myRole(),
+    visitDate: vd, visitMonth: vd.slice(0, 7), status: "draft", returned: false,
+    items: emptyItems(cl), special: { note: "", photos: [] }, summary: summarize({}, cl), checklistVersion: cl.version
+  });
+}
+
+/* =====================================================================
+   8. 점장·매니저: 매장 자체 점검 홈
+   ===================================================================== */
+const storeFilter = { month: thisMonth() };
+const myStoreDoc = () => storeById(S.me?.storeId);
+
+async function viewStoreHome() {
+  loading("#/");
+  await loadStores();
+  const st = myStoreDoc();
+  if (!st) { shell(`<div class="empty">이 계정에 연결된 매장을 찾을 수 없습니다. 본사(마스터)에 문의하세요.</div>`, { narrow: true }); return; }
+  const ym = storeFilter.month;
+  const [rowsM, rowsNow, drafts] = await Promise.all([
+    api.listStoreMonth(st.id, ym),
+    ym === thisMonth() ? Promise.resolve(null) : api.listStoreMonth(st.id, thisMonth()),
+    api.listMyDrafts(S.me.uid)
+  ]);
+  const nowRows = rowsNow || rowsM;
+  const todayDoc = nowRows.filter(d => d.visitDate === today()).sort(byDateDesc)[0];
+  const list = [...rowsM].sort(byDateDesc);
+  const otherDrafts = drafts.filter(d => kindOf(d) === "store" && d.visitMonth !== ym && d.id !== todayDoc?.id);
+  const sub = list.filter(isSubmitted);
+  const days = new Set(sub.map(d => d.visitDate)).size;
+  const elapsed = daysElapsed(ym);
+  const nCount = sub.reduce((a, d) => a + sumOf(d).n, 0);
+
+  let todayCard;
+  if (todayDoc) {
+    const sm = sumOf(todayDoc);
+    const mineEdit = todayDoc.status === "draft" && ownsDoc(todayDoc);
+    todayCard = `<div class="today-t">오늘 ${fmtDate(today())} ${statusChip(todayDoc)}</div>
+      <p class="muted small">작성 ${esc(todayDoc.svName || "")} · 완료 ${sm.done}/${sm.total}</p>
+      <a class="btn primary block big" href="#/i/${esc(todayDoc.id)}">${mineEdit ? "이어서 작성" : "오늘 점검 보기"}</a>`;
+  } else {
+    todayCard = `<div class="today-t">오늘 ${fmtDate(today())}</div>
+      <p class="muted small">아직 오늘 점검이 없습니다. 문항 ${CHECKLISTS.store.items.length}개, 사진 필수 문항은 여러 장 올릴 수 있습니다.</p>
+      <button class="btn primary block big" id="startToday">오늘 점검 시작</button>`;
+  }
+  shell(`
+    <h1>${esc(st.name)}</h1>
+    <p class="muted" style="margin-top:-8px">매장 자체 점검 · ${esc(S.me.name || "")}</p>
+    <div class="panel today">${todayCard}
+      <a class="small muted" href="#/new" style="display:inline-block;margin-top:10px">다른 날짜로 작성</a></div>
+    ${otherDrafts.length ? `<h2>작성 중인 다른 날짜</h2><div class="list">${otherDrafts.sort(byDateDesc).map(d => inspRow(d, { showStore: false, showAuthor: true })).join("")}</div>` : ""}
+    <div class="row" style="margin:22px 0 10px;align-items:center">
+      <h2 style="margin:0;flex:1 1 auto">${monNum(ym)}월 점검</h2>
+      <input class="in" id="fm" type="month" value="${ym}" max="${thisMonth()}" style="flex:0 0 170px;min-height:38px;padding:6px 10px" aria-label="월 선택">
+    </div>
+    <div class="stats">
+      <div class="stat"><b class="num">${days}/${elapsed}</b><span>제출한 날 / 지난 날</span></div>
+      <div class="stat"><b class="num">${nCount}</b><span>개선 필요 건수</span></div>
+      <div class="stat"><b class="num">${list.filter(d => d.status === "submitted").length}</b><span>승인 대기</span></div>
+    </div>
+    ${list.length ? `<div class="list">${list.map(d => inspRow(d, { showStore: false, showAuthor: true })).join("")}</div>`
+      : `<div class="empty">${monNum(ym)}월 점검 기록이 없습니다.</div>`}
+  `, { active: "#/", narrow: true });
+  $("#fm").addEventListener("change", e => { storeFilter.month = e.target.value || thisMonth(); viewStoreHome(); });
+  $("#startToday")?.addEventListener("click", async e => {
+    e.target.disabled = true;
+    try { const id = await createInspectionFor(st, today(), "store"); location.hash = "#/i/" + id; }
+    catch (err) { toast(friendlyError(err), 4000); e.target.disabled = false; }
+  });
+}
+
+async function viewStoreNew() {
+  await loadStores();
+  const st = myStoreDoc();
+  if (!st) { location.hash = "#/"; return; }
+  shell(`
+    <p style="margin:0 0 6px"><a class="small muted" href="#/">처음으로</a></p>
+    <h1>다른 날짜로 작성</h1>
+    <div class="panel">
+      <p class="muted small" style="margin-top:0">${esc(st.name)} · 지난 날짜의 점검을 빠뜨렸을 때 사용하세요.</p>
+      <label class="f" for="vd">점검일</label><input class="in" id="vd" type="date" value="${today()}" max="${today()}">
+      <div class="err" id="ne"></div>
+      <button class="btn primary block" id="go" style="margin-top:6px">점검 시작</button>
+    </div>`, { active: "#/", narrow: true });
+  $("#go").addEventListener("click", async () => {
+    const vd = $("#vd").value;
+    if (!vd) return $("#ne").textContent = "점검일을 입력해 주세요.";
+    if (vd > today()) return $("#ne").textContent = "앞으로의 날짜는 고를 수 없습니다.";
+    $("#go").disabled = true;
+    try {
+      const same = (await api.listStoreMonth(st.id, vd.slice(0, 7))).filter(d => d.visitDate === vd).sort(byDateDesc)[0];
+      if (same) {
+        const open = await modal({ title: "이 날짜의 점검이 이미 있습니다", body: `${fmtDate(vd)} 점검 (작성 ${esc(same.svName || "")}, ${statusLabel(same)})을 열까요?`, ok: "기존 점검 열기", cancel: "새로 만들기" });
+        if (open) { location.hash = "#/i/" + same.id; return; }
+      }
+      const id = await createInspectionFor(st, vd, "store");
       location.hash = "#/i/" + id;
     } catch (e) { $("#ne").textContent = friendlyError(e); $("#go").disabled = false; }
   });
 }
 
 /* =====================================================================
-   9. 점검 작성·보기
+   9. SV: 담당 매장 현황 (담당 매장의 자체 점검 + QSC 전체)
+   ===================================================================== */
+const svFilter = { month: thisMonth(), kind: "", store: "" };
+async function viewSvStores() {
+  loading("#/sv", false);
+  await loadStores();
+  const ym = svFilter.month;
+  const mine = byName(S.stores.filter(s => s.active !== false && s.svUid === S.me.uid));
+  const rows = (await api.listSvMonth(S.me.uid, ym)).sort(byDateDesc);
+  const sub = rows.filter(isSubmitted);
+  const elapsed = daysElapsed(ym);
+  const per = mine.map(s => {
+    const self = sub.filter(d => d.storeId === s.id && kindOf(d) === "store");
+    const qsc = sub.filter(d => d.storeId === s.id && kindOf(d) === "qsc");
+    const latest = sub.filter(d => d.storeId === s.id).sort(byDateDesc)[0];
+    return { s, days: new Set(self.map(d => d.visitDate)).size, lastSelf: self.sort(byDateDesc)[0], qsc: qsc.length, qscRate: avgRate(qsc), latestN: latest ? nTitles(latest) : [], latest };
+  });
+  const shown = rows.filter(d => (!svFilter.kind || kindOf(d) === svFilter.kind) && (!svFilter.store || d.storeId === svFilter.store));
+  shell(`
+    <h1>담당 매장</h1>
+    ${!mine.length ? `<div class="notice back">연결된 담당 매장이 없습니다. 마스터에게 '매장 관리'에서 담당 SV 지정을 요청하세요.</div>` : ""}
+    <div class="panel" style="margin-bottom:12px"><div class="row">
+      <div><label class="f" for="fm" style="margin-top:0">월</label><input class="in" id="fm" type="month" value="${ym}" max="${thisMonth()}"></div>
+      <div><label class="f" for="fk" style="margin-top:0">점검 종류</label><select class="in" id="fk">
+        <option value="">전체</option><option value="store" ${svFilter.kind === "store" ? "selected" : ""}>매장 자체 점검</option><option value="qsc" ${svFilter.kind === "qsc" ? "selected" : ""}>QSC 점검</option></select></div>
+      <div><label class="f" for="fs" style="margin-top:0">매장</label><select class="in" id="fs"><option value="">담당 매장 전체</option>${mine.map(s => `<option value="${esc(s.id)}" ${s.id === svFilter.store ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select></div>
+    </div></div>
+    ${mine.length ? `<h2>매장별 요약 (${monNum(ym)}월, 제출 기준)</h2><div class="tbl-wrap"><table>
+      <thead><tr><th>매장</th><th class="r">자체 점검</th><th>최근 자체 점검</th><th class="r">QSC</th><th class="r">QSC 준수율</th><th>최근 미흡·개선 필요</th></tr></thead>
+      <tbody>${per.map(x => `<tr ${x.latest ? `class="click" data-open="${esc(x.latest.id)}" tabindex="0"` : ""}>
+        <td>${esc(x.s.name)}</td><td class="r num">${x.days}/${elapsed}일</td><td class="num">${x.lastSelf ? esc(x.lastSelf.visitDate) : "-"}</td>
+        <td class="r num">${x.qsc}</td><td class="r num">${x.qscRate === null ? "-" : x.qscRate + "%"}</td>
+        <td class="wrap">${esc(x.latestN.join(", ") || (x.latest ? "없음" : "-"))}</td></tr>`).join("")}</tbody></table></div>` : ""}
+    <h2>점검 목록</h2>
+    ${shown.length ? `<div class="tbl-wrap"><table>
+      <thead><tr><th>날짜</th><th>종류</th><th>매장</th><th>작성자</th><th class="r">결과</th><th>미흡·개선 필요</th><th class="r">사진</th><th>상태</th></tr></thead>
+      <tbody>${shown.map(d => { const sm = sumOf(d); return `<tr class="click" data-open="${esc(d.id)}" tabindex="0">
+        <td class="num">${esc(d.visitDate)}</td><td>${kindChip(d)}</td><td>${esc(d.storeName)}</td><td>${esc(d.svName || "")}</td>
+        <td class="r num">${sm.yn ? `${sm.y}/${sm.yn}` : "-"}</td><td class="wrap">${esc(nTitles(d).join(", ") || "-")}</td>
+        <td class="r num">${photoCount(d)}</td><td>${statusChip(d)}</td></tr>`; }).join("")}</tbody></table></div>`
+      : `<div class="empty">이 조건에 맞는 점검이 없습니다.</div>`}
+  `, { active: "#/sv" });
+  $("#fm").addEventListener("change", e => { svFilter.month = e.target.value || thisMonth(); viewSvStores(); });
+  $("#fk").addEventListener("change", e => { svFilter.kind = e.target.value; viewSvStores(); });
+  $("#fs").addEventListener("change", e => { svFilter.store = e.target.value; viewSvStores(); });
+  wireRowOpen();
+}
+function wireRowOpen() {
+  $$("[data-open]").forEach(tr => {
+    tr.addEventListener("click", e => { if (e.target.closest("input")) return; location.hash = "#/i/" + tr.dataset.open; });
+    tr.addEventListener("keydown", e => { if (e.key === "Enter" && !e.target.closest("input")) location.hash = "#/i/" + tr.dataset.open; });
+  });
+}
+
+/* =====================================================================
+   10. 점검 작성·보기 (QSC·매장 자체 점검 공통)
    ===================================================================== */
 async function viewInspection(id, editReq = false) {
-  shell(`<p class="muted">불러오는 중…</p>`, { narrow: true });
+  loading("");
   const doc = await api.getInspection(id);
-  if (!doc) { shell(`<div class="empty">점검을 찾을 수 없습니다.<br><br><a class="btn sm" href="#/">내 점검으로</a></div>`, { narrow: true }); return; }
-  doc.items = doc.items || emptyItems();
+  if (!doc) { shell(`<div class="empty">점검을 찾을 수 없습니다.<br><br><a class="btn sm" href="#/">처음으로</a></div>`, { narrow: true }); return; }
+  const cl = CL(doc);
+  doc.items = doc.items || emptyItems(cl);
   doc.special = doc.special || { note: "", photos: [] };
-  const own = doc.svUid === S.me.uid;
+  const own = ownsDoc(doc);
   const ownDraft = own && doc.status === "draft";
   const masterEdit = isMaster() && editReq && !ownDraft;   // 마스터 직접 수정 모드
   const canEdit = ownDraft || masterEdit;
+  const itemByKey = key => cl.items.find(c => String(c.no) === String(key));
 
   const ed = { id, doc, canEdit, dirty: false, saving: false, timer: null, uploading: 0, lastSaved: null, failed: false, pend: {} };
 
-  const photosHtml = (key) => {
+  const photosHtml = key => {
     const it = itemOf(doc, key);
+    const c = key === SPECIAL_KEY ? null : itemByKey(key);
+    const max = maxPhotos(c);
     const tiles = (it.photos || []).map((p, i) => `<div class="ph">
-        <img src="${esc(p.thumb || p.url)}" alt="${key === SPECIAL_KEY ? "특이사항" : esc(CHECKLIST.find(c => String(c.no) === String(key))?.title)} 사진 ${i + 1}" loading="lazy" data-zoom="${esc(key)}:${i}">
+        <img src="${esc(p.thumb || p.url)}" alt="${key === SPECIAL_KEY ? "특이사항" : esc(shortOf(c || {}))} 사진 ${i + 1}" loading="lazy" data-zoom="${esc(key)}:${i}">
         ${canEdit ? `<button class="x" data-del="${esc(key)}:${i}" aria-label="사진 ${i + 1} 삭제">×</button>` : ""}</div>`).join("");
-    const pending = Array.from({ length: ed.pend?.[key] || 0 }, () => `<div class="ph up"></div>`).join("");
-    const room = (it.photos || []).length + (ed.pend?.[key] || 0) < MAX_PHOTOS_PER_ITEM;
+    const pending = Array.from({ length: ed.pend[key] || 0 }, () => `<div class="ph up"></div>`).join("");
+    const room = (it.photos || []).length + (ed.pend[key] || 0) < max;
     const add = canEdit && room ? `<label class="add-ph">사진<br>추가<input type="file" accept="image/*" multiple data-add="${esc(key)}"></label>` : "";
     return tiles + pending + add;
   };
 
+  const reqTags = (c, it) => {
+    const t = [];
+    if (c.note === "required") { const ok = !!String(it.note || "").trim(); t.push(`<span class="req ${ok ? "ok" : ""}">내용 필수${ok ? " ✓" : ""}</span>`); }
+    if (c.photo === "required") { const k = (it.photos || []).length; t.push(`<span class="req ${k ? "ok" : ""}">사진 필수${k ? ` ✓ ${k}장` : " · 여러 장 가능"}</span>`); }
+    return t.join("");
+  };
+  const hasReq = c => c.note === "required" || c.photo === "required";
+
   const itemHtml = c => {
     const it = itemOf(doc, c.no);
-    const cls = it.r === "Y" ? "y" : it.r === "N" ? "n" : "";
+    const head = `<div class="item-top"><div class="item-no num">${c.no}</div><div class="item-t">${esc(c.title)}</div></div>
+      ${c.criteria ? `<div class="item-c">${esc(c.criteria)}</div>` : ""}`;
     if (!canEdit) {
-      const plain = it.r === "Y" && !it.note && !(it.photos || []).length;
-      return `<section class="item ${cls} ${plain ? "plain" : ""}" id="item-${c.no}">
-        <div class="item-top"><div class="item-no num">${c.no}</div><div class="item-t">${esc(c.title)}</div></div>
-        <div class="item-c">${esc(c.criteria)}</div>
-        <div class="ro-result ${cls}">${it.r === "Y" ? "Y 준수" : it.r === "N" ? "N 미흡" : "응답 없음"}</div>
+      const roCls = isYN(c) ? (it.r === "Y" ? "y" : it.r === "N" ? "n" : "") : (itemDone(c, it) ? "done" : "");
+      const plain = isYN(c) && it.r === "Y" && !it.note && !(it.photos || []).length;
+      const result = isYN(c)
+        ? `<div class="ro-result ${roCls}">${it.r === "Y" ? `Y ${esc(cl.yWord)}` : it.r === "N" ? `N ${esc(cl.nWord)}` : "응답 없음"}</div>`
+        : (!it.note && !(it.photos || []).length ? `<div class="ro-result">기록 없음</div>` : "");
+      return `<section class="item ${roCls} ${plain ? "plain" : ""}" id="item-${c.no}">${head}${result}
         <div class="item-body">${it.note ? `<div class="ro-note">${esc(it.note)}</div>` : ""}
           ${(it.photos || []).length ? `<div class="photos" data-photos="${c.no}">${photosHtml(c.no)}</div>` : ""}</div>
       </section>`;
     }
-    return `<section class="item ${cls}" id="item-${c.no}">
-      <div class="item-top"><div class="item-no num">${c.no}</div><div class="item-t">${esc(c.title)}</div></div>
-      <div class="item-c">${esc(c.criteria)}</div>
-      <div class="yn" role="group" aria-label="${esc(c.title)} 결과">
-        <button class="y" data-yn="${c.no}:Y" aria-pressed="${it.r === "Y"}">Y 준수</button>
-        <button class="n" data-yn="${c.no}:N" aria-pressed="${it.r === "N"}">N 미흡</button>
-      </div>
+    const ph = isYN(c) ? `비고 (${cl.nWord} 사유, 현장 조치 내용 등)` : c.note === "required" ? "내용을 입력하세요 (필수)" : "메모 (선택)";
+    return `<section class="item ${itemClass(c, it)}" id="item-${c.no}">${head}
+      ${hasReq(c) ? `<div class="reqs" data-reqs="${c.no}">${reqTags(c, it)}</div>` : ""}
+      ${isYN(c) ? `<div class="yn" role="group" aria-label="${esc(shortOf(c))} 결과">
+        <button class="y" data-yn="${c.no}:Y" aria-pressed="${it.r === "Y"}">Y ${esc(cl.yWord)}</button>
+        <button class="n" data-yn="${c.no}:N" aria-pressed="${it.r === "N"}">N ${esc(cl.nWord)}</button>
+      </div>` : ""}
       <div class="item-body">
-        <textarea class="in" data-note="${c.no}" rows="2" placeholder="비고 (미흡 사유, 현장 조치 내용 등)" aria-label="${esc(c.title)} 비고">${esc(it.note)}</textarea>
+        <textarea class="in" data-note="${c.no}" rows="2" placeholder="${esc(ph)}" aria-label="${esc(shortOf(c))} ${c.note === "required" ? "내용" : "비고"}">${esc(it.note)}</textarea>
         <div class="photos" data-photos="${c.no}">${photosHtml(c.no)}</div>
       </div></section>`;
   };
 
   const specialHtml = () => {
+    if (!cl.special) return "";
     const it = doc.special;
     if (!canEdit && !it.note && !(it.photos || []).length) return "";
     return `<div class="cat"><div class="cat-h"><div class="k" aria-hidden="true">+</div><h2>매장 특이사항</h2></div>
@@ -934,22 +1339,27 @@ async function viewInspection(id, editReq = false) {
       </section></div>`;
   };
 
-  const railHtml = () => CATEGORIES.map(cat => {
-    const its = CHECKLIST.filter(c => c.cat === cat.key);
+  const catCount = cat => {
+    const its = cl.items.filter(c => c.cat === cat.key);
+    if (its.every(isYN)) return `${cl.yWord} ${its.filter(c => doc.items[c.no]?.r === "Y").length}/${its.length}`;
+    return `완료 ${its.filter(c => itemDone(c, doc.items[c.no])).length}/${its.length}`;
+  };
+  const railHtml = () => cl.cats.map(cat => {
+    const its = cl.items.filter(c => c.cat === cat.key);
     return `<div class="grp" style="--n:${its.length}">${its.map(c => {
-      const r = doc.items[c.no]?.r;
-      return `<button class="${r === "Y" ? "y" : r === "N" ? "n" : ""}" data-jump="${c.no}" aria-label="${c.no}번 ${esc(c.title)}: ${r === "Y" ? "준수" : r === "N" ? "미흡" : "미응답"}"></button>`;
+      const k = itemClass(c, doc.items[c.no] || {});
+      return `<button class="${k}" data-jump="${c.no}" aria-label="${c.no}번 ${esc(shortOf(c))}: ${k ? "완료" : "미완료"}"></button>`;
     }).join("")}</div>`;
   }).join("");
 
   const statusText = () => {
-    const sm = summarize(doc.items);
+    const sm = summarize(doc.items, cl);
     let save = "";
     if (ed.uploading) save = `사진 올리는 중 ${ed.uploading}장`;
     else if (ed.saving) save = "저장 중…";
     else if (ed.failed) save = "저장 실패, 연결을 확인하세요";
     else if (ed.lastSaved) save = `${pad(ed.lastSaved.getHours())}:${pad(ed.lastSaved.getMinutes())} 자동 저장됨`;
-    return `응답 <b class="num">${sm.answered}/${sm.total}</b>, 준수 <b class="num">${sm.y}</b>, 미흡 <b class="num">${sm.n}</b><br>${save}`;
+    return `완료 <b class="num">${sm.done}/${sm.total}</b>, ${esc(cl.yWord)} <b class="num">${sm.y}</b>, ${esc(cl.nWord)} <b class="num">${sm.n}</b><br>${save}`;
   };
 
   const dock = canEdit ? `<div class="dock"><div class="dock-in">
@@ -969,37 +1379,41 @@ async function viewInspection(id, editReq = false) {
   const ownDraftActs = ownDraft ? `<button class="btn sm ghost danger" id="deld" style="margin-left:auto">이 점검 삭제</button>` : "";
   const stateNotice =
     masterEdit ? `<div class="notice wait"><b>마스터 수정 중</b>: 고친 내용은 바로 저장되고 처리 이력에 남습니다. 다 고쳤으면 아래 '수정 완료'를 누르세요.</div>`
-    : doc.status === "approved" ? `<div class="notice done"><b>승인 완료</b>${doc.approvedBy ? `: ${esc(doc.approvedBy)}` : ""}${doc.approvedAt ? `, ${fmtTs(doc.approvedAt)}` : ""}${!isMaster() ? "<br>승인된 점검은 마스터만 고칠 수 있습니다. 수정이 필요하면 마스터에게 요청하세요." : ""}</div>`
+    : doc.status === "approved" ? `<div class="notice done"><b>승인 완료</b>${doc.approvedBy ? `: ${esc(doc.approvedBy)}` : ""}${doc.approvedAt ? `, ${fmtTs(doc.approvedAt)}` : ""}${!isMaster() && own ? "<br>승인된 점검은 마스터만 고칠 수 있습니다. 수정이 필요하면 본사에 요청하세요." : ""}</div>`
     : doc.status === "submitted" ? `<div class="notice wait"><b>마스터 승인 대기 중</b>${own && !isMaster() ? "<br>승인 전까지는 '수정하기'로 고치거나 삭제할 수 있습니다." : ""}</div>` : "";
   const histHtml = (doc.history || []).length ? `<h2>처리 이력</h2><div class="panel"><ul class="hist">${[...doc.history].reverse().map(h =>
     `<li><span class="num">${fmtTs(h.at)}</span><b>${esc(h.action)}</b> ${esc(h.by || "")}${h.note ? `: ${esc(h.note)}` : ""}</li>`).join("")}</ul></div>` : "";
-  const ownBack = isMaster() ? "#/admin" : "#/";
-  const sm = summarize(doc.items);
+  const backHref = masterEdit ? `#/i/${id}` : own ? "#/" : isMaster() ? "#/admin" : isSV() ? "#/sv" : "#/";
+  const sm = summarize(doc.items, cl);
+  const recTotal = cl.items.filter(c => !isYN(c)).length;
+  const recDone = cl.items.filter(c => !isYN(c) && itemDone(c, doc.items[c.no])).length;
+  const summaryLine = [
+    sm.yn ? `${esc(cl.yWord)} <b class="num">${sm.y}/${sm.yn}</b> (${esc(cl.rateWord)} <b class="num">${sm.rate}%</b>), ${esc(cl.nWord)} ${sm.n}건` : "",
+    recTotal ? `기록 문항 ${recDone}/${recTotal}` : "",
+    `사진 ${photoCount(doc)}장`
+  ].filter(Boolean).join(", ");
 
   shell(`
-    <p style="margin:0 0 6px"><a class="small muted" href="${masterEdit ? "#/i/" + esc(id) : (own ? "#/" : ownBack)}">${masterEdit ? "보기 화면으로" : "목록으로"}</a></p>
-    <div class="ins-head"><h1>${esc(doc.storeName)}</h1>${statusChip(doc)}${ownDraftActs}</div>
-    <div class="ins-meta">${fmtDate(doc.visitDate)} 방문, 점검자 ${esc(doc.svName || "")}${doc.submittedAt && isSubmitted(doc) ? `, 제출 ${fmtTs(doc.submittedAt)}` : ""}</div>
-    ${!canEdit ? `<div class="notice info">준수 <b class="num">${sm.y}/${sm.total}</b> (준수율 <b class="num">${sm.rate}%</b>), 미흡 ${sm.n}건, 사진 ${photoCount(doc)}장</div>` : ""}
+    <p style="margin:0 0 6px"><a class="small muted" href="${backHref}">${masterEdit ? "보기 화면으로" : "목록으로"}</a></p>
+    <div class="ins-head"><h1>${esc(doc.storeName)}</h1>${kindChip(doc)}${statusChip(doc)}${ownDraftActs}</div>
+    <div class="ins-meta">${esc(cl.label)} · ${fmtDate(doc.visitDate)} · 작성 ${esc(doc.svName || "")}${doc.submittedAt && isSubmitted(doc) ? ` · 제출 ${fmtTs(doc.submittedAt)}` : ""}</div>
+    ${!canEdit ? `<div class="notice info">${summaryLine}</div>` : ""}
     ${stateNotice}
     ${doc.returned && doc.status === "draft" ? `<div class="notice back"><b>수정 요청</b>${doc.returnNote ? `: ${esc(doc.returnNote)}` : ""}</div>` : ""}
+    ${canEdit && kindOf(doc) === "store" ? `<p class="muted small" style="margin:8px 0 0">Y = 문제 없음, N = 개선 필요. '내용 필수'·'사진 필수' 표시가 있는 문항은 채워야 제출할 수 있습니다.</p>` : ""}
     ${masterActs}
-    ${!canEdit ? `<label class="small" style="display:inline-flex;gap:6px;align-items:center;margin-top:14px"><input type="checkbox" id="onlyFlag"> 미흡이거나 비고·사진이 있는 문항만 보기</label>` : ""}
-    ${CATEGORIES.map(cat => {
-      const its = CHECKLIST.filter(c => c.cat === cat.key);
-      return `<div class="cat"><div class="cat-h"><div class="k" aria-hidden="true">${cat.key}</div><h2>${cat.label}</h2>
-        <div class="c num" data-catc="${cat.key}"></div></div>${its.map(itemHtml).join("")}</div>`;
+    ${!canEdit ? `<label class="small" style="display:inline-flex;gap:6px;align-items:center;margin-top:14px"><input type="checkbox" id="onlyFlag"> ${esc(cl.nWord)} 문항과 기록이 있는 문항만 보기</label>` : ""}
+    ${cl.cats.map(cat => {
+      const its = cl.items.filter(c => c.cat === cat.key);
+      if (!its.length) return "";
+      return `<div class="cat"><div class="cat-h">${cat.badge ? `<div class="k" aria-hidden="true">${cat.badge}</div>` : `<div class="k sm" aria-hidden="true"></div>`}<h2>${esc(cat.label)}</h2>
+        <div class="c num" data-catc="${cat.key}">${catCount(cat)}</div></div>${its.map(itemHtml).join("")}</div>`;
     }).join("")}
     ${specialHtml()}
     ${histHtml}
   `, { narrow: true, dock });
 
-  const updateCatCounts = () => CATEGORIES.forEach(cat => {
-    const its = CHECKLIST.filter(c => c.cat === cat.key);
-    const y = its.filter(c => doc.items[c.no]?.r === "Y").length;
-    const el = $(`[data-catc=${cat.key}]`); if (el) el.textContent = `준수 ${y}/${its.length}`;
-  });
-  updateCatCounts();
+  const updateCatCounts = () => cl.cats.forEach(cat => { const el = $(`[data-catc="${cat.key}"]`); if (el) el.textContent = catCount(cat); });
 
   const view = $("#view");
   // 사진 확대 / 썸네일을 못 불러오면 '사진 열기' 링크로 대체
@@ -1031,10 +1445,10 @@ async function viewInspection(id, editReq = false) {
     toast("승인했습니다."); router();
   });
   act("#ret", async () => {
-    const note = await modal({ title: "반려 (수정 요청)", body: "점검자에게 보낼 요청 내용을 적어 주세요. 점검은 '작성 중'으로 돌아가고, 점검자가 고쳐서 다시 제출합니다.", ok: "반려하기", input: { placeholder: "예: 3번 사진 추가 필요" } });
+    const note = await modal({ title: "반려 (수정 요청)", body: "작성자에게 보낼 요청 내용을 적어 주세요. 점검은 '작성 중'으로 돌아가고, 작성자가 고쳐서 다시 제출합니다.", ok: "반려하기", input: { placeholder: "예: 10번 온도 기록표 사진 추가 필요" } });
     if (note === null) { $("#ret").disabled = false; return; }
     await api.updateInspection(id, { status: "draft", returned: true, returnNote: note, returnedBy: S.me.name || "", ...clearApproval, history: withHist(doc, "반려", note) });
-    toast("반려했습니다. 점검자 화면에 수정 요청으로 표시됩니다."); router();
+    toast("반려했습니다. 작성자 화면에 수정 요청으로 표시됩니다."); router();
   });
   act("#unapprove", async () => {
     if (!await modal({ title: "승인을 취소할까요?", body: "점검이 '승인 대기'로 돌아갑니다. 이후 직접 수정하거나 반려할 수 있습니다.", ok: "승인 취소" })) { $("#unapprove").disabled = false; return; }
@@ -1046,7 +1460,7 @@ async function viewInspection(id, editReq = false) {
     if (!await modal({ title: "점검을 삭제할까요?", body: "삭제한 점검은 되돌릴 수 없습니다. 드라이브의 사진 파일은 남습니다.", ok: "삭제", danger: true })) { $("#delm").disabled = false; return; }
     await api.deleteInspection(id); toast("삭제했습니다."); location.hash = isMaster() ? "#/admin" : "#/";
   });
-  // SV: 승인 대기 중인 본인 점검 수정·삭제
+  // 작성자(같은 매장 계정 포함): 승인 대기 중인 점검 수정·삭제
   act("#svEdit", async () => {
     if (!await modal({ title: "제출을 취소하고 수정할까요?", body: "점검이 '작성 중'으로 돌아갑니다. 고친 뒤 다시 제출해야 마스터가 승인할 수 있습니다.", ok: "수정하기" })) { $("#svEdit").disabled = false; return; }
     await api.updateInspection(id, { status: "draft", returned: false, history: withHist(doc, "제출 취소(수정)") });
@@ -1063,12 +1477,20 @@ async function viewInspection(id, editReq = false) {
     const st = $("#st"); if (st) st.innerHTML = statusText();
     const rail = $("#rail"); if (rail) rail.innerHTML = railHtml();
   };
+  const refreshItem = key => {
+    const c = itemByKey(key); if (!c) return;
+    const it = itemOf(doc, key), sec = $(`#item-${c.no}`); if (!sec) return;
+    sec.classList.remove("y", "n", "done");
+    const k = itemClass(c, it); if (k) sec.classList.add(k);
+    const rq = $(`[data-reqs="${c.no}"]`, sec); if (rq) rq.innerHTML = reqTags(c, it);
+    updateCatCounts();
+  };
   const save = async () => {
     clearTimeout(ed.timer);
     if (ed.saving) { ed.dirty = true; return; }
     ed.saving = true; ed.dirty = false; ed.failed = false; refreshDock();
     try {
-      const patch = { items: doc.items, special: doc.special, summary: summarize(doc.items) };
+      const patch = { items: doc.items, special: doc.special, summary: summarize(doc.items, cl) };
       const hist = masterEdit && !ed.logged ? withHist(doc, "마스터 수정") : null;   // 마스터 수정은 한 번만 이력에 남김
       if (hist) patch.history = hist;
       await api.updateInspection(id, patch);
@@ -1079,7 +1501,7 @@ async function viewInspection(id, editReq = false) {
     if (ed.dirty && !ed.failed) save();
   };
   const schedule = (ms = 800) => { ed.dirty = true; clearTimeout(ed.timer); ed.timer = setTimeout(save, ms); refreshDock(); };
-  const renderPhotos = key => { const box = $(`[data-photos="${key}"]`); if (box) box.innerHTML = photosHtml(key); };
+  const renderPhotos = key => { const box = $(`[data-photos="${key}"]`); if (box) box.innerHTML = photosHtml(key); refreshItem(key); };
   const flush = async () => {
     if (ed.dirty) await save();
     while ((ed.saving || ed.dirty) && !ed.failed) await sleep(150);
@@ -1099,9 +1521,8 @@ async function viewInspection(id, editReq = false) {
       const it = itemOf(doc, no);
       it.r = it.r === v ? "" : v;
       const sec = $(`#item-${no}`);
-      sec.classList.toggle("y", it.r === "Y"); sec.classList.toggle("n", it.r === "N");
       $$("[data-yn]", sec).forEach(b => b.setAttribute("aria-pressed", String(b.dataset.yn.endsWith(":" + it.r))));
-      updateCatCounts(); schedule(300);
+      refreshItem(no); schedule(300);
       return;
     }
     const jump = e.target.closest("[data-jump]");
@@ -1130,6 +1551,7 @@ async function viewInspection(id, editReq = false) {
     const n = e.target.closest("[data-note]");
     if (!n) return;
     itemOf(doc, n.dataset.note).note = n.value;
+    refreshItem(n.dataset.note);
     schedule();
   });
 
@@ -1138,9 +1560,10 @@ async function viewInspection(id, editReq = false) {
     if (!inp) return;
     const key = inp.dataset.add;
     const it = itemOf(doc, key);
-    const room = MAX_PHOTOS_PER_ITEM - (it.photos || []).length - (ed.pend[key] || 0);
+    const max = maxPhotos(key === SPECIAL_KEY ? null : itemByKey(key));
+    const room = max - (it.photos || []).length - (ed.pend[key] || 0);
     const files = Array.from(inp.files || []).slice(0, Math.max(0, room));
-    if ((inp.files || []).length > files.length) toast(`항목당 사진은 최대 ${MAX_PHOTOS_PER_ITEM}장입니다.`);
+    if ((inp.files || []).length > files.length) toast(`이 문항은 사진을 최대 ${max}장까지 올릴 수 있습니다.`);
     inp.value = "";
     if (!files.length) return;
     ed.pend[key] = (ed.pend[key] || 0) + files.length;
@@ -1151,8 +1574,8 @@ async function viewInspection(id, editReq = false) {
         const blob = await compressImage(f);
         const label = key === SPECIAL_KEY ? "특이사항" : `${key}번`;
         const p = await api.uploadPhoto(blob, {
-          inspectionId: id, storeName: doc.storeName, visitDate: doc.visitDate, item: label,
-          fileName: `${doc.visitDate}_${doc.storeName}_${label}_${Date.now()}.jpg`
+          inspectionId: id, storeName: doc.storeName, visitDate: doc.visitDate, item: `${cl.short} ${label}`,
+          fileName: `${doc.visitDate}_${doc.storeName}_${cl.short}_${label}_${Date.now()}.jpg`
         });
         (it.photos = it.photos || []).push(p);
       } catch (err) { console.error(err); toast("사진을 올리지 못했습니다. " + friendlyError(err), 4000); }
@@ -1162,14 +1585,16 @@ async function viewInspection(id, editReq = false) {
     save();
   });
 
+  const firstMissing = () => cl.items.map(c => ({ c, m: missingOf(c, doc.items[c.no] || {}) })).filter(x => x.m.length);
+  const goMissing = (list, lead) => {
+    const x = list[0];
+    toast(`${lead} ${list.length}개 있습니다. ${x.c.no}번: ${x.m.join("·")} 필요`, 4000);
+    $(`#item-${x.c.no}`)?.scrollIntoView({ block: "start" });
+  };
+
   async function finishEdit() {
-    const sm = summarize(doc.items);
-    if (doc.status !== "draft" && sm.answered < sm.total) {
-      const miss = CHECKLIST.filter(c => !doc.items[c.no]?.r);
-      toast(`제출된 점검이라 모든 문항에 응답이 있어야 합니다. 비어 있는 문항 ${miss.length}개`);
-      $(`#item-${miss[0].no}`)?.scrollIntoView({ block: "start" });
-      return;
-    }
+    const miss = firstMissing();
+    if (doc.status !== "draft" && miss.length) return goMissing(miss, "제출된 점검이라 모든 문항을 채워야 합니다. 비어 있는 문항이");
     if (ed.uploading) { toast("사진을 다 올린 뒤 눌러 주세요."); return; }
     $("#finishEdit").disabled = true;
     if (!await flush()) { $("#finishEdit").disabled = false; toast("저장하지 못했습니다. 연결을 확인한 뒤 다시 눌러 주세요."); return; }
@@ -1179,23 +1604,19 @@ async function viewInspection(id, editReq = false) {
   }
 
   async function submit() {
-    const sm = summarize(doc.items);
-    if (sm.answered < sm.total) {
-      const miss = CHECKLIST.filter(c => !doc.items[c.no]?.r);
-      toast(`응답하지 않은 문항이 ${miss.length}개 있습니다.`);
-      $(`#item-${miss[0].no}`)?.scrollIntoView({ block: "start" });
-      return;
-    }
+    const miss = firstMissing();
+    if (miss.length) return goMissing(miss, "완료되지 않은 문항이");
     if (ed.uploading) { toast("사진을 다 올린 뒤 제출해 주세요."); return; }
-    const noNote = CHECKLIST.filter(c => doc.items[c.no].r === "N" && !doc.items[c.no].note.trim());
-    const body = `준수 ${sm.y}개, 미흡 ${sm.n}개입니다.` +
-      (noNote.length ? `\n\n비고가 비어 있는 미흡 문항: ${noNote.map(c => c.title).join(", ")}\n미흡 사유를 적어 두면 개선 확인이 쉬워집니다.` : "") +
+    const sm = summarize(doc.items, cl);
+    const noNote = cl.items.filter(c => isYN(c) && doc.items[c.no].r === "N" && !String(doc.items[c.no].note || "").trim());
+    const body = `${cl.yWord} ${sm.y}개, ${cl.nWord} ${sm.n}개${sm.total > sm.yn ? `, 기록 문항 ${sm.total - sm.yn}개` : ""}입니다.` +
+      (noNote.length ? `\n\n비고가 비어 있는 ${cl.nWord} 문항: ${noNote.map(shortOf).join(", ")}\n사유를 적어 두면 개선 확인이 쉬워집니다.` : "") +
       "\n\n제출하면 마스터 승인 대기 상태가 됩니다. 승인 전까지는 '수정하기'로 고칠 수 있고, 승인된 뒤에는 마스터만 고칠 수 있습니다.";
     if (!await modal({ title: "점검을 제출할까요?", body: esc(body), ok: "제출하기" })) return;
     clearTimeout(ed.timer);
     $("#submit").disabled = true;
     try {
-      await api.updateInspection(id, { items: doc.items, special: doc.special, summary: summarize(doc.items), status: "submitted", returned: false,
+      await api.updateInspection(id, { items: doc.items, special: doc.special, summary: summarize(doc.items, cl), status: "submitted", returned: false,
         history: withHist(doc, (doc.history || []).some(h => h.action === "제출" || h.action === "재제출") ? "재제출" : "제출") }, { stamp: "submittedAt" });
       ed.dirty = false; leaveGuard = null;
       toast("제출했습니다. 마스터 승인을 기다립니다.");
@@ -1205,32 +1626,36 @@ async function viewInspection(id, editReq = false) {
 }
 
 /* =====================================================================
-   10. 마스터: 점검 내역
+   11. 마스터: 점검 내역
    ===================================================================== */
-const adminFilter = { month: thisMonth(), store: "", sv: "", status: "" };
+const adminFilter = { month: thisMonth(), kind: "", store: "", sv: "", status: "" };
 
 async function viewAdminList() {
-  shell(`<p class="muted">불러오는 중…</p>`, { active: "#/admin" });
+  loading("#/admin", false);
   await Promise.all([loadStores(), loadMembers()]);
-  const { from, to } = monthRange(adminFilter.month);
-  const all = await api.listInspections(from, to);
+  const all = await monthRows(adminFilter.month);
   const rows = all.filter(d =>
+    (!adminFilter.kind || kindOf(d) === adminFilter.kind) &&
     (!adminFilter.store || d.storeId === adminFilter.store) &&
     (!adminFilter.sv || d.svUid === adminFilter.sv) &&
     (!adminFilter.status || (adminFilter.status === "draft" ? !isSubmitted(d) : d.status === adminFilter.status)));
   const sub = rows.filter(isSubmitted);
   const waiting = rows.filter(d => d.status === "submitted");
-  const avg = sub.length ? Math.round(sub.reduce((a, d) => a + (d.summary?.rate ?? summarize(d.items).rate), 0) / sub.length) : null;
-  const visited = new Set(sub.map(d => d.storeId));
+  const subQ = sub.filter(d => kindOf(d) === "qsc"), subS = sub.filter(d => kindOf(d) === "store");
   const activeStores = S.stores.filter(s => s.active !== false);
-  const svs = S.members.filter(m => m.active !== false);
+  const staff = S.members.filter(m => m.active !== false && m.role !== "store");
+  const storeAccts = S.members.filter(m => m.active !== false && m.role === "store");
+  const opt = m => `<option value="${esc(m.uid)}" ${m.uid === adminFilter.sv ? "selected" : ""}>${esc(m.name)}</option>`;
 
   shell(`
     <h1>점검 내역</h1>
     <div class="panel" style="margin-bottom:12px"><div class="row">
       <div><label class="f" for="fm" style="margin-top:0">월</label><input class="in" id="fm" type="month" value="${adminFilter.month}"></div>
+      <div><label class="f" for="fk" style="margin-top:0">종류</label><select class="in" id="fk">
+        <option value="">전체</option><option value="store" ${adminFilter.kind === "store" ? "selected" : ""}>매장 자체 점검</option><option value="qsc" ${adminFilter.kind === "qsc" ? "selected" : ""}>QSC 점검</option></select></div>
       <div><label class="f" for="fs" style="margin-top:0">매장</label><select class="in" id="fs"><option value="">전체 매장</option>${S.stores.map(s => `<option value="${esc(s.id)}" ${s.id === adminFilter.store ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select></div>
-      <div><label class="f" for="fv" style="margin-top:0">점검자</label><select class="in" id="fv"><option value="">전체</option>${svs.map(m => `<option value="${esc(m.uid)}" ${m.uid === adminFilter.sv ? "selected" : ""}>${esc(m.name)}</option>`).join("")}</select></div>
+      <div><label class="f" for="fv" style="margin-top:0">작성자</label><select class="in" id="fv"><option value="">전체</option>
+        ${staff.length ? `<optgroup label="본사·SV">${staff.map(opt).join("")}</optgroup>` : ""}${storeAccts.length ? `<optgroup label="매장 계정">${storeAccts.map(opt).join("")}</optgroup>` : ""}</select></div>
       <div><label class="f" for="ft" style="margin-top:0">상태</label><select class="in" id="ft">
         <option value="">전체</option>
         <option value="submitted" ${adminFilter.status === "submitted" ? "selected" : ""}>승인 대기</option>
@@ -1241,33 +1666,31 @@ async function viewAdminList() {
     <div class="stats">
       <button class="stat click ${adminFilter.status === "submitted" ? "on" : ""}" id="waitCard" type="button"><b class="num">${waiting.length}</b><span>승인 대기 (눌러서 보기)</span></button>
       <div class="stat"><b class="num">${sub.length}</b><span>제출된 점검 (승인 대기 포함)</span></div>
-      <div class="stat"><b class="num">${avg === null ? "-" : avg + "%"}</b><span>평균 준수율</span></div>
-      <div class="stat"><b class="num">${visited.size}/${activeStores.length}</b><span>방문한 매장</span></div>
+      <div class="stat"><b class="num">${new Set(subS.map(d => d.storeId)).size}/${activeStores.length}</b><span>자체 점검 제출 매장</span></div>
+      <div class="stat"><b class="num">${new Set(subQ.map(d => d.storeId)).size}/${activeStores.length}</b><span>QSC 방문 매장</span></div>
+      <div class="stat"><b class="num">${avgRate(subQ) === null ? "-" : avgRate(subQ) + "%"}</b><span>QSC 평균 준수율</span></div>
     </div>
     ${waiting.length ? `<div class="bulk"><button class="btn primary sm" id="bulk" disabled>선택한 점검 승인</button><span class="muted small">승인 대기 점검은 왼쪽 칸을 체크해 한 번에 승인할 수 있습니다.</span></div>` : ""}
     ${rows.length ? `<div class="tbl-wrap"><table>
-      <thead><tr><th>${waiting.length ? `<input type="checkbox" id="pickAll" aria-label="승인 대기 전체 선택">` : ""}</th><th>방문일</th><th>매장</th><th>점검자</th><th class="r">준수</th><th>미흡 문항</th><th class="r">사진</th><th>상태</th></tr></thead>
+      <thead><tr><th>${waiting.length ? `<input type="checkbox" id="pickAll" aria-label="승인 대기 전체 선택">` : ""}</th><th>날짜</th><th>종류</th><th>매장</th><th>작성자</th><th class="r">결과</th><th>미흡·개선 필요</th><th class="r">사진</th><th>상태</th></tr></thead>
       <tbody>${rows.map(d => {
-        const sm = d.summary || summarize(d.items);
+        const sm = sumOf(d);
         return `<tr class="click" data-open="${esc(d.id)}" tabindex="0">
           <td>${d.status === "submitted" ? `<input type="checkbox" data-pick="${esc(d.id)}" aria-label="${esc(d.storeName)} 승인 선택">` : ""}</td>
-          <td class="num">${esc(d.visitDate)}</td><td>${esc(d.storeName)}</td><td>${esc(d.svName || memberName(d.svUid))}</td>
-          <td class="r num">${sm.y}/${sm.total}</td><td class="wrap">${esc(nTitles(d).join(", ") || "-")}</td>
+          <td class="num">${esc(d.visitDate)}</td><td>${kindChip(d)}</td><td>${esc(d.storeName)}</td><td>${esc(d.svName || memberName(d.svUid))}</td>
+          <td class="r num">${isSubmitted(d) ? (sm.yn ? `${sm.y}/${sm.yn}` : "-") : `${sm.done}/${sm.total} 완료`}</td><td class="wrap">${esc(nTitles(d).join(", ") || "-")}</td>
           <td class="r num">${photoCount(d)}</td><td>${statusChip(d)}</td></tr>`;
       }).join("")}</tbody></table></div>` : `<div class="empty">이 조건에 맞는 점검이 없습니다.</div>`}
   `, { active: "#/admin" });
 
   const refilter = () => {
     adminFilter.month = $("#fm").value || thisMonth();
-    adminFilter.store = $("#fs").value; adminFilter.sv = $("#fv").value; adminFilter.status = $("#ft").value;
+    adminFilter.kind = $("#fk").value; adminFilter.store = $("#fs").value; adminFilter.sv = $("#fv").value; adminFilter.status = $("#ft").value;
     viewAdminList();
   };
-  ["#fm", "#fs", "#fv", "#ft"].forEach(s => $(s).addEventListener("change", refilter));
+  ["#fm", "#fk", "#fs", "#fv", "#ft"].forEach(s => $(s).addEventListener("change", refilter));
   $("#waitCard").addEventListener("click", () => { adminFilter.status = adminFilter.status === "submitted" ? "" : "submitted"; viewAdminList(); });
-  $$("[data-open]").forEach(tr => {
-    tr.addEventListener("click", e => { if (e.target.closest("input")) return; location.hash = "#/i/" + tr.dataset.open; });
-    tr.addEventListener("keydown", e => { if (e.key === "Enter" && !e.target.closest("input")) location.hash = "#/i/" + tr.dataset.open; });
-  });
+  wireRowOpen();
   const picks = () => $$("[data-pick]").filter(c => c.checked).map(c => c.dataset.pick);
   const syncBulk = () => { const n = picks().length; const b = $("#bulk"); if (b) { b.disabled = !n; b.textContent = n ? `선택한 ${n}건 승인` : "선택한 점검 승인"; } };
   $$("[data-pick]").forEach(c => c.addEventListener("change", syncBulk));
@@ -1275,7 +1698,7 @@ async function viewAdminList() {
   $("#bulk")?.addEventListener("click", async () => {
     const ids = picks();
     if (!ids.length) return;
-    if (!await modal({ title: `${ids.length}건을 승인할까요?`, body: "승인한 점검은 SV가 고칠 수 없습니다. 필요하면 상세 화면에서 승인을 취소할 수 있습니다.", ok: "승인" })) return;
+    if (!await modal({ title: `${ids.length}건을 승인할까요?`, body: "승인한 점검은 작성자가 고칠 수 없습니다. 필요하면 상세 화면에서 승인을 취소할 수 있습니다.", ok: "승인" })) return;
     $("#bulk").disabled = true;
     let ok = 0;
     for (const id of ids) {
@@ -1289,57 +1712,80 @@ async function viewAdminList() {
     viewAdminList();
   });
   $("#xl").addEventListener("click", () => exportExcel(rows, adminFilter.month));
+  // 이전 버전 점검에 새 항목 채우기 (필요한 것만, 화면은 그대로)
+  if (all.some(d => !d.kind || !d.visitMonth || d.storeSvUid === undefined)) backfill(all);
 }
 
+/* 엑셀: 점검 종류별로 시트를 나눠 문항·비고·사진 링크를 모두 담습니다. */
 function exportExcel(rows, month) {
-  const head = ["방문일", "매장코드", "매장", "점검자", "상태", "준수", "미흡", "준수율(%)"];
-  CHECKLIST.forEach(c => head.push(`${c.no}.${c.title} 결과`, `${c.no}.${c.title} 비고`, `${c.no}.${c.title} 사진`));
-  head.push("매장 특이사항", "특이사항 사진", "제출 일시", "승인자", "승인 일시", "점검 문항 버전");
-  const data = rows.map(d => {
-    const sm = d.summary || summarize(d.items);
-    const r = [d.visitDate, d.storeCode || d.storeId, d.storeName, d.svName || memberName(d.svUid), statusLabel(d), sm.y, sm.n, sm.rate];
-    CHECKLIST.forEach(c => {
-      const it = d.items?.[c.no] || {};
-      r.push(it.r || "", it.note || "", (it.photos || []).map(p => p.url).join("\n"));
+  const sheets = [];
+  for (const cl of Object.values(CHECKLISTS)) {
+    const list = rows.filter(d => kindOf(d) === cl.key);
+    if (!list.length) continue;
+    const head = ["날짜", "매장코드", "매장", "작성자", "상태", cl.yWord, cl.nWord, `${cl.rateWord}(%)`];
+    cl.items.forEach(c => isYN(c)
+      ? head.push(`${c.no}.${shortOf(c)} 결과`, `${c.no}.${shortOf(c)} 비고`, `${c.no}.${shortOf(c)} 사진`)
+      : head.push(`${c.no}.${shortOf(c)} 내용`, `${c.no}.${shortOf(c)} 사진`));
+    if (cl.special) head.push("매장 특이사항", "특이사항 사진");
+    head.push("제출 일시", "승인자", "승인 일시", "점검 문항 버전");
+    const data = list.map(d => {
+      const sm = sumOf(d);
+      const r = [d.visitDate, d.storeCode || d.storeId, d.storeName, d.svName || memberName(d.svUid), statusLabel(d), sm.y, sm.n, sm.rate ?? ""];
+      cl.items.forEach(c => {
+        const it = d.items?.[c.no] || {};
+        const photos = (it.photos || []).map(p => p.url).join("\n");
+        isYN(c) ? r.push(it.r || "", it.note || "", photos) : r.push(it.note || "", photos);
+      });
+      if (cl.special) r.push(d.special?.note || "", (d.special?.photos || []).map(p => p.url).join("\n"));
+      r.push(isSubmitted(d) ? fmtTs(d.submittedAt) : "", d.status === "approved" ? (d.approvedBy || "") : "", d.status === "approved" ? fmtTs(d.approvedAt) : "", d.checklistVersion || "");
+      return r;
     });
-    r.push(d.special?.note || "", (d.special?.photos || []).map(p => p.url).join("\n"), isSubmitted(d) ? fmtTs(d.submittedAt) : "",
-      d.status === "approved" ? (d.approvedBy || "") : "", d.status === "approved" ? fmtTs(d.approvedAt) : "", d.checklistVersion || "");
-    return r;
-  });
+    sheets.push({ name: cl.label, head, data });
+  }
+  if (!sheets.length) { toast("내려받을 점검이 없습니다."); return; }
   const name = `벤슨_매장점검_${month}`;
   if (window.XLSX) {
-    const ws = XLSX.utils.aoa_to_sheet([head, ...data]);
-    ws["!cols"] = head.map((h, i) => ({ wch: i < 4 ? 14 : h.endsWith("비고") || h.includes("특이사항") ? 30 : 10 }));
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "점검 결과");
+    sheets.forEach(sh => {
+      const ws = XLSX.utils.aoa_to_sheet([sh.head, ...sh.data]);
+      ws["!cols"] = sh.head.map((h, i) => ({ wch: i < 4 ? 14 : /비고|내용|특이사항/.test(h) ? 30 : 10 }));
+      XLSX.utils.book_append_sheet(wb, ws, sh.name);
+    });
     XLSX.writeFile(wb, name + ".xlsx");
   } else {
-    const csv = [head, ...data].map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\r\n");
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }));
-    a.download = name + ".csv"; a.click();
+    sheets.forEach(sh => {
+      const csv = [sh.head, ...sh.data].map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\r\n");
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
+      a.download = `${name}_${sh.name}.csv`; a.click();
+    });
   }
   toast("엑셀 파일을 내려받았습니다.");
 }
 
 /* =====================================================================
-   11. 마스터: 매장별 현황
+   12. 마스터: 현황 (점검 종류별)
    ===================================================================== */
+const statsFilter = { kind: "store" };
 async function viewAdminStats() {
-  shell(`<p class="muted">불러오는 중…</p>`, { active: "#/admin/stats" });
+  loading("#/admin/stats", false);
   await Promise.all([loadStores(), loadMembers()]);
-  const { from, to } = monthRange(adminFilter.month);
-  const sub = (await api.listInspections(from, to)).filter(isSubmitted);
+  const ym = adminFilter.month;
+  const cl = CHECKLISTS[statsFilter.kind];
+  const isSelf = cl.key === "store";
+  const sub = (await monthRows(ym)).filter(d => isSubmitted(d) && kindOf(d) === cl.key);
   const activeStores = S.stores.filter(s => s.active !== false);
+  const elapsed = daysElapsed(ym);
 
   const byStore = activeStores.map(s => {
-    const list = sub.filter(d => d.storeId === s.id).sort((a, b) => b.visitDate.localeCompare(a.visitDate));
-    const avg = list.length ? Math.round(list.reduce((a, d) => a + (d.summary?.rate ?? summarize(d.items).rate), 0) / list.length) : null;
-    return { s, list, avg, last: list[0], lastN: list[0] ? nTitles(list[0]) : [] };
-  }).sort((a, b) => (a.list.length === 0) - (b.list.length === 0) || (a.avg ?? 101) - (b.avg ?? 101));
-  const unvisited = byStore.filter(x => !x.list.length);
+    const list = sub.filter(d => d.storeId === s.id).sort(byDateDesc);
+    return { s, list, days: new Set(list.map(d => d.visitDate)).size, avg: avgRate(list), last: list[0], lastN: list[0] ? nTitles(list[0]) : [] };
+  }).sort((a, b) => isSelf ? (a.days - b.days || a.s.name.localeCompare(b.s.name, "ko"))
+    : ((a.list.length === 0) - (b.list.length === 0) || (a.avg ?? 101) - (b.avg ?? 101)));
+  const none = byStore.filter(x => !x.list.length);
 
-  const byItem = CHECKLIST.map(c => {
+  const ynItems = cl.items.filter(isYN);
+  const byItem = ynItems.map(c => {
     const n = sub.filter(d => d.items?.[c.no]?.r === "N").length;
     return { c, n, pct: sub.length ? Math.round(n / sub.length * 100) : 0 };
   });
@@ -1351,81 +1797,89 @@ async function viewAdminStats() {
     const ids = new Set(ss.map(s => s.id));
     const list = sub.filter(d => ids.has(d.storeId));
     const seen = new Set(list.map(d => d.storeId));
-    const avg = list.length ? Math.round(list.reduce((a, d) => a + (d.summary?.rate ?? summarize(d.items).rate), 0) / list.length) : null;
-    return { name, total: ss.length, seen: seen.size, count: list.length, avg, missing: ss.filter(s => !seen.has(s.id)).map(s => s.name) };
+    const dayCounts = ss.map(s => new Set(list.filter(d => d.storeId === s.id).map(d => d.visitDate)).size);
+    return { name, total: ss.length, seen: seen.size, count: list.length, avg: avgRate(list),
+      avgDays: ss.length ? Math.round(dayCounts.reduce((a, b) => a + b, 0) / ss.length * 10) / 10 : 0,
+      missing: ss.filter(s => !seen.has(s.id)).map(s => s.name) };
   }).sort((a, b) => a.name.localeCompare(b.name, "ko"));
-  const mon = Number(adminFilter.month.slice(5));
+  const mon = monNum(ym);
 
   shell(`
-    <h1>매장별 현황</h1>
-    <div class="row" style="margin-bottom:12px;max-width:260px"><div><label class="f" for="fm" style="margin-top:0">월</label><input class="in" id="fm" type="month" value="${adminFilter.month}"></div></div>
-    ${unvisited.length ? `<div class="notice back">${mon}월에 제출된 점검이 없는 매장이 ${unvisited.length}곳입니다. SV별 목록은 아래 표에서 볼 수 있습니다.</div>` : (activeStores.length ? `<div class="notice info">${mon}월에 모든 매장의 점검이 제출됐습니다.</div>` : "")}
-    ${bySv.length ? `<h2>SV별 담당 매장 점검</h2><div class="tbl-wrap"><table>
-      <thead><tr><th>담당 SV</th><th class="r">담당 매장</th><th class="r">점검한 매장</th><th style="width:22%"></th><th class="r">점검 건수</th><th class="r">평균 준수율</th><th>아직 점검하지 않은 매장</th></tr></thead>
+    <h1>현황</h1>
+    <div class="row" style="margin-bottom:12px;max-width:520px">
+      <div><label class="f" for="fm" style="margin-top:0">월</label><input class="in" id="fm" type="month" value="${ym}"></div>
+      <div><label class="f" for="fk" style="margin-top:0">점검 종류</label><select class="in" id="fk">
+        <option value="store" ${isSelf ? "selected" : ""}>매장 자체 점검</option><option value="qsc" ${!isSelf ? "selected" : ""}>QSC 점검</option></select></div>
+    </div>
+    ${none.length ? `<div class="notice back">${mon}월에 제출된 ${esc(cl.label)}이 없는 매장이 ${none.length}곳입니다: ${esc(none.map(x => x.s.name).join(", "))}</div>`
+      : (activeStores.length ? `<div class="notice info">${mon}월에 모든 매장의 ${esc(cl.label)}이 제출됐습니다.</div>` : "")}
+    ${bySv.length ? `<h2>SV별 담당 매장</h2><div class="tbl-wrap"><table>
+      <thead><tr><th>담당 SV</th><th class="r">담당 매장</th><th class="r">제출 매장</th><th style="width:20%"></th>
+        ${isSelf ? `<th class="r">매장당 평균 제출일</th>` : `<th class="r">점검 건수</th>`}<th class="r">평균 ${esc(cl.rateWord)}</th><th>제출이 없는 매장</th></tr></thead>
       <tbody>${bySv.map(x => `<tr><td>${esc(x.name)}</td><td class="r num">${x.total}</td><td class="r num">${x.seen}</td>
         <td><div class="bar y"><i style="width:${x.total ? Math.round(x.seen / x.total * 100) : 0}%"></i></div></td>
-        <td class="r num">${x.count}</td><td class="r num">${x.avg === null ? "-" : x.avg + "%"}</td>
+        <td class="r num">${isSelf ? `${x.avgDays}/${elapsed}일` : x.count}</td><td class="r num">${x.avg === null ? "-" : x.avg + "%"}</td>
         <td class="wrap">${esc(x.missing.join(", ") || "없음")}</td></tr>`).join("")}</tbody></table></div>` : ""}
     <div class="split">
       <div><h2>매장별</h2>
         ${activeStores.length ? `<div class="tbl-wrap"><table>
-        <thead><tr><th>매장</th><th>담당</th><th class="r">방문</th><th>최근 방문</th><th class="r">평균 준수율</th><th>최근 미흡 문항</th></tr></thead>
+        <thead><tr><th>매장</th><th>담당</th>${isSelf ? `<th class="r">제출일</th><th>최근 제출</th>` : `<th class="r">방문</th><th>최근 방문</th>`}<th class="r">평균 ${esc(cl.rateWord)}</th><th>최근 ${esc(cl.nWord)}</th></tr></thead>
         <tbody>${byStore.map(x => `<tr ${x.last ? `class="click" data-open="${esc(x.last.id)}" tabindex="0"` : ""}>
           <td>${esc(x.s.name)}</td><td>${esc(svNameOf(x.s) || "-")}</td>
-          <td class="r num">${x.list.length}</td><td class="num">${x.last ? esc(x.last.visitDate) : "-"}</td>
+          <td class="r num">${isSelf ? `${x.days}/${elapsed}` : x.list.length}</td><td class="num">${x.last ? esc(x.last.visitDate) : "-"}</td>
           <td class="r num">${x.avg === null ? "-" : x.avg + "%"}</td><td class="wrap">${esc(x.lastN.join(", ") || (x.last ? "없음" : "-"))}</td></tr>`).join("")}
         </tbody></table></div>` : `<div class="empty">등록된 매장이 없습니다.</div>`}
       </div>
-      <div><h2>문항별 미흡 건수</h2>
+      <div><h2>문항별 ${esc(cl.nWord)} 건수</h2>
         <div class="tbl-wrap"><table>
-        <thead><tr><th>문항</th><th class="r">미흡</th><th style="width:40%"></th></tr></thead>
-        <tbody>${byItem.map(x => `<tr><td>${x.c.no}. ${esc(x.c.title)}</td><td class="r num">${x.n}건${sub.length ? ` (${x.pct}%)` : ""}</td>
+        <thead><tr><th>문항</th><th class="r">${esc(cl.nWord)}</th><th style="width:40%"></th></tr></thead>
+        <tbody>${byItem.map(x => `<tr><td>${x.c.no}. ${esc(shortOf(x.c))}</td><td class="r num">${x.n}건${sub.length ? ` (${x.pct}%)` : ""}</td>
           <td><div class="bar"><i style="width:${Math.round(x.n / maxN * 100)}%"></i></div></td></tr>`).join("")}</tbody></table></div>
-        <p class="muted small" style="margin-top:8px">제출된 점검 ${sub.length}건 기준입니다 (승인 대기 ${sub.filter(d => d.status === "submitted").length}건 포함).</p>
+        <p class="muted small" style="margin-top:8px">제출된 ${esc(cl.label)} ${sub.length}건 기준입니다 (승인 대기 ${sub.filter(d => d.status === "submitted").length}건 포함).${isSelf ? " 기록 문항(미점검)은 제출 시 모두 채워져 있어 여기서는 Y/N 문항만 셉니다." : ""}</p>
       </div>
     </div>
   `, { active: "#/admin/stats" });
   $("#fm").addEventListener("change", () => { adminFilter.month = $("#fm").value || thisMonth(); viewAdminStats(); });
-  $$("[data-open]").forEach(tr => {
-    tr.addEventListener("click", () => location.hash = "#/i/" + tr.dataset.open);
-    tr.addEventListener("keydown", e => { if (e.key === "Enter") location.hash = "#/i/" + tr.dataset.open; });
-  });
+  $("#fk").addEventListener("change", e => { statsFilter.kind = e.target.value; viewAdminStats(); });
+  wireRowOpen();
 }
 
 /* =====================================================================
-   12. 마스터: 매장 관리
+   13. 마스터: 매장 관리
    ===================================================================== */
 async function viewAdminStores() {
-  shell(`<p class="muted">불러오는 중…</p>`, { active: "#/admin/stores" });
+  loading("#/admin/stores", false);
   await Promise.all([loadStores(), loadMembers()]);
-  const members = S.members.filter(m => m.active !== false);
+  const svs = S.members.filter(m => m.active !== false && m.role !== "store");
   const have = new Set(S.stores.flatMap(x => [x.id, x.code]).filter(Boolean));
   const missingSeed = STORE_SEED.filter(([code]) => !have.has(code));
+  const acctCount = id => S.members.filter(m => m.role === "store" && m.storeId === id && m.active !== false).length;
   const svOpts = st => {
     const cur = st ? svUidOf(st) : "";
     const pending = st && !cur && st.svName ? `<option value="__pending" selected>${esc(st.svName)} (계정 없음)</option>` : "";
     return pending + `<option value="" ${!cur && !pending ? "selected" : ""}>미지정</option>` +
-      members.map(m => `<option value="${esc(m.uid)}" ${m.uid === cur ? "selected" : ""}>${esc(m.name)}</option>`).join("");
+      svs.map(m => `<option value="${esc(m.uid)}" ${m.uid === cur ? "selected" : ""}>${esc(m.name)}</option>`).join("");
   };
   const unlinked = S.stores.filter(x => x.active !== false && !svUidOf(x) && x.svName);
   shell(`
     <h1>매장 관리</h1>
     ${missingSeed.length ? `<div class="panel" style="margin-bottom:12px">
       <h2 style="margin-top:0">기본 매장 목록 등록</h2>
-      <p class="muted small">매장코드·담당 SV가 포함된 벤슨 매장 ${STORE_SEED.length}곳 중 ${missingSeed.length}곳이 아직 등록되지 않았습니다. SV 계정을 같은 이름으로 만들면 담당 매장이 자동으로 연결됩니다.</p>
+      <p class="muted small">매장코드·담당 SV가 포함된 벤슨 매장 ${STORE_SEED.length}곳 중 ${missingSeed.length}곳이 아직 등록되지 않았습니다.</p>
       <div class="err" id="sde"></div>
       <button class="btn primary" id="seed">${missingSeed.length}곳 한 번에 등록</button></div>` : ""}
-    ${unlinked.length ? `<div class="notice info">담당 SV 계정이 아직 없는 매장이 ${unlinked.length}곳 있습니다 (${esc([...new Set(unlinked.map(x => x.svName))].join(", "))}). '사용자 관리'에서 같은 이름으로 계정을 만들면 자동으로 연결됩니다.</div>` : ""}
+    ${unlinked.length ? `<div class="notice info">담당 SV 계정이 아직 없는 매장이 ${unlinked.length}곳 있습니다 (${esc([...new Set(unlinked.map(x => x.svName))].join(", "))}). '사용자 관리'에서 같은 이름으로 SV 계정을 만들면 자동으로 연결됩니다.</div>` : ""}
     <div class="split">
       <div>
         ${S.stores.length ? `<div class="tbl-wrap"><table>
-          <thead><tr><th>코드</th><th>매장</th><th>담당 SV</th><th>사용</th></tr></thead>
+          <thead><tr><th>코드</th><th>매장</th><th>담당 SV</th><th class="r">매장 계정</th><th>사용</th></tr></thead>
           <tbody>${S.stores.map(x => `<tr>
             <td class="num">${esc(x.code || "-")}</td><td>${esc(x.name)}</td>
             <td><select class="in" style="min-height:36px;padding:4px 8px" data-sv="${esc(x.id)}" aria-label="${esc(x.name)} 담당 SV">${svOpts(x)}</select></td>
+            <td class="r num">${acctCount(x.id) || "-"}</td>
             <td><label><input type="checkbox" data-act="${esc(x.id)}" ${x.active !== false ? "checked" : ""}> 사용</label></td></tr>`).join("")}
           </tbody></table></div>
-          <p class="muted small" style="margin-top:8px">'사용'을 끄면 새 점검의 매장 목록에서 빠집니다. 지난 점검 기록은 그대로 남습니다.</p>`
+          <p class="muted small" style="margin-top:8px">담당 SV를 바꾸면 그 매장의 지난 점검도 새 SV가 볼 수 있게 함께 옮겨집니다. '사용'을 끄면 새 점검의 매장 목록에서 빠지고, 지난 기록은 남습니다.</p>`
         : `<div class="empty">아직 매장이 없습니다. 위의 '한 번에 등록'을 누르거나 오른쪽에서 매장을 추가하세요.</div>`}
       </div>
       <div class="panel">
@@ -1443,7 +1897,7 @@ async function viewAdminStores() {
     $("#seed").disabled = true;
     try {
       for (const [code, name, sv] of missingSeed) {
-        const uid = members.find(m => m.name === sv)?.uid || "";
+        const uid = svs.find(m => m.name === sv)?.uid || "";
         await api.setStore(code, { code, name, svName: sv, svUid: uid, active: true });
       }
       toast(`매장 ${missingSeed.length}곳을 등록했습니다.`); viewAdminStores();
@@ -1451,10 +1905,14 @@ async function viewAdminStores() {
   });
   $$("[data-sv]").forEach(sel => sel.addEventListener("change", async () => {
     if (sel.value === "__pending") return;
+    sel.disabled = true;
     try {
       await api.updateStore(sel.dataset.sv, { svUid: sel.value, svName: sel.value ? memberName(sel.value) : "" });
-      toast("담당 SV를 바꿨습니다.");
+      const k = await syncStoreSv(sel.dataset.sv, sel.value);
+      monthCache = {};
+      toast(`담당 SV를 바꿨습니다.${k ? ` 지난 점검 ${k}건도 함께 옮겼습니다.` : ""}`, 3000);
     } catch (e) { toast(friendlyError(e)); }
+    sel.disabled = false;
   }));
   $$("[data-act]").forEach(cb => cb.addEventListener("change", async () => {
     try { await api.updateStore(cb.dataset.act, { active: cb.checked }); toast(cb.checked ? "사용으로 바꿨습니다." : "사용 중지했습니다."); } catch (e) { toast(friendlyError(e)); }
@@ -1474,7 +1932,7 @@ async function viewAdminStores() {
     $("#add").disabled = true;
     try {
       for (const r of fresh) {
-        const data = { code: r.code, name: r.name, svName: r.sv, svUid: members.find(m => m.name === r.sv)?.uid || "", active: true };
+        const data = { code: r.code, name: r.name, svName: r.sv, svUid: svs.find(m => m.name === r.sv)?.uid || "", active: true };
         if (r.code) await api.setStore(r.code, data); else await api.addStore(data);
       }
       toast(`매장 ${fresh.length}곳을 추가했습니다.`); viewAdminStores();
@@ -1483,29 +1941,112 @@ async function viewAdminStores() {
 }
 
 /* =====================================================================
-   13. 마스터: 사용자 관리
+   14. 마스터: 사용자 관리 (본사·SV 계정 / 매장 계정 일괄 등록)
    ===================================================================== */
+const bulk = { rows: null, results: null, includeExisting: false };
+
+/* 엑셀 표(2차원 배열) → 매장 계정 행. 머리글이 있으면 열 이름으로, 없으면 양식 순서로 읽습니다. */
+function parseBulk(matrix) {
+  const norm = v => String(v ?? "").trim();
+  let rows = matrix.map(r => (r || []).map(norm)).filter(r => r.some(Boolean));
+  if (!rows.length) return [];
+  const h = rows[0].map(x => x.replace(/\s/g, ""));
+  const find = (...keys) => h.findIndex(x => keys.some(k => x.includes(k)));
+  let idx = { code: 0, name: 2, id: 3, pw: 4 };
+  if (find("매장코드") >= 0) {
+    idx = { code: find("매장코드"), name: find("이름"), id: find("아이디", "이메일"), pw: find("비밀번호") };
+    rows = rows.slice(1);
+  } else if (rows[0].length === 4) idx = { code: 0, name: 1, id: 2, pw: 3 };
+  const at = (r, i) => (i >= 0 ? r[i] || "" : "");
+  return rows.map(r => ({ code: at(r, idx.code), name: at(r, idx.name), id: at(r, idx.id), pw: at(r, idx.pw) }));
+}
+function validateBulk(raw) {
+  const byCode = new Map(S.stores.map(s => [String(s.code || s.id).toUpperCase(), s]));
+  const existing = new Set(S.members.filter(m => m.active !== false).map(m => String(m.email || "").toLowerCase()));
+  const seen = new Set();
+  return raw.map(r => {
+    const st = byCode.get(r.code.toUpperCase());
+    const out = { ...r, storeName: st?.name || "" };
+    if (!st) return { ...out, err: "매장코드를 찾을 수 없습니다" };
+    let id = (r.id || st.code || st.id).trim();
+    let email;
+    if (id.includes("@")) { email = id.toLowerCase(); }
+    else {
+      id = id.toLowerCase();
+      if (!/^[a-z0-9][a-z0-9._-]{2,39}$/.test(id)) return { ...out, err: "아이디는 영문·숫자·. _ - 로 3자 이상" };
+      email = `${id}@${STORE_LOGIN_DOMAIN}`;
+    }
+    if (seen.has(email)) return { ...out, err: "같은 아이디가 표에 두 번 있습니다" };
+    seen.add(email);
+    if (r.pw && r.pw.length < 6) return { ...out, err: "비밀번호는 6자 이상" };
+    return { ...out, loginId: id, email, password: r.pw || genPassword(), autoPw: !r.pw, name: r.name || `${st.name} 매장`,
+      storeId: st.id, exists: existing.has(email) };
+  });
+}
+
 async function viewAdminUsers() {
-  shell(`<p class="muted">불러오는 중…</p>`, { active: "#/admin/users" });
-  await loadMembers();
+  loading("#/admin/users", false);
+  await Promise.all([loadMembers(), loadStores()]);
+  const staff = S.members.filter(m => m.role !== "store");
+  const activeStores = S.stores.filter(s => s.active !== false);
+  // 매장 계정 목록 — 일괄 등록 뒤 이 부분만 다시 그림
+  const storeAcctsHtml = () => {
+    const storeAccts = S.members.filter(m => m.role === "store")
+      .sort((a, b) => (a.storeName || "").localeCompare(b.storeName || "", "ko") || (a.name || "").localeCompare(b.name || "", "ko"));
+    const noAcct = activeStores.filter(s => !storeAccts.some(m => m.storeId === s.id && m.active !== false));
+    return `<h2>매장 계정 <span class="muted small">(${storeAccts.filter(m => m.active !== false).length}개 사용 중)</span></h2>
+        ${noAcct.length ? `<div class="notice back">계정이 없는 매장 ${noAcct.length}곳: ${esc(noAcct.map(s => s.name).join(", "))}</div>` : `<div class="notice done">등록된 매장 모두 계정이 있습니다.</div>`}
+        ${storeAccts.length ? `<div class="tbl-wrap"><table>
+          <thead><tr><th>매장</th><th>이름</th><th>아이디</th><th>사용</th></tr></thead>
+          <tbody>${storeAccts.map(m => `<tr><td>${esc(m.storeName || storeById(m.storeId)?.name || "")}</td><td>${esc(m.name)}</td>
+            <td class="num">${esc(loginIdOf(m))}</td>
+            <td><label><input type="checkbox" data-on="${esc(m.uid)}" ${m.active !== false ? "checked" : ""}> 사용</label></td></tr>`).join("")}</tbody></table></div>`
+          : `<div class="empty">아직 매장 계정이 없습니다. '매장 계정 일괄 등록'으로 만드세요.</div>`}`;
+  };
+  const wireActive = root => $$("[data-on]", root).forEach(cb => cb.addEventListener("change", async () => {
+    try { await api.updateMember(cb.dataset.on, { active: cb.checked }); toast(cb.checked ? "사용으로 바꿨습니다." : "사용 중지했습니다."); } catch (e) { toast(friendlyError(e)); }
+  }));
+
   shell(`
     <h1>사용자 관리</h1>
     <div class="split">
-      <div><div class="tbl-wrap"><table>
+      <div>
+        <h2 style="margin-top:0">본사·SV 계정</h2>
+        <div class="tbl-wrap"><table>
         <thead><tr><th>이름</th><th>이메일</th><th>역할</th><th>사용</th></tr></thead>
-        <tbody>${S.members.map(m => {
+        <tbody>${staff.map(m => {
           const self = m.uid === S.me.uid;
           return `<tr><td>${esc(m.name)}${self ? ' <span class="chip">나</span>' : ""}</td><td>${esc(m.email || "")}</td>
           <td><select class="in" style="min-height:36px;padding:4px 8px" data-role="${esc(m.uid)}" ${self ? "disabled" : ""} aria-label="${esc(m.name)} 역할">
             <option value="sv" ${m.role !== "master" ? "selected" : ""}>SV</option><option value="master" ${m.role === "master" ? "selected" : ""}>마스터</option></select></td>
           <td><label><input type="checkbox" data-on="${esc(m.uid)}" ${m.active !== false ? "checked" : ""} ${self ? "disabled" : ""}> 사용</label></td></tr>`;
         }).join("")}</tbody></table></div>
-        <p class="muted small" style="margin-top:8px">퇴사·전보 시 '사용'을 끄면 즉시 로그인해도 아무것도 볼 수 없습니다. 마스터는 모든 점검을 보고, SV는 본인 점검만 봅니다.</p>
+        <p class="muted small" style="margin-top:8px">마스터는 모든 점검을, SV는 본인 점검과 담당 매장의 점검을, 매장 계정은 자기 매장의 자체 점검만 봅니다. 퇴사·전보 시 '사용'을 끄면 바로 막힙니다.</p>
+
+        <div id="sacc">${storeAcctsHtml()}</div>
+        <p class="muted small" style="margin-top:8px">매장 계정 비밀번호를 잊었을 때: Firebase 콘솔 → Authentication에서 그 아이디를 삭제한 뒤, 일괄 등록에서 같은 아이디로 다시 만드세요(이미 등록된 아이디도 다시 만들기 체크). 점검 기록은 매장 기준으로 저장돼 그대로 남습니다.</p>
       </div>
       <div>
         <div class="panel">
-          <h2 style="margin-top:0">계정 만들기</h2>
-          <label class="f" for="un">이름 (매장 목록의 담당자 이름과 똑같이)</label><input class="in" id="un">
+          <h2 style="margin-top:0">매장 계정 일괄 등록</h2>
+          <ol class="steps small">
+            <li><b>양식 내려받기</b>: 등록된 매장 ${activeStores.length}곳이 미리 채워진 엑셀입니다.</li>
+            <li>이름·아이디·임시 비밀번호를 고칩니다. <span class="muted">아이디를 비우면 매장코드(예: bsc0007), 비밀번호를 비우면 8자리로 자동 생성합니다. 한 매장에 계정을 여러 개 만들려면 줄을 복사해 아이디만 다르게 쓰세요.</span></li>
+            <li>파일을 올리거나 엑셀 표를 복사해 붙여넣고 <b>확인하기</b>를 누릅니다.</li>
+          </ol>
+          <div class="row" style="margin-top:8px">
+            <button class="btn" id="tpl" ${activeStores.length ? "" : "disabled"}>양식 내려받기</button>
+            <label class="btn" style="flex:0 0 auto">파일 올리기<input type="file" id="bf" accept=".xlsx,.xls,.csv" hidden></label>
+          </div>
+          <textarea class="in" id="bp" rows="4" style="margin-top:10px" placeholder="또는 엑셀에서 머리글(매장코드·매장명·이름·아이디·임시 비밀번호)까지 복사해 붙여넣기"></textarea>
+          <label class="small" style="display:flex;gap:6px;align-items:center;margin-top:8px"><input type="checkbox" id="bx" ${bulk.includeExisting ? "checked" : ""}> 이미 등록된 아이디도 다시 만들기 (콘솔에서 삭제한 경우)</label>
+          <div class="err" id="be"></div>
+          <button class="btn primary block" id="bcheck">확인하기</button>
+          <div id="bres" style="margin-top:12px"></div>
+        </div>
+        <div class="panel" style="margin-top:12px">
+          <h2 style="margin-top:0">본사·SV 계정 만들기</h2>
+          <label class="f" for="un">이름 (매장 목록의 담당 SV 이름과 똑같이)</label><input class="in" id="un">
           <label class="f" for="ue">이메일 (로그인 ID)</label><input class="in" id="ue" type="email">
           <label class="f" for="up">임시 비밀번호 (6자 이상)</label><input class="in" id="up" type="text" autocomplete="off">
           <label class="f" for="ur">역할</label><select class="in" id="ur"><option value="sv">SV</option><option value="master">마스터</option></select>
@@ -1515,7 +2056,7 @@ async function viewAdminUsers() {
         </div>
         <div class="panel" style="margin-top:12px">
           <h2 style="margin-top:0">기존 계정 등록</h2>
-          <p class="muted small">Firebase 콘솔에서 직접 만든 계정은, 그 사람이 로그인했을 때 화면에 뜨는 사용자 ID로 등록합니다.</p>
+          <p class="muted small">Firebase 콘솔에서 직접 만든 본사·SV 계정은, 그 사람이 로그인했을 때 화면에 뜨는 사용자 ID로 등록합니다.</p>
           <label class="f" for="ruid">사용자 ID</label><input class="in" id="ruid">
           <div class="row"><div><label class="f" for="rn">이름</label><input class="in" id="rn"></div>
             <div><label class="f" for="rr">역할</label><select class="in" id="rr"><option value="sv">SV</option><option value="master">마스터</option></select></div></div>
@@ -1529,9 +2070,103 @@ async function viewAdminUsers() {
   $$("[data-role]").forEach(sel => sel.addEventListener("change", async () => {
     try { await api.updateMember(sel.dataset.role, { role: sel.value }); toast("역할을 바꿨습니다."); } catch (e) { toast(friendlyError(e)); }
   }));
-  $$("[data-on]").forEach(cb => cb.addEventListener("change", async () => {
-    try { await api.updateMember(cb.dataset.on, { active: cb.checked }); toast(cb.checked ? "사용으로 바꿨습니다." : "사용 중지했습니다."); } catch (e) { toast(friendlyError(e)); }
-  }));
+  wireActive(document);
+
+  /* --- 매장 계정 일괄 등록 --- */
+  $("#bx").addEventListener("change", e => { bulk.includeExisting = e.target.checked; if (bulk.rows) renderPreview(); });
+  $("#tpl").addEventListener("click", () => {
+    if (!window.XLSX) return toast("엑셀 기능을 불러오는 중입니다. 잠시 뒤 다시 눌러 주세요.");
+    const aoa = [["매장코드", "매장명", "이름", "아이디", "임시 비밀번호"],
+      ...activeStores.map(s => [s.code || s.id, s.name, `${s.name} 점장`, String(s.code || s.id).toLowerCase(), ""])];
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws["!cols"] = [{ wch: 12 }, { wch: 16 }, { wch: 20 }, { wch: 16 }, { wch: 16 }];
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "매장 계정");
+    XLSX.writeFile(wb, "벤슨_매장계정_양식.xlsx");
+  });
+  $("#bf").addEventListener("change", async e => {
+    const f = e.target.files?.[0]; e.target.value = "";
+    if (!f) return;
+    $("#be").textContent = "";
+    try {
+      let matrix;
+      if (/\.csv$/i.test(f.name)) {
+        const text = (await f.text()).replace(/^﻿/, "");
+        matrix = text.split(/\r?\n/).map(l => l.split(/,|\t/));
+      } else {
+        if (!window.XLSX) throw new Error("엑셀 기능을 불러오는 중입니다. 잠시 뒤 다시 올려 주세요.");
+        const wb = XLSX.read(await f.arrayBuffer(), { type: "array" });
+        matrix = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: false, defval: "" });
+      }
+      bulk.rows = parseBulk(matrix); bulk.results = null; renderPreview();
+    } catch (err) { $("#be").textContent = friendlyError(err); }
+  });
+  $("#bcheck").addEventListener("click", () => {
+    $("#be").textContent = "";
+    const text = $("#bp").value.trim();
+    if (text) { bulk.rows = parseBulk(text.split(/\r?\n/).map(l => l.split("\t"))); bulk.results = null; }
+    if (!bulk.rows?.length) return $("#be").textContent = "파일을 올리거나 표를 붙여넣어 주세요.";
+    renderPreview();
+  });
+  if (bulk.rows) renderPreview();
+
+  function renderPreview() {
+    const list = validateBulk(bulk.rows);
+    const targets = list.filter(r => !r.err && (!r.exists || bulk.includeExisting));
+    const res = bulk.results;
+    const state = r => {
+      const k = res?.[r.email];
+      if (k) return k.ok ? `<span class="chip done">만듦</span>` : `<span class="chip back">${esc(k.msg)}</span>`;
+      if (r.err) return `<span class="chip back">${esc(r.err)}</span>`;
+      if (r.exists && !bulk.includeExisting) return `<span class="chip">이미 등록됨 · 건너뜀</span>`;
+      return `<span class="chip wait">만들 예정</span>`;
+    };
+    const okN = res ? Object.values(res).filter(x => x.ok).length : 0;
+    $("#bres").innerHTML = `
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>매장</th><th>이름</th><th>아이디</th><th>비밀번호</th><th>상태</th></tr></thead>
+        <tbody>${list.map(r => `<tr><td>${esc(r.storeName || r.code)}</td><td>${esc(r.name || "")}</td><td class="num">${esc(r.loginId || r.id || "")}</td>
+          <td class="num">${r.password ? esc(r.password) + (r.autoPw ? ' <span class="muted small">자동</span>' : "") : ""}</td><td>${state(r)}</td></tr>`).join("")}</tbody>
+      </table></div>
+      ${res ? `<p class="small" style="margin:10px 0">${okN}개를 만들었습니다. 아이디와 비밀번호를 매장에 전달한 뒤, 내려받은 파일은 지워 주세요.</p>
+          <button class="btn block" id="bdl">결과 내려받기 (아이디·비밀번호)</button>`
+        : targets.length > BULK_LIMIT ? `<div class="notice back">한 번에 ${BULK_LIMIT}개까지 만들 수 있습니다 (Firebase 제한: 같은 인터넷 주소에서 시간당 새 계정 100개). 표를 나눠서 올려 주세요.</div>`
+        : `<button class="btn primary block" id="bgo" style="margin-top:10px" ${targets.length ? "" : "disabled"}>${targets.length}개 계정 만들기</button>`}`;
+    $("#bgo")?.addEventListener("click", async () => {
+      if (!await modal({ title: `매장 계정 ${targets.length}개를 만들까요?`, body: "만드는 동안 이 화면을 닫지 마세요. 끝나면 아이디·비밀번호를 엑셀로 내려받을 수 있습니다.", ok: "만들기" })) return;
+      $("#bgo").disabled = true;
+      bulk.results = {};
+      let i = 0;
+      await api.createMembersBulk(targets, async (r, out) => {
+        i++; $("#bgo").textContent = `만드는 중… ${i}/${targets.length}`;
+        if (out.ok) {
+          bulk.results[r.email] = { ok: true };
+          // 같은 아이디의 예전 계정 기록(콘솔에서 삭제한 계정)은 사용 중지
+          for (const m of S.members.filter(m => (m.email || "").toLowerCase() === r.email && m.uid !== out.uid && m.active !== false)) {
+            try { await api.updateMember(m.uid, { active: false }); } catch (_) {}
+          }
+        } else {
+          const c = out.error?.code;
+          bulk.results[r.email] = { ok: false, msg: c === "auth/email-already-in-use" ? "이미 있는 아이디(콘솔에 계정 있음)" : c === "auth/too-many-requests" ? "요청 한도 초과, 1시간 뒤 다시" : friendlyError(out.error) };
+        }
+      });
+      await loadMembers();
+      $("#sacc").innerHTML = storeAcctsHtml(); wireActive($("#sacc"));
+      bulk.resultRows = targets;
+      renderPreview();
+      toast(`${Object.values(bulk.results).filter(x => x.ok).length}개 계정을 만들었습니다.`);
+    });
+    $("#bdl")?.addEventListener("click", () => {
+      const out = (bulk.resultRows || []).map(r => [r.code, r.storeName, r.name, r.loginId, bulk.results[r.email]?.ok ? r.password : "", bulk.results[r.email]?.ok ? "만듦" : bulk.results[r.email]?.msg || ""]);
+      const aoa = [["매장코드", "매장명", "이름", "아이디", "임시 비밀번호", "결과"], ...out];
+      if (window.XLSX) {
+        const ws = XLSX.utils.aoa_to_sheet(aoa); ws["!cols"] = [{ wch: 12 }, { wch: 16 }, { wch: 20 }, { wch: 16 }, { wch: 16 }, { wch: 28 }];
+        const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "매장 계정");
+        XLSX.writeFile(wb, `벤슨_매장계정_발급결과_${today()}.xlsx`);
+      }
+    });
+  }
+
+  /* --- 본사·SV 계정 --- */
   $("#mk").addEventListener("click", async () => {
     const name = $("#un").value.trim(), email = $("#ue").value.trim(), password = $("#up").value, role = $("#ur").value;
     if (!name || !email) return $("#ue1").textContent = "이름과 이메일을 입력해 주세요.";
@@ -1539,7 +2174,8 @@ async function viewAdminUsers() {
     $("#mk").disabled = true;
     try {
       const uid = await api.createMember({ name, email, password, role });
-      const k = await linkStoresTo(uid, name);
+      const k = role === "sv" ? await linkStoresTo(uid, name) : 0;
+      monthCache = {};
       toast(`${name} 계정을 만들었습니다.${k ? ` 담당 매장 ${k}곳을 연결했습니다.` : ""}`, 3500); viewAdminUsers();
     }
     catch (e) { $("#ue1").textContent = friendlyError(e); $("#mk").disabled = false; }
@@ -1550,7 +2186,8 @@ async function viewAdminUsers() {
     $("#rg").disabled = true;
     try {
       await api.registerMember(uid, { name, email, role });
-      const k = await linkStoresTo(uid, name);
+      const k = role === "sv" ? await linkStoresTo(uid, name) : 0;
+      monthCache = {};
       toast(`${name}님을 등록했습니다.${k ? ` 담당 매장 ${k}곳을 연결했습니다.` : ""}`, 3500); viewAdminUsers();
     }
     catch (e) { $("#ue2").textContent = friendlyError(e); $("#rg").disabled = false; }
@@ -1558,13 +2195,17 @@ async function viewAdminUsers() {
 }
 
 /* =====================================================================
-   14. 시작
+   15. 시작
    ===================================================================== */
 (async function start() {
   $("#acct").addEventListener("click", accountMenu);
   $("#homeLink").addEventListener("click", goHome);
   try {
     api = FIREBASE_CONFIG.apiKey ? await createFirebaseApi() : createDemoApi();
+    // 저장할 때마다 한 달치 목록 임시 보관을 비웁니다.
+    for (const k of ["createInspection", "updateInspection", "deleteInspection"]) {
+      const f = api[k]; api[k] = (...a) => { monthCache = {}; return f(...a); };
+    }
   } catch (e) {
     console.error(e);
     $("#demoBar").hidden = true;
@@ -1572,14 +2213,15 @@ async function viewAdminUsers() {
     return;
   }
   api.onAuth(async user => {
-    S.user = user; S.me = null; leaveGuard = null;
+    S.user = user; S.me = null; leaveGuard = null; monthCache = {};
     if (!user) { history.replaceState(null, "", location.pathname + location.search); lastHash = ""; return viewLogin(); }
     try {
       const me = await api.getMember(user.uid);
-      if (!me) return viewNoAccess("관리자에게 아래 사용자 ID를 전달해 등록을 요청하세요.");
+      if (!me) return viewNoAccess("등록되지 않은 계정입니다. 관리자에게 아래 사용자 ID를 전달해 등록을 요청하세요.");
       if (me.active === false) return viewNoAccess("사용이 중지된 계정입니다. 관리자에게 문의하세요.");
+      if (me.role === "store" && !me.storeId) return viewNoAccess("매장이 연결되지 않은 매장 계정입니다. 관리자에게 문의하세요.");
       S.me = me;
-      if (isMaster()) await loadMembers();
+      if (isMaster()) { await loadMembers(); backfillAllOnce(); }
       lastHash = location.hash;
       router();
     } catch (e) {
