@@ -76,7 +76,7 @@ p{margin:0 0 10px}
 ol.steps{margin:6px 0 0;padding-left:18px}
 ol.steps li{margin:4px 0}
 .btn:disabled{opacity:.45;cursor:not-allowed}
-label.f{display:block;font-size:13px;font-weight:600;color:var(--ink-2);margin:12px 0 6px}
+label.f,div.f{display:block;font-size:13px;font-weight:600;color:var(--ink-2);margin:12px 0 6px}
 .in,select.in,textarea.in{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
 textarea.in{min-height:72px;resize:vertical;line-height:1.5}
 .row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
@@ -100,6 +100,11 @@ textarea.in{min-height:72px;resize:vertical;line-height:1.5}
 .chip.wait{background:var(--warn-bg);color:var(--warn)}
 .chip.kind{background:#E8EEF9;color:#1E3A72}
 .chip.kind.store{background:#EFE8F8;color:#55307F}
+.picks{display:grid;gap:8px;margin-top:6px}
+.pick{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:#fff;cursor:pointer}
+.pick input{margin-top:3px;flex:0 0 auto;width:18px;height:18px;accent-color:var(--ink)}
+.pick>span{display:flex;flex-direction:column;gap:2px}
+.pick.on{border-color:var(--ink);background:#F6F7F9}
 .hist{list-style:none;margin:0;padding:0;font-size:14px}
 .hist li{padding:6px 0;border-bottom:1px solid var(--line-2)}
 .hist li:last-child{border-bottom:0}
@@ -262,7 +267,7 @@ const STORE_LOGIN_DOMAIN = FIREBASE_CONFIG.authDomain || "benson-inspect.firebas
    note / photo: "required"(필수) — 비워 두면 선택
    ===================================================================== */
 const CHECKLISTS = {
-  /* SV 방문 점검 (기존 QSC) */
+  /* SV용 점검 (기존 QSC) */
   qsc: {
     key: "qsc", label: "QSC 점검", short: "QSC", version: "QSC-2026-10", special: true,
     yWord: "준수", nWord: "미흡", rateWord: "준수율",
@@ -286,9 +291,9 @@ const CHECKLISTS = {
       { no: 12, cat: "C", type: "yn", title: "고객 공간",   criteria: "테이블, 의자, 바닥, 출입문, 키오스크 및 매장 전면이 청결하게 유지되고 있는가?" }
     ]
   },
-  /* 점장·매니저 매장 자체 점검 (질문 리스트 2026-11) — Y=문제 없음, N=개선 필요 */
+  /* 매장용 점검 (질문 리스트 2026-11) — 점장·매니저가 매일 작성. SV·마스터도 골라서 쓸 수 있음. Y=문제 없음, N=개선 필요 */
   store: {
-    key: "store", label: "매장 자체 점검", short: "자체 점검", version: "STORE-2026-11", special: false,
+    key: "store", label: "매장용 점검", short: "매장용", version: "STORE-2026-11", special: false,
     yWord: "문제 없음", nWord: "개선 필요", rateWord: "문제 없음 비율",
     cats: [
       { key: "A", label: "2차 업무" }, { key: "B", label: "POS&키오스크" }, { key: "C", label: "고객응대" },
@@ -418,6 +423,8 @@ function photoCount(doc) {
   return k;
 }
 const nTitles = doc => CL(doc).items.filter(c => isYN(c) && doc.items?.[c.no]?.r === "N").map(shortOf);
+/* 매장 계정(점장·매니저)이 직접 쓴 매장용 점검인가. SV·마스터가 매장용 문항으로 쓴 점검과 구분합니다. */
+const isStoreSelf = d => kindOf(d) === "store" && (d.authorRole || "store") === "store";
 const kindChip = d => `<span class="chip kind ${kindOf(d)}">${esc(CL(d).short)}</span>`;
 const avgRate = list => {
   const r = list.map(d => sumOf(d).rate).filter(v => v !== null);
@@ -633,7 +640,7 @@ async function createFirebaseApi() {
     /* 조회는 역할별로 보안 규칙이 허용하는 조건(같음 조건만)으로만 합니다. */
     listMyInspections: uid => run(FS.where("svUid", "==", uid)),
     listMyDrafts: uid => run(FS.where("svUid", "==", uid), FS.where("status", "==", "draft")),
-    listStoreMonth: (storeId, ym) => run(FS.where("storeId", "==", storeId), FS.where("kind", "==", "store"), FS.where("visitMonth", "==", ym)),
+    listStoreMonth: (storeId, ym) => run(FS.where("storeId", "==", storeId), FS.where("kind", "==", "store"), FS.where("authorRole", "==", "store"), FS.where("visitMonth", "==", ym)),
     listSvMonth: (uid, ym) => run(FS.where("storeSvUid", "==", uid), FS.where("visitMonth", "==", ym)),
     listByStore: storeId => run(FS.where("storeId", "==", storeId)),
     listAllInspections: () => run(),
@@ -765,7 +772,7 @@ function createDemoApi() {
     async updateStore(id, patch) { await wait(); Object.assign(db.stores[id], patch); },
     listMyInspections: uid => where(d => d.svUid === uid),
     listMyDrafts: uid => where(d => d.svUid === uid && d.status === "draft"),
-    listStoreMonth: (storeId, ym) => where(d => d.storeId === storeId && d.kind === "store" && d.visitMonth === ym),
+    listStoreMonth: (storeId, ym) => where(d => d.storeId === storeId && d.kind === "store" && d.authorRole === "store" && d.visitMonth === ym),
     listSvMonth: (uid, ym) => where(d => d.storeSvUid === uid && d.visitMonth === ym),
     listByStore: storeId => where(d => d.storeId === storeId),
     listAllInspections: () => where(() => true),
@@ -784,7 +791,7 @@ function createDemoApi() {
 
 /* =====================================================================
    5. 앱 상태·화면 전환
-   역할: master(마스터) / sv(SV: QSC 점검, 담당 매장 조회) / store(점장·매니저: 매장 자체 점검)
+   역할: master(마스터) / sv(SV: QSC·매장용 점검, 담당 매장 조회) / store(점장·매니저: 매장용 점검)
    ===================================================================== */
 const S = { user: null, me: null, stores: [], members: [] };
 const ROLE_LABEL = { master: "마스터", sv: "SV", store: "매장" };
@@ -793,8 +800,8 @@ const isMaster = () => myRole() === "master";
 const isSV = () => myRole() === "sv";
 const isStoreUser = () => myRole() === "store";
 const roleLabel = (m = S.me) => ROLE_LABEL[m?.role] || "SV";
-/* 이 점검을 내가 작성·수정할 수 있는 사람인가: 작성자 본인, 또는 같은 매장 계정(매장 자체 점검) */
-const ownsDoc = d => !!S.me && (d.svUid === S.me.uid || (isStoreUser() && kindOf(d) === "store" && d.storeId === S.me.storeId));
+/* 이 점검을 내가 작성·수정할 수 있는 사람인가: 작성자 본인, 또는 같은 매장 계정(매장 계정이 쓴 매장용 점검) */
+const ownsDoc = d => !!S.me && (d.svUid === S.me.uid || (isStoreUser() && isStoreSelf(d) && d.storeId === S.me.storeId));
 const app = $("#app");
 let leaveGuard = null;   // 점검 작성 중 이탈 방지 { nav, unload, flush }
 
@@ -1053,34 +1060,51 @@ async function viewHome() {
   const monthDone = done.filter(d => d.visitDate?.startsWith(thisMonth())).length;
   shell(`
     <h1>내 점검</h1>
-    <a class="btn primary block big" href="#/new">새 QSC 점검 시작</a>
-    <p class="muted small" style="margin-top:10px">이번 달 제출 <b class="num">${monthDone}</b>건${isSV() ? ` · 담당 매장의 점장 자체 점검은 <a href="#/sv">담당 매장</a>에서 볼 수 있습니다.` : ""}</p>
+    <a class="btn primary block big" href="#/new">새 점검 시작</a>
+    <p class="muted small" style="margin-top:10px">이번 달 제출 <b class="num">${monthDone}</b>건${isSV() ? ` · 점장·매니저가 쓴 매장용 점검은 <a href="#/sv">담당 매장</a>에서 볼 수 있습니다.` : ""}</p>
     ${drafts.length ? `<h2>작성 중</h2><div class="list">${drafts.map(d => inspRow(d)).join("")}</div>` : ""}
     <h2>제출한 점검</h2>
-    ${done.length ? `<div class="list">${done.slice(0, 60).map(d => inspRow(d)).join("")}</div>` : `<div class="empty">아직 제출한 점검이 없습니다. 매장에 도착하면 '새 QSC 점검 시작'을 누르세요.</div>`}
+    ${done.length ? `<div class="list">${done.slice(0, 60).map(d => inspRow(d)).join("")}</div>` : `<div class="empty">아직 제출한 점검이 없습니다. 매장에 도착하면 '새 점검 시작'을 누르세요.</div>`}
   `, { active: "#/", narrow: true });
 }
 
-/* 새 QSC 점검 (SV·마스터) */
+/* 새 점검 (SV·마스터): SV용(QSC) 또는 매장용 점검표를 골라 시작 */
+const NEW_KIND_KEY = "benson_inspect_newkind";
 async function viewNew() {
   await loadStores();
   const active = S.stores.filter(s => s.active !== false);
   const mine = byName(active.filter(isMyStore));
   const others = byName(active.filter(s => !isMyStore(s)));
   const opt = s => `<option value="${esc(s.id)}">${esc(s.name)}</option>`;
+  let kind = "qsc";
+  try { const k = localStorage.getItem(NEW_KIND_KEY); if (CHECKLISTS[k]) kind = k; } catch (_) {}
+  const pick = (k, title, desc) => `<label class="pick ${kind === k ? "on" : ""}">
+      <input type="radio" name="kd" value="${k}" ${kind === k ? "checked" : ""}>
+      <span><b>${title}</b><span class="muted small">${desc}</span></span></label>`;
   shell(`
-    <h1>새 QSC 점검</h1>
+    <h1>새 점검</h1>
     ${active.length ? `<div class="panel">
-      <label class="f" for="st" style="margin-top:0">매장</label>
+      <div class="f" style="margin-top:0">점검표</div>
+      <div class="picks" role="radiogroup" aria-label="점검표 선택">
+        ${pick("qsc", "SV용 점검 (QSC)", `품질·서비스·청결 ${CHECKLISTS.qsc.items.length}문항 · 준수/미흡`)}
+        ${pick("store", "매장용 점검", `점장·매니저 점검표 ${CHECKLISTS.store.items.length}문항 · 사진 필수 문항 포함`)}
+      </div>
+      <label class="f" for="st">매장</label>
       <select class="in" id="st"><option value="">매장을 고르세요</option>
         ${mine.length ? `<optgroup label="내 담당 매장">${mine.map(opt).join("")}</optgroup><optgroup label="다른 매장">${others.map(opt).join("")}</optgroup>` : byName(active).map(opt).join("")}
       </select>
       <label class="f" for="vd">방문일</label><input class="in" id="vd" type="date" value="${today()}" max="${today()}">
       <div class="err" id="ne"></div>
       <button class="btn primary block" id="go" style="margin-top:6px">점검 시작</button>
+      <p class="muted small" style="margin-top:10px">매장용 점검을 SV·마스터가 쓰면 SV 점검으로 따로 저장되고, 매장 계정 화면과 매장 제출 현황에는 넣지 않습니다.</p>
     </div>` : `<div class="empty">등록된 매장이 없습니다. ${isMaster() ? `<a href="#/admin/stores">매장 관리</a>에서 매장을 먼저 추가하세요.` : "관리자에게 매장 등록을 요청하세요."}</div>`}
   `, { active: "#/", narrow: true });
   if (!active.length) return;
+  $$('input[name="kd"]').forEach(r => r.addEventListener("change", () => {
+    kind = r.value;
+    $$(".pick").forEach(l => l.classList.toggle("on", l.querySelector("input").checked));
+    try { localStorage.setItem(NEW_KIND_KEY, kind); } catch (_) {}
+  }));
   $("#go").addEventListener("click", async () => {
     const st = storeById($("#st").value);
     const vd = $("#vd").value;
@@ -1089,12 +1113,12 @@ async function viewNew() {
     $("#go").disabled = true;
     try {
       const mineList = await api.listMyInspections(S.me.uid);
-      const dup = mineList.find(d => d.storeId === st.id && d.visitDate === vd && kindOf(d) === "qsc");
+      const dup = mineList.find(d => d.storeId === st.id && d.visitDate === vd && kindOf(d) === kind);
       if (dup) {
-        const open = await modal({ title: "같은 날 같은 매장 점검이 있습니다", body: `${esc(st.name)}, ${fmtDate(vd)} 점검을 이미 만들었습니다. 그 점검을 열까요?`, ok: "기존 점검 열기", cancel: "새로 만들기" });
+        const open = await modal({ title: "같은 날 같은 매장 점검이 있습니다", body: `${esc(st.name)}, ${fmtDate(vd)} ${esc(CHECKLISTS[kind].label)}을 이미 만들었습니다. 그 점검을 열까요?`, ok: "기존 점검 열기", cancel: "새로 만들기" });
         if (open) { location.hash = "#/i/" + dup.id; return; }
       }
-      const id = await createInspectionFor(st, vd, "qsc");
+      const id = await createInspectionFor(st, vd, kind);
       location.hash = "#/i/" + id;
     } catch (e) { $("#ne").textContent = friendlyError(e); $("#go").disabled = false; }
   });
@@ -1111,7 +1135,7 @@ function createInspectionFor(st, vd, kind) {
 }
 
 /* =====================================================================
-   8. 점장·매니저: 매장 자체 점검 홈
+   8. 점장·매니저: 매장용 점검 홈
    ===================================================================== */
 const storeFilter = { month: thisMonth() };
 const myStoreDoc = () => storeById(S.me?.storeId);
@@ -1150,7 +1174,7 @@ async function viewStoreHome() {
   }
   shell(`
     <h1>${esc(st.name)}</h1>
-    <p class="muted" style="margin-top:-8px">매장 자체 점검 · ${esc(S.me.name || "")}</p>
+    <p class="muted" style="margin-top:-8px">매장용 점검 · ${esc(S.me.name || "")}</p>
     <div class="panel today">${todayCard}
       <a class="small muted" href="#/new" style="display:inline-block;margin-top:10px">다른 날짜로 작성</a></div>
     ${otherDrafts.length ? `<h2>작성 중인 다른 날짜</h2><div class="list">${otherDrafts.sort(byDateDesc).map(d => inspRow(d, { showStore: false, showAuthor: true })).join("")}</div>` : ""}
@@ -1205,7 +1229,7 @@ async function viewStoreNew() {
 }
 
 /* =====================================================================
-   9. SV: 담당 매장 현황 (담당 매장의 자체 점검 + QSC 전체)
+   9. SV: 담당 매장 현황 (담당 매장의 매장용 점검 + QSC 전체)
    ===================================================================== */
 const svFilter = { month: thisMonth(), kind: "", store: "" };
 async function viewSvStores() {
@@ -1217,7 +1241,7 @@ async function viewSvStores() {
   const sub = rows.filter(isSubmitted);
   const elapsed = daysElapsed(ym);
   const per = mine.map(s => {
-    const self = sub.filter(d => d.storeId === s.id && kindOf(d) === "store");
+    const self = sub.filter(d => d.storeId === s.id && isStoreSelf(d));
     const qsc = sub.filter(d => d.storeId === s.id && kindOf(d) === "qsc");
     const latest = sub.filter(d => d.storeId === s.id).sort(byDateDesc)[0];
     return { s, days: new Set(self.map(d => d.visitDate)).size, lastSelf: self.sort(byDateDesc)[0], qsc: qsc.length, qscRate: avgRate(qsc), latestN: latest ? nTitles(latest) : [], latest };
@@ -1229,11 +1253,11 @@ async function viewSvStores() {
     <div class="panel" style="margin-bottom:12px"><div class="row">
       <div><label class="f" for="fm" style="margin-top:0">월</label><input class="in" id="fm" type="month" value="${ym}" max="${thisMonth()}"></div>
       <div><label class="f" for="fk" style="margin-top:0">점검 종류</label><select class="in" id="fk">
-        <option value="">전체</option><option value="store" ${svFilter.kind === "store" ? "selected" : ""}>매장 자체 점검</option><option value="qsc" ${svFilter.kind === "qsc" ? "selected" : ""}>QSC 점검</option></select></div>
+        <option value="">전체</option><option value="store" ${svFilter.kind === "store" ? "selected" : ""}>매장용 점검</option><option value="qsc" ${svFilter.kind === "qsc" ? "selected" : ""}>QSC 점검</option></select></div>
       <div><label class="f" for="fs" style="margin-top:0">매장</label><select class="in" id="fs"><option value="">담당 매장 전체</option>${mine.map(s => `<option value="${esc(s.id)}" ${s.id === svFilter.store ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select></div>
     </div></div>
     ${mine.length ? `<h2>매장별 요약 (${monNum(ym)}월, 제출 기준)</h2><div class="tbl-wrap"><table>
-      <thead><tr><th>매장</th><th class="r">자체 점검</th><th>최근 자체 점검</th><th class="r">QSC</th><th class="r">QSC 준수율</th><th>최근 미흡·개선 필요</th></tr></thead>
+      <thead><tr><th>매장</th><th class="r">매장 제출</th><th>최근 매장 제출</th><th class="r">QSC</th><th class="r">QSC 준수율</th><th>최근 미흡·개선 필요</th></tr></thead>
       <tbody>${per.map(x => `<tr ${x.latest ? `class="click" data-open="${esc(x.latest.id)}" tabindex="0"` : ""}>
         <td>${esc(x.s.name)}</td><td class="r num">${x.days}/${elapsed}일</td><td class="num">${x.lastSelf ? esc(x.lastSelf.visitDate) : "-"}</td>
         <td class="r num">${x.qsc}</td><td class="r num">${x.qscRate === null ? "-" : x.qscRate + "%"}</td>
@@ -1243,7 +1267,7 @@ async function viewSvStores() {
       <thead><tr><th>날짜</th><th>종류</th><th>매장</th><th>작성자</th><th class="r">결과</th><th>미흡·개선 필요</th><th class="r">사진</th><th>상태</th></tr></thead>
       <tbody>${shown.map(d => { const sm = sumOf(d); return `<tr class="click" data-open="${esc(d.id)}" tabindex="0">
         <td class="num">${esc(d.visitDate)}</td><td>${kindChip(d)}</td><td>${esc(d.storeName)}</td><td>${esc(d.svName || "")}</td>
-        <td class="r num">${sm.yn ? `${sm.y}/${sm.yn}` : "-"}</td><td class="wrap">${esc(nTitles(d).join(", ") || "-")}</td>
+        <td class="r num">${isSubmitted(d) ? (sm.yn ? `${sm.y}/${sm.yn}` : "-") : `${sm.done}/${sm.total} 완료`}</td><td class="wrap">${esc(nTitles(d).join(", ") || "-")}</td>
         <td class="r num">${photoCount(d)}</td><td>${statusChip(d)}</td></tr>`; }).join("")}</tbody></table></div>`
       : `<div class="empty">이 조건에 맞는 점검이 없습니다.</div>`}
   `, { active: "#/sv" });
@@ -1260,7 +1284,7 @@ function wireRowOpen() {
 }
 
 /* =====================================================================
-   10. 점검 작성·보기 (QSC·매장 자체 점검 공통)
+   10. 점검 작성·보기 (QSC·매장용 점검 공통)
    ===================================================================== */
 async function viewInspection(id, editReq = false) {
   loading("");
@@ -1396,7 +1420,7 @@ async function viewInspection(id, editReq = false) {
   shell(`
     <p style="margin:0 0 6px"><a class="small muted" href="${backHref}">${masterEdit ? "보기 화면으로" : "목록으로"}</a></p>
     <div class="ins-head"><h1>${esc(doc.storeName)}</h1>${kindChip(doc)}${statusChip(doc)}${ownDraftActs}</div>
-    <div class="ins-meta">${esc(cl.label)} · ${fmtDate(doc.visitDate)} · 작성 ${esc(doc.svName || "")}${doc.submittedAt && isSubmitted(doc) ? ` · 제출 ${fmtTs(doc.submittedAt)}` : ""}</div>
+    <div class="ins-meta">${esc(cl.label)} · ${fmtDate(doc.visitDate)} · 작성 ${esc(doc.svName || "")}${kindOf(doc) === "store" && !isStoreSelf(doc) ? ` (${esc(ROLE_LABEL[doc.authorRole] || "SV")})` : ""}${doc.submittedAt && isSubmitted(doc) ? ` · 제출 ${fmtTs(doc.submittedAt)}` : ""}</div>
     ${!canEdit ? `<div class="notice info">${summaryLine}</div>` : ""}
     ${stateNotice}
     ${doc.returned && doc.status === "draft" ? `<div class="notice back"><b>수정 요청</b>${doc.returnNote ? `: ${esc(doc.returnNote)}` : ""}</div>` : ""}
@@ -1641,7 +1665,7 @@ async function viewAdminList() {
     (!adminFilter.status || (adminFilter.status === "draft" ? !isSubmitted(d) : d.status === adminFilter.status)));
   const sub = rows.filter(isSubmitted);
   const waiting = rows.filter(d => d.status === "submitted");
-  const subQ = sub.filter(d => kindOf(d) === "qsc"), subS = sub.filter(d => kindOf(d) === "store");
+  const subQ = sub.filter(d => kindOf(d) === "qsc"), subS = sub.filter(isStoreSelf);
   const activeStores = S.stores.filter(s => s.active !== false);
   const staff = S.members.filter(m => m.active !== false && m.role !== "store");
   const storeAccts = S.members.filter(m => m.active !== false && m.role === "store");
@@ -1652,7 +1676,7 @@ async function viewAdminList() {
     <div class="panel" style="margin-bottom:12px"><div class="row">
       <div><label class="f" for="fm" style="margin-top:0">월</label><input class="in" id="fm" type="month" value="${adminFilter.month}"></div>
       <div><label class="f" for="fk" style="margin-top:0">종류</label><select class="in" id="fk">
-        <option value="">전체</option><option value="store" ${adminFilter.kind === "store" ? "selected" : ""}>매장 자체 점검</option><option value="qsc" ${adminFilter.kind === "qsc" ? "selected" : ""}>QSC 점검</option></select></div>
+        <option value="">전체</option><option value="store" ${adminFilter.kind === "store" ? "selected" : ""}>매장용 점검</option><option value="qsc" ${adminFilter.kind === "qsc" ? "selected" : ""}>QSC 점검</option></select></div>
       <div><label class="f" for="fs" style="margin-top:0">매장</label><select class="in" id="fs"><option value="">전체 매장</option>${S.stores.map(s => `<option value="${esc(s.id)}" ${s.id === adminFilter.store ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select></div>
       <div><label class="f" for="fv" style="margin-top:0">작성자</label><select class="in" id="fv"><option value="">전체</option>
         ${staff.length ? `<optgroup label="본사·SV">${staff.map(opt).join("")}</optgroup>` : ""}${storeAccts.length ? `<optgroup label="매장 계정">${storeAccts.map(opt).join("")}</optgroup>` : ""}</select></div>
@@ -1666,7 +1690,7 @@ async function viewAdminList() {
     <div class="stats">
       <button class="stat click ${adminFilter.status === "submitted" ? "on" : ""}" id="waitCard" type="button"><b class="num">${waiting.length}</b><span>승인 대기 (눌러서 보기)</span></button>
       <div class="stat"><b class="num">${sub.length}</b><span>제출된 점검 (승인 대기 포함)</span></div>
-      <div class="stat"><b class="num">${new Set(subS.map(d => d.storeId)).size}/${activeStores.length}</b><span>자체 점검 제출 매장</span></div>
+      <div class="stat"><b class="num">${new Set(subS.map(d => d.storeId)).size}/${activeStores.length}</b><span>매장용 점검 제출 매장 (매장 계정)</span></div>
       <div class="stat"><b class="num">${new Set(subQ.map(d => d.storeId)).size}/${activeStores.length}</b><span>QSC 방문 매장</span></div>
       <div class="stat"><b class="num">${avgRate(subQ) === null ? "-" : avgRate(subQ) + "%"}</b><span>QSC 평균 준수율</span></div>
     </div>
@@ -1677,7 +1701,7 @@ async function viewAdminList() {
         const sm = sumOf(d);
         return `<tr class="click" data-open="${esc(d.id)}" tabindex="0">
           <td>${d.status === "submitted" ? `<input type="checkbox" data-pick="${esc(d.id)}" aria-label="${esc(d.storeName)} 승인 선택">` : ""}</td>
-          <td class="num">${esc(d.visitDate)}</td><td>${kindChip(d)}</td><td>${esc(d.storeName)}</td><td>${esc(d.svName || memberName(d.svUid))}</td>
+          <td class="num">${esc(d.visitDate)}</td><td>${kindChip(d)}</td><td>${esc(d.storeName)}</td><td>${esc(d.svName || memberName(d.svUid))}${kindOf(d) === "store" && !isStoreSelf(d) ? ` <span class="muted small">${esc(ROLE_LABEL[d.authorRole] || "SV")}</span>` : ""}</td>
           <td class="r num">${isSubmitted(d) ? (sm.yn ? `${sm.y}/${sm.yn}` : "-") : `${sm.done}/${sm.total} 완료`}</td><td class="wrap">${esc(nTitles(d).join(", ") || "-")}</td>
           <td class="r num">${photoCount(d)}</td><td>${statusChip(d)}</td></tr>`;
       }).join("")}</tbody></table></div>` : `<div class="empty">이 조건에 맞는 점검이 없습니다.</div>`}
@@ -1722,7 +1746,7 @@ function exportExcel(rows, month) {
   for (const cl of Object.values(CHECKLISTS)) {
     const list = rows.filter(d => kindOf(d) === cl.key);
     if (!list.length) continue;
-    const head = ["날짜", "매장코드", "매장", "작성자", "상태", cl.yWord, cl.nWord, `${cl.rateWord}(%)`];
+    const head = ["날짜", "매장코드", "매장", "작성자", "작성 구분", "상태", cl.yWord, cl.nWord, `${cl.rateWord}(%)`];
     cl.items.forEach(c => isYN(c)
       ? head.push(`${c.no}.${shortOf(c)} 결과`, `${c.no}.${shortOf(c)} 비고`, `${c.no}.${shortOf(c)} 사진`)
       : head.push(`${c.no}.${shortOf(c)} 내용`, `${c.no}.${shortOf(c)} 사진`));
@@ -1730,7 +1754,7 @@ function exportExcel(rows, month) {
     head.push("제출 일시", "승인자", "승인 일시", "점검 문항 버전");
     const data = list.map(d => {
       const sm = sumOf(d);
-      const r = [d.visitDate, d.storeCode || d.storeId, d.storeName, d.svName || memberName(d.svUid), statusLabel(d), sm.y, sm.n, sm.rate ?? ""];
+      const r = [d.visitDate, d.storeCode || d.storeId, d.storeName, d.svName || memberName(d.svUid), ROLE_LABEL[d.authorRole] || (kindOf(d) === "store" ? "매장" : "SV"), statusLabel(d), sm.y, sm.n, sm.rate ?? ""];
       cl.items.forEach(c => {
         const it = d.items?.[c.no] || {};
         const photos = (it.photos || []).map(p => p.url).join("\n");
@@ -1748,7 +1772,7 @@ function exportExcel(rows, month) {
     const wb = XLSX.utils.book_new();
     sheets.forEach(sh => {
       const ws = XLSX.utils.aoa_to_sheet([sh.head, ...sh.data]);
-      ws["!cols"] = sh.head.map((h, i) => ({ wch: i < 4 ? 14 : /비고|내용|특이사항/.test(h) ? 30 : 10 }));
+      ws["!cols"] = sh.head.map((h, i) => ({ wch: i < 5 ? 14 : /비고|내용|특이사항/.test(h) ? 30 : 10 }));
       XLSX.utils.book_append_sheet(wb, ws, sh.name);
     });
     XLSX.writeFile(wb, name + ".xlsx");
@@ -1773,7 +1797,7 @@ async function viewAdminStats() {
   const ym = adminFilter.month;
   const cl = CHECKLISTS[statsFilter.kind];
   const isSelf = cl.key === "store";
-  const sub = (await monthRows(ym)).filter(d => isSubmitted(d) && kindOf(d) === cl.key);
+  const sub = (await monthRows(ym)).filter(d => isSubmitted(d) && (isSelf ? isStoreSelf(d) : kindOf(d) === cl.key));
   const activeStores = S.stores.filter(s => s.active !== false);
   const elapsed = daysElapsed(ym);
 
@@ -1809,7 +1833,7 @@ async function viewAdminStats() {
     <div class="row" style="margin-bottom:12px;max-width:520px">
       <div><label class="f" for="fm" style="margin-top:0">월</label><input class="in" id="fm" type="month" value="${ym}"></div>
       <div><label class="f" for="fk" style="margin-top:0">점검 종류</label><select class="in" id="fk">
-        <option value="store" ${isSelf ? "selected" : ""}>매장 자체 점검</option><option value="qsc" ${!isSelf ? "selected" : ""}>QSC 점검</option></select></div>
+        <option value="store" ${isSelf ? "selected" : ""}>매장용 점검 (매장 계정 제출)</option><option value="qsc" ${!isSelf ? "selected" : ""}>QSC 점검</option></select></div>
     </div>
     ${none.length ? `<div class="notice back">${mon}월에 제출된 ${esc(cl.label)}이 없는 매장이 ${none.length}곳입니다: ${esc(none.map(x => x.s.name).join(", "))}</div>`
       : (activeStores.length ? `<div class="notice info">${mon}월에 모든 매장의 ${esc(cl.label)}이 제출됐습니다.</div>` : "")}
@@ -1835,7 +1859,7 @@ async function viewAdminStats() {
         <thead><tr><th>문항</th><th class="r">${esc(cl.nWord)}</th><th style="width:40%"></th></tr></thead>
         <tbody>${byItem.map(x => `<tr><td>${x.c.no}. ${esc(shortOf(x.c))}</td><td class="r num">${x.n}건${sub.length ? ` (${x.pct}%)` : ""}</td>
           <td><div class="bar"><i style="width:${Math.round(x.n / maxN * 100)}%"></i></div></td></tr>`).join("")}</tbody></table></div>
-        <p class="muted small" style="margin-top:8px">제출된 ${esc(cl.label)} ${sub.length}건 기준입니다 (승인 대기 ${sub.filter(d => d.status === "submitted").length}건 포함).${isSelf ? " 기록 문항(미점검)은 제출 시 모두 채워져 있어 여기서는 Y/N 문항만 셉니다." : ""}</p>
+        <p class="muted small" style="margin-top:8px">제출된 ${esc(cl.label)} ${sub.length}건 기준입니다 (승인 대기 ${sub.filter(d => d.status === "submitted").length}건 포함).${isSelf ? " 매장 계정이 제출한 것만 셉니다(SV·마스터가 쓴 매장용 점검은 '점검 내역'에서 확인). 기록 문항은 제출 시 모두 채워져 있어 Y/N 문항만 셉니다." : ""}</p>
       </div>
     </div>
   `, { active: "#/admin/stats" });
@@ -1958,7 +1982,7 @@ function parseBulk(matrix) {
     rows = rows.slice(1);
   } else if (rows[0].length === 4) idx = { code: 0, name: 1, id: 2, pw: 3 };
   const at = (r, i) => (i >= 0 ? r[i] || "" : "");
-  return rows.map(r => ({ code: at(r, idx.code), name: at(r, idx.name), id: at(r, idx.id), pw: at(r, idx.pw) }));
+  return rows.map(r => ({ code: at(r, idx.code), name: at(r, idx.name), id: at(r, idx.id), pw: at(r, idx.pw), gen: genPassword() }));
 }
 function validateBulk(raw) {
   const byCode = new Map(S.stores.map(s => [String(s.code || s.id).toUpperCase(), s]));
@@ -1979,7 +2003,7 @@ function validateBulk(raw) {
     if (seen.has(email)) return { ...out, err: "같은 아이디가 표에 두 번 있습니다" };
     seen.add(email);
     if (r.pw && r.pw.length < 6) return { ...out, err: "비밀번호는 6자 이상" };
-    return { ...out, loginId: id, email, password: r.pw || genPassword(), autoPw: !r.pw, name: r.name || `${st.name} 매장`,
+    return { ...out, loginId: id, email, password: r.pw || r.gen || genPassword(), autoPw: !r.pw, name: r.name || `${st.name} 매장`,
       storeId: st.id, exists: existing.has(email) };
   });
 }
@@ -2001,7 +2025,7 @@ async function viewAdminUsers() {
           <tbody>${storeAccts.map(m => `<tr><td>${esc(m.storeName || storeById(m.storeId)?.name || "")}</td><td>${esc(m.name)}</td>
             <td class="num">${esc(loginIdOf(m))}</td>
             <td><label><input type="checkbox" data-on="${esc(m.uid)}" ${m.active !== false ? "checked" : ""}> 사용</label></td></tr>`).join("")}</tbody></table></div>`
-          : `<div class="empty">아직 매장 계정이 없습니다. '매장 계정 일괄 등록'으로 만드세요.</div>`}`;
+          : `<div class="empty">아직 매장 계정이 없습니다. '매장 계정 만들기' 또는 엑셀 일괄 등록으로 만드세요.</div>`}`;
   };
   const wireActive = root => $$("[data-on]", root).forEach(cb => cb.addEventListener("change", async () => {
     try { await api.updateMember(cb.dataset.on, { active: cb.checked }); toast(cb.checked ? "사용으로 바꿨습니다." : "사용 중지했습니다."); } catch (e) { toast(friendlyError(e)); }
@@ -2021,14 +2045,27 @@ async function viewAdminUsers() {
             <option value="sv" ${m.role !== "master" ? "selected" : ""}>SV</option><option value="master" ${m.role === "master" ? "selected" : ""}>마스터</option></select></td>
           <td><label><input type="checkbox" data-on="${esc(m.uid)}" ${m.active !== false ? "checked" : ""} ${self ? "disabled" : ""}> 사용</label></td></tr>`;
         }).join("")}</tbody></table></div>
-        <p class="muted small" style="margin-top:8px">마스터는 모든 점검을, SV는 본인 점검과 담당 매장의 점검을, 매장 계정은 자기 매장의 자체 점검만 봅니다. 퇴사·전보 시 '사용'을 끄면 바로 막힙니다.</p>
+        <p class="muted small" style="margin-top:8px">마스터는 모든 점검을, SV는 본인 점검과 담당 매장의 점검을, 매장 계정은 자기 매장에서 매장 계정이 쓴 매장용 점검만 봅니다. 퇴사·전보 시 '사용'을 끄면 바로 막힙니다.</p>
 
         <div id="sacc">${storeAcctsHtml()}</div>
-        <p class="muted small" style="margin-top:8px">매장 계정 비밀번호를 잊었을 때: Firebase 콘솔 → Authentication에서 그 아이디를 삭제한 뒤, 일괄 등록에서 같은 아이디로 다시 만드세요(이미 등록된 아이디도 다시 만들기 체크). 점검 기록은 매장 기준으로 저장돼 그대로 남습니다.</p>
+        <p class="muted small" style="margin-top:8px">매장 계정 비밀번호를 잊었을 때: Firebase 콘솔 → Authentication에서 그 아이디를 삭제한 뒤, '매장 계정 만들기'에서 같은 아이디로 다시 만드세요('다시 만들기' 체크). 점검 기록은 매장 기준으로 저장돼 그대로 남습니다.</p>
       </div>
       <div>
         <div class="panel">
-          <h2 style="margin-top:0">매장 계정 일괄 등록</h2>
+          <h2 style="margin-top:0">매장 계정 만들기</h2>
+          <p class="muted small" style="margin-top:0">한 매장씩 바로 만들 때 씁니다. 여러 매장을 한 번에 만들 때는 아래 엑셀 일괄 등록이 편합니다.</p>
+          <label class="f" for="sa_st">매장</label>
+          <select class="in" id="sa_st"><option value="">매장을 고르세요</option>${byName(activeStores).map(s => `<option value="${esc(s.id)}">${esc(s.name)}${s.code ? ` (${esc(s.code)})` : ""}</option>`).join("")}</select>
+          <label class="f" for="sa_nm">이름</label><input class="in" id="sa_nm" autocomplete="off" placeholder="예: 스타필드수원 점장">
+          <label class="f" for="sa_id">아이디 (로그인용)</label><input class="in" id="sa_id" autocomplete="off" autocapitalize="off" placeholder="비우면 매장코드 (예: bsc0007)">
+          <label class="f" for="sa_pw">임시 비밀번호 (6자 이상)</label><input class="in" id="sa_pw" type="text" autocomplete="off" placeholder="비우면 8자리 자동 생성">
+          <label class="small" style="display:flex;gap:6px;align-items:center;margin-top:8px"><input type="checkbox" id="sa_x"> 이미 등록된 아이디도 다시 만들기 (콘솔에서 삭제한 경우)</label>
+          <div class="err" id="sa_e"></div>
+          <button class="btn primary block" id="sa_go">매장 계정 만들기</button>
+          <div id="sa_res"></div>
+        </div>
+        <div class="panel" style="margin-top:12px">
+          <h2 style="margin-top:0">매장 계정 일괄 등록 (엑셀)</h2>
           <ol class="steps small">
             <li><b>양식 내려받기</b>: 등록된 매장 ${activeStores.length}곳이 미리 채워진 엑셀입니다.</li>
             <li>이름·아이디·임시 비밀번호를 고칩니다. <span class="muted">아이디를 비우면 매장코드(예: bsc0007), 비밀번호를 비우면 8자리로 자동 생성합니다. 한 매장에 계정을 여러 개 만들려면 줄을 복사해 아이디만 다르게 쓰세요.</span></li>
@@ -2071,6 +2108,47 @@ async function viewAdminUsers() {
     try { await api.updateMember(sel.dataset.role, { role: sel.value }); toast("역할을 바꿨습니다."); } catch (e) { toast(friendlyError(e)); }
   }));
   wireActive(document);
+
+  /* --- 매장 계정 1개씩 만들기 --- */
+  const acctErrMsg = e => { const c = e?.code; return c === "auth/email-already-in-use" ? "이미 있는 아이디입니다(콘솔에 계정이 남아 있음). 다른 아이디를 쓰거나 콘솔에서 지운 뒤 다시 만드세요." : c === "auth/too-many-requests" ? "요청 한도를 넘었습니다. 1시간 뒤 다시 시도하세요." : friendlyError(e); };
+  const deactivateOld = async (email, uid) => {
+    // 같은 아이디의 예전 계정 기록(콘솔에서 삭제한 계정)은 사용 중지
+    for (const m of S.members.filter(m => (m.email || "").toLowerCase() === email && m.uid !== uid && m.active !== false)) {
+      try { await api.updateMember(m.uid, { active: false }); } catch (_) {}
+    }
+  };
+  $("#sa_st").addEventListener("change", () => {
+    const st = storeById($("#sa_st").value);
+    $("#sa_nm").placeholder = st ? `${st.name} 점장` : "예: 스타필드수원 점장";
+    $("#sa_id").placeholder = st ? `비우면 ${String(st.code || st.id).toLowerCase()}` : "비우면 매장코드 (예: bsc0007)";
+  });
+  $("#sa_go").addEventListener("click", async () => {
+    $("#sa_e").textContent = ""; $("#sa_res").innerHTML = "";
+    const st = storeById($("#sa_st").value);
+    if (!st) return $("#sa_e").textContent = "매장을 골라 주세요.";
+    const [r] = validateBulk([{ code: String(st.code || st.id), name: $("#sa_nm").value.trim() || `${st.name} 점장`,
+      id: $("#sa_id").value.trim(), pw: $("#sa_pw").value.trim(), gen: genPassword() }]);
+    if (r.err) return $("#sa_e").textContent = r.err;
+    if (r.exists && !$("#sa_x").checked) return $("#sa_e").textContent = `이미 등록된 아이디입니다 (${r.loginId}). 비밀번호를 잊은 경우 Firebase 콘솔에서 이 아이디를 삭제한 뒤 '다시 만들기'를 체크하세요.`;
+    $("#sa_go").disabled = true; $("#sa_go").textContent = "만드는 중…";
+    let res = null;
+    await api.createMembersBulk([r], async (_, out) => { res = out; if (out.ok) await deactivateOld(r.email, out.uid); });
+    $("#sa_go").disabled = false; $("#sa_go").textContent = "매장 계정 만들기";
+    if (!res?.ok) return $("#sa_e").textContent = acctErrMsg(res?.error);
+    await loadMembers();
+    $("#sacc").innerHTML = storeAcctsHtml(); wireActive($("#sacc"));
+    ["#sa_nm", "#sa_id", "#sa_pw"].forEach(k => { $(k).value = ""; }); $("#sa_x").checked = false;
+    const msg = `[벤슨 매장 점검] ${r.storeName}\n아이디: ${r.loginId}\n임시 비밀번호: ${r.password}\n첫 로그인 후 '계정 > 비밀번호 변경'으로 바꿔 주세요.`;
+    $("#sa_res").innerHTML = `<div class="notice done" style="margin-top:12px"><b>${esc(r.storeName)} 계정을 만들었습니다.</b><br>
+        이름 ${esc(r.name)} · 아이디 <b class="num">${esc(r.loginId)}</b> · 임시 비밀번호 <b class="num">${esc(r.password)}</b></div>
+      <button class="btn block" id="sa_cp" style="margin-top:8px">전달용 문구 복사</button>
+      <p class="muted small" style="margin-top:6px">이 화면을 벗어나면 비밀번호를 다시 볼 수 없습니다. 매장에 전달한 뒤 지워 주세요.</p>`;
+    $("#sa_cp").addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(msg); toast("복사했습니다. 카톡·문자에 붙여넣으세요."); }
+      catch (_) { toast("복사가 막혀 있습니다. 화면의 아이디·비밀번호를 직접 전달해 주세요.", 3500); }
+    });
+    toast("매장 계정을 만들었습니다.");
+  });
 
   /* --- 매장 계정 일괄 등록 --- */
   $("#bx").addEventListener("change", e => { bulk.includeExisting = e.target.checked; if (bulk.rows) renderPreview(); });
@@ -2140,10 +2218,7 @@ async function viewAdminUsers() {
         i++; $("#bgo").textContent = `만드는 중… ${i}/${targets.length}`;
         if (out.ok) {
           bulk.results[r.email] = { ok: true };
-          // 같은 아이디의 예전 계정 기록(콘솔에서 삭제한 계정)은 사용 중지
-          for (const m of S.members.filter(m => (m.email || "").toLowerCase() === r.email && m.uid !== out.uid && m.active !== false)) {
-            try { await api.updateMember(m.uid, { active: false }); } catch (_) {}
-          }
+          await deactivateOld(r.email, out.uid);
         } else {
           const c = out.error?.code;
           bulk.results[r.email] = { ok: false, msg: c === "auth/email-already-in-use" ? "이미 있는 아이디(콘솔에 계정 있음)" : c === "auth/too-many-requests" ? "요청 한도 초과, 1시간 뒤 다시" : friendlyError(out.error) };
