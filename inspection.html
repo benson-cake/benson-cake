@@ -101,6 +101,8 @@ textarea.in{min-height:72px;resize:vertical;line-height:1.5}
 .chip.kind{background:#E8EEF9;color:#1E3A72}
 .chip.kind.store{background:#EFE8F8;color:#55307F}
 .picks{display:grid;gap:8px;margin-top:6px}
+.ins-meta-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ins-meta-row .btn.sm{min-height:30px;padding:0 10px}
 .seg{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
 .seg button{min-height:36px;padding:0 14px;border-radius:999px;border:1.5px solid var(--line);background:#fff;font:inherit;font-size:14px;font-weight:600;color:var(--ink-2);cursor:pointer}
 .seg button.on{background:var(--ink);border-color:var(--ink);color:#fff}
@@ -446,6 +448,28 @@ function statusChip(doc) {
 }
 const statusLabel = d => d.status === "approved" ? "승인 완료" : d.status === "submitted" ? "승인 대기" : (d.returned ? "수정 요청" : "작성 중");
 const isSubmitted = d => d.status === "submitted" || d.status === "approved";
+/* 시각 값(Firestore Timestamp·숫자·Date) → 밀리초 */
+const tsMs = t => t?.toMillis ? t.toMillis() : t?.toDate ? t.toDate().getTime() : t instanceof Date ? t.getTime() : typeof t === "number" ? t : t?.seconds ? t.seconds * 1000 : 0;
+/* 제출일: 마스터가 고친 날짜(submitDate)가 있으면 그 날짜, 없으면 제출 시각의 날짜 */
+const subDateOf = d => d.submitDate || (d.submittedAt ? ymd(new Date(tsMs(d.submittedAt))) : "");
+/* 목록·현황의 날짜 기준 (기본: 제출일) */
+const dateBasis = { by: "submit" };
+const basisDate = d => dateBasis.by === "submit" ? (subDateOf(d) || d.visitDate || "") : (d.visitDate || "");
+const byBasisDesc = (a, b) => basisDate(b).localeCompare(basisDate(a)) || tsMs(b.submittedAt) - tsMs(a.submittedAt);
+const basisSel = () => `<div><label class="f" for="fbz" style="margin-top:0">날짜 기준</label><select class="in" id="fbz">
+  <option value="submit" ${dateBasis.by === "submit" ? "selected" : ""}>제출일 기준</option><option value="visit" ${dateBasis.by === "visit" ? "selected" : ""}>점검일 기준</option></select></div>`;
+const wireBasis = rerender => $("#fbz")?.addEventListener("change", e => { dateBasis.by = e.target.value; rerender(); });
+/* 날짜 칸: 기준 날짜를 크게, 다른 날짜가 다르면 작게 */
+const dateCell = d => {
+  const main = basisDate(d), sd = subDateOf(d);
+  const other = dateBasis.by === "submit" ? (d.visitDate && d.visitDate !== main ? `점검 ${d.visitDate.slice(5)}` : "") : (sd && sd !== main ? `제출 ${sd.slice(5)}` : "");
+  return `${esc(main)}${other ? `<div class="muted small">${esc(other)}</div>` : ""}`;
+};
+/* 승인: 매장 계정이 쓴 매장용 점검은 그 매장의 담당 SV 또는 마스터, 나머지는 마스터 */
+const canApprove = d => isMaster() || (isSV() && isStoreSelf(d) && d.storeSvUid === S.me.uid);
+const approverRole = d => d.approvedByRole || S.members.find(m => m.uid === d.approvedByUid)?.role || "";
+const approvePatch = d => ({ status: "approved", approvedBy: S.me.name || "", approvedByUid: S.me.uid, approvedByRole: myRole(), history: withHist(d, "승인") });
+const fmtDur = ms => ms == null ? "-" : ms < 36e5 ? `${Math.max(1, Math.round(ms / 6e4))}분` : ms < 48 * 36e5 ? `${Math.round(ms / 36e5)}시간` : `${(ms / 864e5).toFixed(1)}일`;
 const withHist = (d, action, note = "") => [...(d.history || []), { at: Date.now(), by: S.me?.name || "", action, ...(note ? { note } : {}) }];
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 function genPassword(len = 8) {
@@ -655,7 +679,10 @@ async function createFirebaseApi() {
     listMyInspections: uid => run(FS.where("svUid", "==", uid)),
     listMyDrafts: uid => run(FS.where("svUid", "==", uid), FS.where("status", "==", "draft")),
     listStoreMonth: (storeId, ym) => run(FS.where("storeId", "==", storeId), FS.where("kind", "==", "store"), FS.where("authorRole", "==", "store"), FS.where("visitMonth", "==", ym)),
-    listSvMonth: (uid, ym) => run(FS.where("storeSvUid", "==", uid), FS.where("visitMonth", "==", ym)),
+    listSvMonth: (uid, ym, basis = "visit") => run(FS.where("storeSvUid", "==", uid), FS.where(basis === "submit" ? "submitMonth" : "visitMonth", "==", ym)),
+    listSvPending: uid => run(FS.where("storeSvUid", "==", uid), FS.where("status", "==", "submitted")),
+    listSubmitMonth: ym => run(FS.where("submitMonth", "==", ym)),
+    listPending: () => run(FS.where("status", "==", "submitted")),
     listByStore: storeId => run(FS.where("storeId", "==", storeId)),
     listAllInspections: () => run(),
     listInspections: (from, to) => run(FS.where("visitDate", ">=", from), FS.where("visitDate", "<=", to), FS.orderBy("visitDate", "desc")),
@@ -713,11 +740,11 @@ function createDemoApi() {
       kind, storeId: code, storeCode: code, storeName: st.name, storeSvUid: st.svUid, svUid: author, svName: db.members[author].name,
       authorRole: db.members[author].role, authorPosition: db.members[author].position || "", visitDate: ymd(d), visitMonth: ymd(d).slice(0, 7), status, returned: false,
       special: { note: "", photos: [] }, checklistVersion: cl.version, createdAt: d.getTime(), updatedAt: d.getTime(),
-      ...(status !== "draft" ? { submittedAt: d.getTime(), history: [{ at: d.getTime(), by: db.members[author].name, action: "제출" }] } : { history: [] })
+      ...(status !== "draft" ? { submittedAt: d.getTime(), submitDate: ymd(d), submitMonth: ymd(d).slice(0, 7), history: [{ at: d.getTime(), by: db.members[author].name, action: "제출" }] } : { history: [] })
     };
   };
   const approve = doc => {
-    doc.approvedBy = "마스터 예시"; doc.approvedByUid = "demo-master"; doc.approvedAt = doc.submittedAt + 3600e3;
+    doc.approvedBy = "마스터 예시"; doc.approvedByUid = "demo-master"; doc.approvedByRole = "master"; doc.approvedAt = doc.submittedAt + 3600e3;
     doc.history.push({ at: doc.approvedAt, by: "마스터 예시", action: "승인" });
   };
   // QSC (SV 방문 점검)
@@ -790,7 +817,10 @@ function createDemoApi() {
     listMyInspections: uid => where(d => d.svUid === uid),
     listMyDrafts: uid => where(d => d.svUid === uid && d.status === "draft"),
     listStoreMonth: (storeId, ym) => where(d => d.storeId === storeId && d.kind === "store" && d.authorRole === "store" && d.visitMonth === ym),
-    listSvMonth: (uid, ym) => where(d => d.storeSvUid === uid && d.visitMonth === ym),
+    listSvMonth: (uid, ym, basis = "visit") => where(d => d.storeSvUid === uid && (basis === "submit" ? d.submitMonth : d.visitMonth) === ym),
+    listSvPending: uid => where(d => d.storeSvUid === uid && d.status === "submitted"),
+    listSubmitMonth: ym => where(d => d.submitMonth === ym),
+    listPending: () => where(d => d.status === "submitted"),
     listByStore: storeId => where(d => d.storeId === storeId),
     listAllInspections: () => where(() => true),
     listInspections: (from, to) => where(d => d.visitDate >= from && d.visitDate <= to).then(r => r.sort((a, b) => b.visitDate.localeCompare(a.visitDate))),
@@ -825,17 +855,21 @@ let leaveGuard = null;   // 점검 작성 중 이탈 방지 { nav, unload, flush
 /* 한 달치 점검 목록은 1분 동안 재사용해 Firestore 읽기 횟수를 아낍니다(무료 한도 관리). 저장하면 바로 비웁니다. */
 let monthCache = {};
 async function monthRows(ym, force = false) {
-  const c = monthCache[ym];
+  const key = `${dateBasis.by}:${ym}`;
+  const c = monthCache[key];
   if (!force && c && Date.now() - c.at < 60000) return c.rows;
-  const { from, to } = monthRange(ym);
-  const rows = await api.listInspections(from, to);
-  monthCache[ym] = { at: Date.now(), rows };
+  let rows;
+  if (dateBasis.by === "submit") rows = await api.listSubmitMonth(ym);
+  else { const { from, to } = monthRange(ym); rows = await api.listInspections(from, to); }
+  rows.sort(byBasisDesc);
+  monthCache[key] = { at: Date.now(), rows };
   return rows;
 }
 
 function tabsFor() {
   if (!S.me) return [];
-  if (isMaster()) return [["#/admin", "점검 내역"], ["#/admin/stats", "현황"], ["#/", "내 점검"], ["#/admin/stores", "매장 관리"], ["#/admin/users", "사용자 관리"]];
+  if (isMaster()) return [["#/admin", "점검 내역"], ["#/admin/stats", "매장 자체점검 현황"], ["#/admin/stats/sv", "SV 점검 현황"], ["#/admin/approvals", "승인 현황"],
+    ["#/", "내 점검"], ["#/admin/stores", "매장 관리"], ["#/admin/users", "사용자 관리"]];
   if (isSV()) return [["#/", "내 점검"], ["#/sv", "담당 매장"]];
   return [];
 }
@@ -939,7 +973,8 @@ async function router() {
     if (parts[0] === "sv" && isSV()) return await viewSvStores();
     if (parts[0] === "admin" && isMaster()) {
       if (!parts[1]) return await viewAdminList();
-      if (parts[1] === "stats") return await viewAdminStats();
+      if (parts[1] === "stats") return await viewAdminStats(parts[2] === "sv" ? "qsc" : "store");
+      if (parts[1] === "approvals") return await viewAdminApprovals();
       if (parts[1] === "stores") return await viewAdminStores();
       if (parts[1] === "users") return await viewAdminUsers();
     }
@@ -1006,6 +1041,7 @@ async function backfill(rows) {
     if (!d.kind) patch.kind = "qsc";
     if (!d.visitMonth && d.visitDate) patch.visitMonth = d.visitDate.slice(0, 7);
     if (d.storeSvUid === undefined) patch.storeSvUid = storeById(d.storeId)?.svUid || "";
+    if (!d.submitMonth && (d.submittedAt || isSubmitted(d))) { const sd = subDateOf(d) || d.visitDate; if (sd) { patch.submitDate = sd; patch.submitMonth = sd.slice(0, 7); } }
     if (Object.keys(patch).length) {
       try { await api.updateInspection(d.id, patch); Object.assign(d, patch); k++; } catch (e) { console.warn("backfill", d.id, e); }
     }
@@ -1014,13 +1050,14 @@ async function backfill(rows) {
   return k;
 }
 async function backfillAllOnce() {
-  const KEY = "benson_inspect_v3_backfill";
-  try { if (localStorage.getItem(KEY)) return; } catch (_) {}
+  const KEY = "benson_inspect_v4_backfill";   // v4: 제출일(submitMonth) 추가
+  try { if (localStorage.getItem(KEY)) return 0; } catch (_) {}
   try {
     await loadStores();
-    await backfill(await api.listAllInspections());
+    const k = await backfill(await api.listAllInspections());
     try { localStorage.setItem(KEY, String(Date.now())); } catch (_) {}
-  } catch (e) { console.warn("backfill skipped", e); }
+    return k;
+  } catch (e) { console.warn("backfill skipped", e); return 0; }
 }
 
 /* =====================================================================
@@ -1118,18 +1155,22 @@ function inspRow(d, { showStore = true, showAuthor = false } = {}) {
 
 async function viewHome() {
   loading("#/");
-  const list = (await api.listMyInspections(S.me.uid)).sort(byDateDesc);
+  const [list0, svPend] = await Promise.all([api.listMyInspections(S.me.uid), isSV() ? api.listSvPending(S.me.uid) : Promise.resolve([])]);
+  const list = list0.sort(byDateDesc);
+  const toReview = svPend.filter(isStoreSelf);
   const drafts = list.filter(d => !isSubmitted(d));
   const done = list.filter(isSubmitted);
   const monthDone = done.filter(d => d.visitDate?.startsWith(thisMonth())).length;
   shell(`
     <h1>내 점검</h1>
+    ${toReview.length ? `<a class="notice wait" href="#/sv" id="goReview" style="display:block;text-decoration:none;color:inherit"><b>담당 매장 승인 대기 ${toReview.length}건</b> · 점장·매니저가 제출한 매장 자체점검입니다. 눌러서 승인하기</a>` : ""}
     <a class="btn primary block big" href="#/new">새 점검 시작</a>
     <p class="muted small" style="margin-top:10px">이번 달 제출 <b class="num">${monthDone}</b>건${isSV() ? ` · 점장·매니저가 쓴 매장용 점검은 <a href="#/sv">담당 매장</a>에서 볼 수 있습니다.` : ""}</p>
     ${drafts.length ? `<h2>작성 중</h2><div class="list">${drafts.map(d => inspRow(d)).join("")}</div>` : ""}
     <h2>제출한 점검</h2>
     ${done.length ? `<div class="list">${done.slice(0, 60).map(d => inspRow(d)).join("")}</div>` : `<div class="empty">아직 제출한 점검이 없습니다. 매장에 도착하면 '새 점검 시작'을 누르세요.</div>`}
   `, { active: "#/", narrow: true });
+  $("#goReview")?.addEventListener("click", () => { svFilter.status = "submitted"; });
 }
 
 /* 새 점검 (SV·마스터): SV용(QSC) 또는 매장용 점검표를 골라 시작 */
@@ -1299,50 +1340,96 @@ async function viewStoreNew() {
 /* =====================================================================
    9. SV: 담당 매장 현황 (담당 매장의 매장용 점검 + QSC 전체)
    ===================================================================== */
-const svFilter = { month: thisMonth(), kind: "", store: "" };
+const svFilter = { month: thisMonth(), kind: "", store: "", status: "" };
 async function viewSvStores() {
   loading("#/sv", false);
-  await loadStores();
+  await Promise.all([loadStores(), loadMembers()]);
   const ym = svFilter.month;
   const mine = byName(S.stores.filter(s => s.active !== false && s.svUid === S.me.uid));
-  const rows = (await api.listSvMonth(S.me.uid, ym)).sort(byDateDesc);
+  const [monthList, pend] = await Promise.all([api.listSvMonth(S.me.uid, ym, dateBasis.by), api.listSvPending(S.me.uid)]);
+  const rows = monthList.sort(byBasisDesc);
+  const toReview = pend.filter(canApprove).sort((a, b) => tsMs(a.submittedAt) - tsMs(b.submittedAt));
   const sub = rows.filter(isSubmitted);
   const elapsed = daysElapsed(ym);
   const per = mine.map(s => {
     const self = sub.filter(d => d.storeId === s.id && isStoreSelf(d));
     const qsc = sub.filter(d => d.storeId === s.id && kindOf(d) === "qsc");
-    const latest = sub.filter(d => d.storeId === s.id).sort(byDateDesc)[0];
-    return { s, days: new Set(self.map(d => d.visitDate)).size, lastSelf: self.sort(byDateDesc)[0], qsc: qsc.length, qscRate: avgRate(qsc), latestN: latest ? nTitles(latest) : [], latest };
+    const latest = sub.filter(d => d.storeId === s.id).sort(byBasisDesc)[0];
+    return { s, days: new Set(self.map(d => d.visitDate)).size, lastSelf: self.sort(byBasisDesc)[0], qsc: qsc.length, qscRate: avgRate(qsc),
+      wait: toReview.filter(d => d.storeId === s.id).length, latestN: latest ? nTitles(latest) : [], latest };
   });
-  const shown = rows.filter(d => (!svFilter.kind || kindOf(d) === svFilter.kind) && (!svFilter.store || d.storeId === svFilter.store));
+  // '승인 대기'를 고르면 달과 상관없이 지금 승인 대기인 점검을 모두 보여 줍니다.
+  const base = svFilter.status === "submitted" ? toReview : rows;
+  const shown = base.filter(d => (!svFilter.kind || kindOf(d) === svFilter.kind) && (!svFilter.store || d.storeId === svFilter.store) &&
+    (!svFilter.status || svFilter.status === "submitted" || (svFilter.status === "draft" ? !isSubmitted(d) : d.status === svFilter.status)));
+  const pickable = shown.filter(d => d.status === "submitted" && canApprove(d));
   shell(`
     <h1>담당 매장</h1>
     ${!mine.length ? `<div class="notice back">연결된 담당 매장이 없습니다. 마스터에게 '매장 관리'에서 담당 SV 지정을 요청하세요.</div>` : ""}
+    ${toReview.length ? `<button type="button" class="notice wait" id="waitOnly" style="display:block;width:100%;text-align:left;border:0;cursor:pointer;font:inherit">
+      <b>승인 대기 ${toReview.length}건</b> · 점장·매니저가 제출한 매장 자체점검은 담당 SV가 승인합니다. ${svFilter.status === "submitted" ? "(전체 보기로 돌아가려면 누르세요)" : "(눌러서 승인 대기만 보기)"}</button>` : ""}
     <div class="panel" style="margin-bottom:12px"><div class="row">
-      <div><label class="f" for="fm" style="margin-top:0">월</label><input class="in" id="fm" type="month" value="${ym}" max="${thisMonth()}"></div>
+      <div><label class="f" for="fm" style="margin-top:0">월</label><input class="in" id="fm" type="month" value="${ym}" max="${thisMonth()}" ${svFilter.status === "submitted" ? "disabled" : ""}></div>
+      ${basisSel()}
       <div><label class="f" for="fk" style="margin-top:0">점검 종류</label><select class="in" id="fk">
         <option value="">전체</option><option value="store" ${svFilter.kind === "store" ? "selected" : ""}>매장용 점검</option><option value="qsc" ${svFilter.kind === "qsc" ? "selected" : ""}>QSC 점검</option></select></div>
       <div><label class="f" for="fs" style="margin-top:0">매장</label><select class="in" id="fs"><option value="">담당 매장 전체</option>${mine.map(s => `<option value="${esc(s.id)}" ${s.id === svFilter.store ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select></div>
+      <div><label class="f" for="ft" style="margin-top:0">상태</label><select class="in" id="ft">
+        <option value="">전체</option>
+        <option value="submitted" ${svFilter.status === "submitted" ? "selected" : ""}>승인 대기 (전체 기간)</option>
+        <option value="approved" ${svFilter.status === "approved" ? "selected" : ""}>승인 완료</option>
+        <option value="draft" ${svFilter.status === "draft" ? "selected" : ""}>수정 요청·작성 중</option></select></div>
     </div></div>
-    ${mine.length ? `<h2>매장별 요약 (${monNum(ym)}월, 제출 기준)</h2><div class="tbl-wrap"><table>
-      <thead><tr><th>매장</th><th class="r">매장 제출</th><th>최근 매장 제출</th><th class="r">QSC</th><th class="r">QSC 준수율</th><th>최근 미흡·개선 필요</th></tr></thead>
+    ${mine.length && svFilter.status !== "submitted" ? `<h2>매장별 요약 (${monNum(ym)}월, ${dateBasis.by === "submit" ? "제출일" : "점검일"} 기준)</h2><div class="tbl-wrap"><table>
+      <thead><tr><th>매장</th><th class="r">매장 제출</th><th>최근 매장 제출</th><th class="r">승인 대기</th><th class="r">QSC</th><th class="r">QSC 준수율</th><th>최근 미흡·개선 필요</th></tr></thead>
       <tbody>${per.map(x => `<tr ${x.latest ? `class="click" data-open="${esc(x.latest.id)}" tabindex="0"` : ""}>
-        <td>${esc(x.s.name)}</td><td class="r num">${x.days}/${elapsed}일</td><td class="num">${x.lastSelf ? esc(x.lastSelf.visitDate) : "-"}</td>
-        <td class="r num">${x.qsc}</td><td class="r num">${x.qscRate === null ? "-" : x.qscRate + "%"}</td>
+        <td>${esc(x.s.name)}</td><td class="r num">${x.days}/${elapsed}일</td><td class="num">${x.lastSelf ? esc(basisDate(x.lastSelf)) : "-"}</td>
+        <td class="r num">${x.wait || "-"}</td><td class="r num">${x.qsc}</td><td class="r num">${x.qscRate === null ? "-" : x.qscRate + "%"}</td>
         <td class="wrap">${esc(x.latestN.join(", ") || (x.latest ? "없음" : "-"))}</td></tr>`).join("")}</tbody></table></div>` : ""}
     <h2>점검 목록</h2>
+    ${pickable.length ? `<div class="bulk"><button class="btn primary sm" id="bulk" disabled>선택한 점검 승인</button><span class="muted small">승인 대기 점검은 왼쪽 칸을 체크해 한 번에 승인할 수 있습니다.</span></div>` : ""}
     ${shown.length ? `<div class="tbl-wrap"><table>
-      <thead><tr><th>날짜</th><th>종류</th><th>매장</th><th>작성자</th><th class="r">결과</th><th>미흡·개선 필요</th><th class="r">사진</th><th>상태</th></tr></thead>
+      <thead><tr><th>${pickable.length ? `<input type="checkbox" id="pickAll" aria-label="승인 대기 전체 선택">` : ""}</th><th>${dateBasis.by === "submit" ? "제출일" : "점검일"}</th><th>종류</th><th>매장</th><th>작성자</th><th class="r">결과</th><th>미흡·개선 필요</th><th class="r">사진</th><th>상태</th></tr></thead>
       <tbody>${shown.map(d => { const sm = sumOf(d); return `<tr class="click" data-open="${esc(d.id)}" tabindex="0">
-        <td class="num">${esc(d.visitDate)}</td><td>${kindChip(d)}</td><td>${esc(d.storeName)}</td><td>${esc(d.svName || "")}</td>
+        <td>${d.status === "submitted" && canApprove(d) ? `<input type="checkbox" data-pick="${esc(d.id)}" aria-label="${esc(d.storeName)} 승인 선택">` : ""}</td>
+        <td class="num">${dateCell(d)}</td><td>${kindChip(d)}</td><td>${esc(d.storeName)}</td><td>${esc(d.svName || "")}${d.authorPosition ? ` <span class="muted small">${esc(d.authorPosition)}</span>` : ""}</td>
         <td class="r num">${isSubmitted(d) ? (sm.yn ? `${sm.y}/${sm.yn}` : "-") : `${sm.done}/${sm.total} 완료`}</td><td class="wrap">${esc(nTitles(d).join(", ") || "-")}</td>
-        <td class="r num">${photoCount(d)}</td><td>${statusChip(d)}</td></tr>`; }).join("")}</tbody></table></div>`
+        <td class="r num">${photoCount(d)}</td><td>${statusChip(d)}${approvedByLine(d)}</td></tr>`; }).join("")}</tbody></table></div>`
       : `<div class="empty">이 조건에 맞는 점검이 없습니다.</div>`}
   `, { active: "#/sv" });
   $("#fm").addEventListener("change", e => { svFilter.month = e.target.value || thisMonth(); viewSvStores(); });
   $("#fk").addEventListener("change", e => { svFilter.kind = e.target.value; viewSvStores(); });
   $("#fs").addEventListener("change", e => { svFilter.store = e.target.value; viewSvStores(); });
+  $("#ft").addEventListener("change", e => { svFilter.status = e.target.value; viewSvStores(); });
+  $("#waitOnly")?.addEventListener("click", () => { svFilter.status = svFilter.status === "submitted" ? "" : "submitted"; viewSvStores(); });
+  wireBasis(viewSvStores);
   wireRowOpen();
+  wireBulkApprove(shown, viewSvStores);
+}
+/* 승인자 표시 (상태 칸 아래 작게) */
+const approvedByLine = d => d.status === "approved" && d.approvedBy
+  ? `<div class="muted small">${esc(d.approvedBy)}${approverRole(d) === "sv" ? " (SV)" : approverRole(d) === "master" ? " (마스터)" : ""}</div>` : "";
+/* 목록에서 체크한 승인 대기 점검을 한 번에 승인 (마스터·담당 SV 공통) */
+function wireBulkApprove(rows, rerender) {
+  const picks = () => $$("[data-pick]").filter(c => c.checked).map(c => c.dataset.pick);
+  const sync = () => { const n = picks().length; const b = $("#bulk"); if (b) { b.disabled = !n; b.textContent = n ? `선택한 ${n}건 승인` : "선택한 점검 승인"; } };
+  $$("[data-pick]").forEach(c => c.addEventListener("change", sync));
+  $("#pickAll")?.addEventListener("change", e => { $$("[data-pick]").forEach(c => { c.checked = e.target.checked; }); sync(); });
+  $("#bulk")?.addEventListener("click", async () => {
+    const ids = picks();
+    if (!ids.length) return;
+    if (!await modal({ title: `${ids.length}건을 승인할까요?`, body: "승인한 점검은 작성자가 고칠 수 없습니다. 필요하면 상세 화면에서 승인을 취소할 수 있습니다.", ok: "승인" })) return;
+    $("#bulk").disabled = true;
+    let ok = 0;
+    for (const id of ids) {
+      const d = rows.find(x => x.id === id);
+      if (!d || !canApprove(d)) continue;
+      try { await api.updateInspection(id, approvePatch(d), { stamp: "approvedAt" }); ok++; } catch (e) { console.error(e); }
+    }
+    monthCache = {};
+    toast(ok === ids.length ? `${ok}건을 승인했습니다.` : `${ok}건 승인, ${ids.length - ok}건은 실패했습니다. 다시 시도해 주세요.`, 3500);
+    rerender();
+  });
 }
 function wireRowOpen() {
   $$("[data-open]").forEach(tr => {
@@ -1464,6 +1551,10 @@ async function viewInspection(id, editReq = false) {
     if (doc.status === "submitted") acts = `<button class="btn primary" id="approve">승인</button><button class="btn" id="ret">반려 (수정 요청)</button><button class="btn" id="medit">직접 수정</button><button class="btn danger" id="delm">삭제</button>`;
     else if (doc.status === "approved") acts = `<button class="btn" id="unapprove">승인 취소</button><button class="btn" id="medit">직접 수정</button><button class="btn danger" id="delm">삭제</button>`;
     else acts = `<button class="btn danger" id="delm">삭제</button>`;
+  } else if (!canEdit && !own && canApprove(doc)) {
+    // 담당 SV: 자기 담당 매장의 매장 자체점검 승인·반려 (자기가 한 승인만 취소)
+    if (doc.status === "submitted") acts = `<button class="btn primary" id="approve">승인</button><button class="btn" id="ret">반려 (수정 요청)</button>`;
+    else if (doc.status === "approved" && doc.approvedByUid === S.me.uid) acts = `<button class="btn" id="unapprove">승인 취소</button>`;
   } else if (!canEdit && own && doc.status === "submitted") {
     acts = `<button class="btn" id="svEdit">수정하기</button><button class="btn danger" id="svDel">삭제</button>`;
   }
@@ -1471,11 +1562,16 @@ async function viewInspection(id, editReq = false) {
   const ownDraftActs = ownDraft ? `<button class="btn sm ghost danger" id="deld" style="margin-left:auto">이 점검 삭제</button>` : "";
   const stateNotice =
     masterEdit ? `<div class="notice wait"><b>마스터 수정 중</b>: 고친 내용은 바로 저장되고 처리 이력에 남습니다. 다 고쳤으면 아래 '수정 완료'를 누르세요.</div>`
-    : doc.status === "approved" ? `<div class="notice done"><b>승인 완료</b>${doc.approvedBy ? `: ${esc(doc.approvedBy)}` : ""}${doc.approvedAt ? `, ${fmtTs(doc.approvedAt)}` : ""}${!isMaster() && own ? "<br>승인된 점검은 마스터만 고칠 수 있습니다. 수정이 필요하면 본사에 요청하세요." : ""}</div>`
-    : doc.status === "submitted" ? `<div class="notice wait"><b>마스터 승인 대기 중</b>${own && !isMaster() ? "<br>승인 전까지는 '수정하기'로 고치거나 삭제할 수 있습니다." : ""}</div>` : "";
+    : doc.status === "approved" ? `<div class="notice done"><b>승인 완료</b>${doc.approvedBy ? `: ${esc(doc.approvedBy)}${approverRole(doc) === "sv" ? " (담당 SV)" : approverRole(doc) === "master" ? " (마스터)" : ""}` : ""}${doc.approvedAt ? `, ${fmtTs(doc.approvedAt)}` : ""}${!isMaster() && own ? "<br>승인된 점검은 마스터만 고칠 수 있습니다. 수정이 필요하면 본사에 요청하세요." : ""}</div>`
+    : doc.status === "submitted" ? `<div class="notice wait"><b>${isStoreSelf(doc) ? "담당 SV 또는 마스터" : "마스터"} 승인 대기 중</b>${own && !isMaster() ? "<br>승인 전까지는 '수정하기'로 고치거나 삭제할 수 있습니다." : ""}</div>` : "";
   const histHtml = (doc.history || []).length ? `<h2>처리 이력</h2><div class="panel"><ul class="hist">${[...doc.history].reverse().map(h =>
     `<li><span class="num">${fmtTs(h.at)}</span><b>${esc(h.action)}</b> ${esc(h.by || "")}${h.note ? `: ${esc(h.note)}` : ""}</li>`).join("")}</ul></div>` : "";
   const backHref = masterEdit ? `#/i/${id}` : own ? "#/" : isMaster() ? "#/admin" : isSV() ? "#/sv" : "#/";
+  function metaHtml() {
+    const sd = subDateOf(doc);
+    return `${esc(cl.label)} · 점검일 ${fmtDate(doc.visitDate)} · 작성 ${esc(doc.svName || "")}${kindOf(doc) === "store" && !isStoreSelf(doc) ? ` (${esc(ROLE_LABEL[doc.authorRole] || "SV")})` : doc.authorPosition ? ` (${esc(doc.authorPosition)})` : ""}` +
+      (sd && (isSubmitted(doc) || doc.returned) ? ` · 제출 ${doc.submitDateManual ? `${esc(sd)} <span class="muted">(마스터 수정)</span>` : esc(fmtTs(doc.submittedAt) || sd)}` : "");
+  }
   const sm = summarize(doc.items, cl);
   const recTotal = cl.items.filter(c => !isYN(c)).length;
   const recDone = cl.items.filter(c => !isYN(c) && itemDone(c, doc.items[c.no])).length;
@@ -1488,7 +1584,7 @@ async function viewInspection(id, editReq = false) {
   shell(`
     <p style="margin:0 0 6px"><a class="small muted" href="${backHref}">${masterEdit ? "보기 화면으로" : "목록으로"}</a></p>
     <div class="ins-head"><h1>${esc(doc.storeName)}</h1>${kindChip(doc)}${statusChip(doc)}${ownDraftActs}</div>
-    <div class="ins-meta">${esc(cl.label)} · ${fmtDate(doc.visitDate)} · 작성 ${esc(doc.svName || "")}${kindOf(doc) === "store" && !isStoreSelf(doc) ? ` (${esc(ROLE_LABEL[doc.authorRole] || "SV")})` : doc.authorPosition ? ` (${esc(doc.authorPosition)})` : ""}${doc.submittedAt && isSubmitted(doc) ? ` · 제출 ${fmtTs(doc.submittedAt)}` : ""}</div>
+    <div class="ins-meta-row"><div class="ins-meta" id="insMeta">${metaHtml()}</div>${isMaster() ? `<button class="btn sm" id="editDates" type="button">날짜 수정</button>` : ""}</div>
     ${!canEdit ? `<div class="notice info">${summaryLine}</div>` : ""}
     ${stateNotice}
     ${doc.returned && doc.status === "draft" ? `<div class="notice back"><b>수정 요청</b>${doc.returnNote ? `: ${esc(doc.returnNote)}` : ""}</div>` : ""}
@@ -1530,17 +1626,58 @@ async function viewInspection(id, editReq = false) {
     e.target.disabled = true;
     try { await fn(); } catch (err) { console.error(err); toast(friendlyError(err), 4000); e.target.disabled = false; }
   });
-  const clearApproval = { approvedAt: null, approvedBy: "", approvedByUid: "" };
-  // 마스터: 승인 / 반려 / 승인 취소 / 직접 수정 / 삭제
+  const clearApproval = { approvedAt: null, approvedBy: "", approvedByUid: "", approvedByRole: "" };
+  // 마스터·담당 SV: 승인 / 반려 / 승인 취소, 마스터: 직접 수정 / 삭제
   act("#approve", async () => {
-    await api.updateInspection(id, { status: "approved", approvedBy: S.me.name || "", approvedByUid: S.me.uid, history: withHist(doc, "승인") }, { stamp: "approvedAt" });
+    await api.updateInspection(id, approvePatch(doc), { stamp: "approvedAt" });
     toast("승인했습니다."); router();
   });
+  // 마스터: 점검일·제출일 직접 수정 (목록·현황은 제출일 기준)
+  $("#editDates")?.addEventListener("click", () => editDates());
+  function editDates() {
+    const sd0 = subDateOf(doc), canSub = !!sd0;
+    const bg = document.createElement("div");
+    bg.className = "modal-bg";
+    bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-label="날짜 수정">
+      <h3>날짜 수정</h3>
+      <p class="muted small" style="margin:0">목록과 현황은 기본으로 <b>제출일</b> 기준으로 묶입니다. 고친 내용은 처리 이력에 남습니다.</p>
+      <label class="f" for="dv">점검일</label><input class="in" id="dv" type="date" value="${esc(doc.visitDate || "")}" max="${today()}">
+      <label class="f" for="ds">제출일</label><input class="in" id="ds" type="date" value="${esc(sd0)}" max="${today()}" ${canSub ? "" : "disabled"}>
+      ${canSub ? "" : `<p class="muted small" style="margin:6px 0 0">아직 제출되지 않은 점검이라 제출일은 없습니다.</p>`}
+      <div class="err" id="de"></div>
+      <div class="acts"><button class="btn" data-a="no">취소</button><button class="btn primary" data-a="ok">저장</button></div></div>`;
+    document.body.appendChild(bg);
+    const close = () => bg.remove();
+    bg.addEventListener("keydown", e => { if (e.key === "Escape") close(); });
+    bg.addEventListener("click", async e => {
+      const a = e.target.closest("[data-a]")?.dataset.a;
+      if (a === "no" || e.target === bg) return close();
+      if (a !== "ok") return;
+      const v = $("#dv", bg).value, sdv = canSub ? $("#ds", bg).value : "";
+      if (!v) return $("#de", bg).textContent = "점검일을 입력해 주세요.";
+      if (canSub && !sdv) return $("#de", bg).textContent = "제출일을 입력해 주세요.";
+      const patch = {}, notes = [];
+      if (v !== doc.visitDate) { patch.visitDate = v; patch.visitMonth = v.slice(0, 7); notes.push(`점검일 ${doc.visitDate} → ${v}`); }
+      if (canSub && sdv !== sd0) { patch.submitDate = sdv; patch.submitMonth = sdv.slice(0, 7); patch.submitDateManual = true; notes.push(`제출일 ${sd0} → ${sdv}`); }
+      if (!notes.length) return close();
+      patch.history = withHist(doc, "날짜 수정", notes.join(", "));
+      const okBtn = $("[data-a=ok]", bg); okBtn.disabled = true;
+      try {
+        await api.updateInspection(id, patch);
+        Object.assign(doc, patch);
+        monthCache = {};
+        close();
+        $("#insMeta").innerHTML = metaHtml();
+        toast("날짜를 고쳤습니다.");
+        if (!canEdit) router();
+      } catch (e2) { $("#de", bg).textContent = friendlyError(e2); okBtn.disabled = false; }
+    });
+  }
   act("#ret", async () => {
     const note = await modal({ title: "반려 (수정 요청)", body: "작성자에게 보낼 요청 내용을 적어 주세요. 점검은 '작성 중'으로 돌아가고, 작성자가 고쳐서 다시 제출합니다.", ok: "반려하기", input: { placeholder: "예: 10번 온도 기록표 사진 추가 필요" } });
     if (note === null) { $("#ret").disabled = false; return; }
     await api.updateInspection(id, { status: "draft", returned: true, returnNote: note, returnedBy: S.me.name || "", ...clearApproval, history: withHist(doc, "반려", note) });
-    toast("반려했습니다. 작성자 화면에 수정 요청으로 표시됩니다."); router();
+    monthCache = {}; toast("반려했습니다. 작성자 화면에 수정 요청으로 표시됩니다."); router();
   });
   act("#unapprove", async () => {
     if (!await modal({ title: "승인을 취소할까요?", body: "점검이 '승인 대기'로 돌아갑니다. 이후 직접 수정하거나 반려할 수 있습니다.", ok: "승인 취소" })) { $("#unapprove").disabled = false; return; }
@@ -1554,7 +1691,7 @@ async function viewInspection(id, editReq = false) {
   });
   // 작성자(같은 매장 계정 포함): 승인 대기 중인 점검 수정·삭제
   act("#svEdit", async () => {
-    if (!await modal({ title: "제출을 취소하고 수정할까요?", body: "점검이 '작성 중'으로 돌아갑니다. 고친 뒤 다시 제출해야 마스터가 승인할 수 있습니다.", ok: "수정하기" })) { $("#svEdit").disabled = false; return; }
+    if (!await modal({ title: "제출을 취소하고 수정할까요?", body: "점검이 '작성 중'으로 돌아갑니다. 고친 뒤 다시 제출해야 승인할 수 있습니다.", ok: "수정하기" })) { $("#svEdit").disabled = false; return; }
     await api.updateInspection(id, { status: "draft", returned: false, history: withHist(doc, "제출 취소(수정)") });
     router();
   });
@@ -1703,15 +1840,16 @@ async function viewInspection(id, editReq = false) {
     const noNote = cl.items.filter(c => isYN(c) && doc.items[c.no].r === "N" && !String(doc.items[c.no].note || "").trim());
     const body = `${cl.yWord} ${sm.y}개, ${cl.nWord} ${sm.n}개${sm.total > sm.yn ? `, 기록 문항 ${sm.total - sm.yn}개` : ""}입니다.` +
       (noNote.length ? `\n\n비고가 비어 있는 ${cl.nWord} 문항: ${noNote.map(shortOf).join(", ")}\n사유를 적어 두면 개선 확인이 쉬워집니다.` : "") +
-      "\n\n제출하면 마스터 승인 대기 상태가 됩니다. 승인 전까지는 '수정하기'로 고칠 수 있고, 승인된 뒤에는 마스터만 고칠 수 있습니다.";
+      `\n\n제출하면 ${isStoreSelf(doc) ? "담당 SV·마스터" : "마스터"} 승인 대기 상태가 됩니다. 승인 전까지는 '수정하기'로 고칠 수 있고, 승인된 뒤에는 마스터만 고칠 수 있습니다.`;
     if (!await modal({ title: "점검을 제출할까요?", body: esc(body), ok: "제출하기" })) return;
     clearTimeout(ed.timer);
     $("#submit").disabled = true;
     try {
       await api.updateInspection(id, { items: doc.items, special: doc.special, summary: summarize(doc.items, cl), status: "submitted", returned: false,
+        submitDate: today(), submitMonth: thisMonth(), submitDateManual: false,
         history: withHist(doc, (doc.history || []).some(h => h.action === "제출" || h.action === "재제출") ? "재제출" : "제출") }, { stamp: "submittedAt" });
       ed.dirty = false; leaveGuard = null;
-      toast("제출했습니다. 마스터 승인을 기다립니다.");
+      toast(isStoreSelf(doc) ? "제출했습니다. 담당 SV 승인을 기다립니다." : "제출했습니다. 마스터 승인을 기다립니다.");
       location.hash = "#/";
     } catch (e) { $("#submit").disabled = false; toast("제출하지 못했습니다. " + friendlyError(e), 4000); }
   }
@@ -1743,6 +1881,7 @@ async function viewAdminList() {
     <h1>점검 내역</h1>
     <div class="panel" style="margin-bottom:12px"><div class="row">
       <div><label class="f" for="fm" style="margin-top:0">월</label><input class="in" id="fm" type="month" value="${adminFilter.month}"></div>
+      ${basisSel()}
       <div><label class="f" for="fk" style="margin-top:0">종류</label><select class="in" id="fk">
         <option value="">전체</option><option value="store" ${adminFilter.kind === "store" ? "selected" : ""}>매장용 점검</option><option value="qsc" ${adminFilter.kind === "qsc" ? "selected" : ""}>QSC 점검</option></select></div>
       <div><label class="f" for="fs" style="margin-top:0">매장</label><select class="in" id="fs"><option value="">전체 매장</option>${S.stores.map(s => `<option value="${esc(s.id)}" ${s.id === adminFilter.store ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select></div>
@@ -1752,9 +1891,9 @@ async function viewAdminList() {
         <option value="">전체</option>
         <option value="submitted" ${adminFilter.status === "submitted" ? "selected" : ""}>승인 대기</option>
         <option value="approved" ${adminFilter.status === "approved" ? "selected" : ""}>승인 완료</option>
-        <option value="draft" ${adminFilter.status === "draft" ? "selected" : ""}>작성 중</option></select></div>
+        <option value="draft" ${adminFilter.status === "draft" ? "selected" : ""}>${dateBasis.by === "submit" ? "수정 요청" : "작성 중·수정 요청"}</option></select></div>
       <button class="btn" id="xl">엑셀로 내려받기</button>
-    </div></div>
+    </div>${dateBasis.by === "submit" ? `<p class="muted small" style="margin:8px 0 0">제출일 기준: 그 달에 제출된 점검입니다. 아직 한 번도 제출하지 않은 작성 중 점검은 '점검일 기준'에서 볼 수 있습니다.</p>` : ""}</div>
     <div class="stats">
       <button class="stat click ${adminFilter.status === "submitted" ? "on" : ""}" id="waitCard" type="button"><b class="num">${waiting.length}</b><span>승인 대기 (눌러서 보기)</span></button>
       <div class="stat"><b class="num">${sub.length}</b><span>제출된 점검 (승인 대기 포함)</span></div>
@@ -1764,14 +1903,14 @@ async function viewAdminList() {
     </div>
     ${waiting.length ? `<div class="bulk"><button class="btn primary sm" id="bulk" disabled>선택한 점검 승인</button><span class="muted small">승인 대기 점검은 왼쪽 칸을 체크해 한 번에 승인할 수 있습니다.</span></div>` : ""}
     ${rows.length ? `<div class="tbl-wrap"><table>
-      <thead><tr><th>${waiting.length ? `<input type="checkbox" id="pickAll" aria-label="승인 대기 전체 선택">` : ""}</th><th>날짜</th><th>종류</th><th>매장</th><th>작성자</th><th class="r">결과</th><th>미흡·개선 필요</th><th class="r">사진</th><th>상태</th></tr></thead>
+      <thead><tr><th>${waiting.length ? `<input type="checkbox" id="pickAll" aria-label="승인 대기 전체 선택">` : ""}</th><th>${dateBasis.by === "submit" ? "제출일" : "점검일"}</th><th>종류</th><th>매장</th><th>작성자</th><th class="r">결과</th><th>미흡·개선 필요</th><th class="r">사진</th><th>상태</th></tr></thead>
       <tbody>${rows.map(d => {
         const sm = sumOf(d);
         return `<tr class="click" data-open="${esc(d.id)}" tabindex="0">
           <td>${d.status === "submitted" ? `<input type="checkbox" data-pick="${esc(d.id)}" aria-label="${esc(d.storeName)} 승인 선택">` : ""}</td>
-          <td class="num">${esc(d.visitDate)}</td><td>${kindChip(d)}</td><td>${esc(d.storeName)}</td><td>${esc(d.svName || memberName(d.svUid))}${kindOf(d) === "store" && !isStoreSelf(d) ? ` <span class="muted small">${esc(ROLE_LABEL[d.authorRole] || "SV")}</span>` : d.authorPosition ? ` <span class="muted small">${esc(d.authorPosition)}</span>` : ""}</td>
+          <td class="num">${dateCell(d)}</td><td>${kindChip(d)}</td><td>${esc(d.storeName)}</td><td>${esc(d.svName || memberName(d.svUid))}${kindOf(d) === "store" && !isStoreSelf(d) ? ` <span class="muted small">${esc(ROLE_LABEL[d.authorRole] || "SV")}</span>` : d.authorPosition ? ` <span class="muted small">${esc(d.authorPosition)}</span>` : ""}</td>
           <td class="r num">${isSubmitted(d) ? (sm.yn ? `${sm.y}/${sm.yn}` : "-") : `${sm.done}/${sm.total} 완료`}</td><td class="wrap">${esc(nTitles(d).join(", ") || "-")}</td>
-          <td class="r num">${photoCount(d)}</td><td>${statusChip(d)}</td></tr>`;
+          <td class="r num">${photoCount(d)}</td><td>${statusChip(d)}${approvedByLine(d)}</td></tr>`;
       }).join("")}</tbody></table></div>` : `<div class="empty">이 조건에 맞는 점검이 없습니다.</div>`}
   `, { active: "#/admin" });
 
@@ -1783,29 +1922,11 @@ async function viewAdminList() {
   ["#fm", "#fk", "#fs", "#fv", "#ft"].forEach(s => $(s).addEventListener("change", refilter));
   $("#waitCard").addEventListener("click", () => { adminFilter.status = adminFilter.status === "submitted" ? "" : "submitted"; viewAdminList(); });
   wireRowOpen();
-  const picks = () => $$("[data-pick]").filter(c => c.checked).map(c => c.dataset.pick);
-  const syncBulk = () => { const n = picks().length; const b = $("#bulk"); if (b) { b.disabled = !n; b.textContent = n ? `선택한 ${n}건 승인` : "선택한 점검 승인"; } };
-  $$("[data-pick]").forEach(c => c.addEventListener("change", syncBulk));
-  $("#pickAll")?.addEventListener("change", e => { $$("[data-pick]").forEach(c => { c.checked = e.target.checked; }); syncBulk(); });
-  $("#bulk")?.addEventListener("click", async () => {
-    const ids = picks();
-    if (!ids.length) return;
-    if (!await modal({ title: `${ids.length}건을 승인할까요?`, body: "승인한 점검은 작성자가 고칠 수 없습니다. 필요하면 상세 화면에서 승인을 취소할 수 있습니다.", ok: "승인" })) return;
-    $("#bulk").disabled = true;
-    let ok = 0;
-    for (const id of ids) {
-      const d = rows.find(x => x.id === id);
-      try {
-        await api.updateInspection(id, { status: "approved", approvedBy: S.me.name || "", approvedByUid: S.me.uid, history: withHist(d, "승인") }, { stamp: "approvedAt" });
-        ok++;
-      } catch (e) { console.error(e); }
-    }
-    toast(ok === ids.length ? `${ok}건을 승인했습니다.` : `${ok}건 승인, ${ids.length - ok}건은 실패했습니다. 다시 시도해 주세요.`, 3500);
-    viewAdminList();
-  });
+  wireBulkApprove(rows, viewAdminList);
+  wireBasis(viewAdminList);
   $("#xl").addEventListener("click", () => exportExcel(rows, adminFilter.month));
   // 이전 버전 점검에 새 항목 채우기 (필요한 것만, 화면은 그대로)
-  if (all.some(d => !d.kind || !d.visitMonth || d.storeSvUid === undefined)) backfill(all);
+  if (all.some(d => !d.kind || !d.visitMonth || d.storeSvUid === undefined || (!d.submitMonth && (d.submittedAt || isSubmitted(d))))) backfill(all);
 }
 
 /* 엑셀: 점검 종류별로 시트를 나눠 문항·비고·사진 링크를 모두 담습니다. */
@@ -1814,22 +1935,24 @@ function exportExcel(rows, month) {
   for (const cl of Object.values(CHECKLISTS)) {
     const list = rows.filter(d => kindOf(d) === cl.key);
     if (!list.length) continue;
-    const head = ["날짜", "매장코드", "매장", "작성자", "작성 구분", "직급", "상태", cl.yWord, cl.nWord, `${cl.rateWord}(%)`];
+    const head = ["점검일", "제출일", "매장코드", "매장", "작성자", "작성 구분", "직급", "상태", cl.yWord, cl.nWord, `${cl.rateWord}(%)`];
     cl.items.forEach(c => isYN(c)
       ? head.push(`${c.no}.${shortOf(c)} 결과`, `${c.no}.${shortOf(c)} 비고`, `${c.no}.${shortOf(c)} 사진`)
       : head.push(`${c.no}.${shortOf(c)} 내용`, `${c.no}.${shortOf(c)} 사진`));
     if (cl.special) head.push("매장 특이사항", "특이사항 사진");
-    head.push("제출 일시", "승인자", "승인 일시", "점검 문항 버전");
+    head.push("제출 일시", "승인자", "승인 구분", "승인 일시", "점검 문항 버전");
     const data = list.map(d => {
       const sm = sumOf(d);
-      const r = [d.visitDate, d.storeCode || d.storeId, d.storeName, d.svName || memberName(d.svUid), ROLE_LABEL[d.authorRole] || (kindOf(d) === "store" ? "매장" : "SV"), d.authorPosition || "", statusLabel(d), sm.y, sm.n, sm.rate ?? ""];
+      const r = [d.visitDate, subDateOf(d), d.storeCode || d.storeId, d.storeName, d.svName || memberName(d.svUid), ROLE_LABEL[d.authorRole] || (kindOf(d) === "store" ? "매장" : "SV"), d.authorPosition || "", statusLabel(d), sm.y, sm.n, sm.rate ?? ""];
       cl.items.forEach(c => {
         const it = d.items?.[c.no] || {};
         const photos = (it.photos || []).map(p => p.url).join("\n");
         isYN(c) ? r.push(it.r || "", it.note || "", photos) : r.push(it.note || "", photos);
       });
       if (cl.special) r.push(d.special?.note || "", (d.special?.photos || []).map(p => p.url).join("\n"));
-      r.push(isSubmitted(d) ? fmtTs(d.submittedAt) : "", d.status === "approved" ? (d.approvedBy || "") : "", d.status === "approved" ? fmtTs(d.approvedAt) : "", d.checklistVersion || "");
+      const ar = approverRole(d);
+      r.push(isSubmitted(d) ? fmtTs(d.submittedAt) : "", d.status === "approved" ? (d.approvedBy || "") : "", d.status === "approved" ? (ar === "sv" ? "담당 SV" : ar === "master" ? "마스터" : "") : "",
+        d.status === "approved" ? fmtTs(d.approvedAt) : "", d.checklistVersion || "");
       return r;
     });
     sheets.push({ name: cl.label, head, data });
@@ -1840,7 +1963,7 @@ function exportExcel(rows, month) {
     const wb = XLSX.utils.book_new();
     sheets.forEach(sh => {
       const ws = XLSX.utils.aoa_to_sheet([sh.head, ...sh.data]);
-      ws["!cols"] = sh.head.map((h, i) => ({ wch: i < 6 ? 14 : /비고|내용|특이사항/.test(h) ? 30 : 10 }));
+      ws["!cols"] = sh.head.map((h, i) => ({ wch: i < 7 ? 14 : /비고|내용|특이사항/.test(h) ? 30 : 10 }));
       XLSX.utils.book_append_sheet(wb, ws, sh.name);
     });
     XLSX.writeFile(wb, name + ".xlsx");
@@ -1858,12 +1981,12 @@ function exportExcel(rows, month) {
 /* =====================================================================
    12. 마스터: 현황 (점검 종류별)
    ===================================================================== */
-const statsFilter = { kind: "store" };
-async function viewAdminStats() {
-  loading("#/admin/stats", false);
+async function viewAdminStats(kind = "store") {
+  const tab = kind === "qsc" ? "#/admin/stats/sv" : "#/admin/stats";
+  loading(tab, false);
   await Promise.all([loadStores(), loadMembers()]);
   const ym = adminFilter.month;
-  const cl = CHECKLISTS[statsFilter.kind];
+  const cl = CHECKLISTS[kind];
   const isSelf = cl.key === "store";
   const sub = (await monthRows(ym)).filter(d => isSubmitted(d) && (isSelf ? isStoreSelf(d) : kindOf(d) === cl.key));
   const activeStores = S.stores.filter(s => s.active !== false);
@@ -1897,11 +2020,11 @@ async function viewAdminStats() {
   const mon = monNum(ym);
 
   shell(`
-    <h1>현황</h1>
+    <h1>${isSelf ? "매장 자체점검 현황" : "SV 점검 현황"}</h1>
+    <p class="muted" style="margin-top:-8px">${isSelf ? "점장·매니저가 매장 계정으로 제출한 매장용 점검" : "SV가 매장을 방문해 제출한 QSC 점검"} · ${dateBasis.by === "submit" ? "제출일" : "점검일"} 기준</p>
     <div class="row" style="margin-bottom:12px;max-width:520px">
       <div><label class="f" for="fm" style="margin-top:0">월</label><input class="in" id="fm" type="month" value="${ym}"></div>
-      <div><label class="f" for="fk" style="margin-top:0">점검 종류</label><select class="in" id="fk">
-        <option value="store" ${isSelf ? "selected" : ""}>매장용 점검 (매장 계정 제출)</option><option value="qsc" ${!isSelf ? "selected" : ""}>QSC 점검</option></select></div>
+      ${basisSel()}
     </div>
     ${none.length ? `<div class="notice back">${mon}월에 제출된 ${esc(cl.label)}이 없는 매장이 ${none.length}곳입니다: ${esc(none.map(x => x.s.name).join(", "))}</div>`
       : (activeStores.length ? `<div class="notice info">${mon}월에 모든 매장의 ${esc(cl.label)}이 제출됐습니다.</div>` : "")}
@@ -1918,7 +2041,7 @@ async function viewAdminStats() {
         <thead><tr><th>매장</th><th>담당</th>${isSelf ? `<th class="r">제출일</th><th>최근 제출</th>` : `<th class="r">방문</th><th>최근 방문</th>`}<th class="r">평균 ${esc(cl.rateWord)}</th><th>최근 ${esc(cl.nWord)}</th></tr></thead>
         <tbody>${byStore.map(x => `<tr ${x.last ? `class="click" data-open="${esc(x.last.id)}" tabindex="0"` : ""}>
           <td>${esc(x.s.name)}</td><td>${esc(svNameOf(x.s) || "-")}</td>
-          <td class="r num">${isSelf ? `${x.days}/${elapsed}` : x.list.length}</td><td class="num">${x.last ? esc(x.last.visitDate) : "-"}</td>
+          <td class="r num">${isSelf ? `${x.days}/${elapsed}` : x.list.length}</td><td class="num">${x.last ? esc(basisDate(x.last)) : "-"}</td>
           <td class="r num">${x.avg === null ? "-" : x.avg + "%"}</td><td class="wrap">${esc(x.lastN.join(", ") || (x.last ? "없음" : "-"))}</td></tr>`).join("")}
         </tbody></table></div>` : `<div class="empty">등록된 매장이 없습니다.</div>`}
       </div>
@@ -1930,9 +2053,94 @@ async function viewAdminStats() {
         <p class="muted small" style="margin-top:8px">제출된 ${esc(cl.label)} ${sub.length}건 기준입니다 (승인 대기 ${sub.filter(d => d.status === "submitted").length}건 포함).${isSelf ? " 매장 계정이 제출한 것만 셉니다(SV·마스터가 쓴 매장용 점검은 '점검 내역'에서 확인). 기록 문항은 제출 시 모두 채워져 있어 Y/N 문항만 셉니다." : ""}</p>
       </div>
     </div>
-  `, { active: "#/admin/stats" });
-  $("#fm").addEventListener("change", () => { adminFilter.month = $("#fm").value || thisMonth(); viewAdminStats(); });
-  $("#fk").addEventListener("change", e => { statsFilter.kind = e.target.value; viewAdminStats(); });
+  `, { active: tab });
+  $("#fm").addEventListener("change", () => { adminFilter.month = $("#fm").value || thisMonth(); viewAdminStats(kind); });
+  wireBasis(() => viewAdminStats(kind));
+  wireRowOpen();
+}
+
+/* =====================================================================
+   12-2. 마스터: 승인 현황
+   ===================================================================== */
+const apprFilter = { who: "store" };   // store: 매장 자체점검(담당 SV·마스터 승인), sv: SV·마스터가 쓴 점검(마스터 승인)
+async function viewAdminApprovals() {
+  loading("#/admin/approvals", false);
+  await Promise.all([loadStores(), loadMembers()]);
+  const ym = adminFilter.month, mon = monNum(ym);
+  const [monthAll, pendAll] = await Promise.all([monthRows(ym), api.listPending()]);
+  const isStoreTab = apprFilter.who === "store";
+  const inTab = d => isStoreTab ? isStoreSelf(d) : !isStoreSelf(d);
+  const rows = monthAll.filter(d => inTab(d) && (isSubmitted(d) || d.returned));
+  const pend = pendAll.filter(inTab).sort((a, b) => tsMs(a.submittedAt) - tsMs(b.submittedAt));
+  const now = Date.now();
+  const waitMs = d => Math.max(0, now - (tsMs(d.submittedAt) || now));
+  const OLD = 3 * 864e5;
+  const appr = rows.filter(d => d.status === "approved");
+  const lead = d => { const a = tsMs(d.approvedAt), b = tsMs(d.submittedAt); return a && b && a >= b ? a - b : null; };
+  const avg = list => { const v = list.map(lead).filter(x => x !== null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+  const returnedOf = list => list.filter(d => (d.history || []).some(h => h.action === "반려")).length;
+  const bySvN = appr.filter(d => approverRole(d) === "sv").length, byMaN = appr.filter(d => approverRole(d) === "master").length;
+
+  // 묶음: 매장 자체점검은 담당 SV별, SV 점검은 작성자별
+  const keyOf = d => isStoreTab ? (d.storeSvUid || "") : (d.svUid || "");
+  const keys = isStoreTab
+    ? [...new Set([...S.stores.filter(s => s.active !== false).map(s => s.svUid || ""), ...rows.map(keyOf), ...pend.map(keyOf)])]
+    : [...new Set([...rows.map(keyOf), ...pend.map(keyOf)])];
+  const groups = keys.map(k => {
+    const r = rows.filter(d => keyOf(d) === k), a = r.filter(d => d.status === "approved"), p = pend.filter(d => keyOf(d) === k);
+    return { k, name: k ? (memberName(k) || "이름 없음") : "담당 미지정", stores: S.stores.filter(s => s.active !== false && (s.svUid || "") === k).length,
+      sub: r.length, appr: a.length, sv: a.filter(d => approverRole(d) === "sv").length, ma: a.filter(d => approverRole(d) === "master").length,
+      wait: p.length, old: p.filter(d => waitMs(d) >= OLD).length, avg: avg(a), ret: returnedOf(r) };
+  }).filter(g => g.sub || g.wait || (isStoreTab && g.stores)).sort((a, b) => b.wait - a.wait || a.name.localeCompare(b.name, "ko"));
+  const recent = [...appr].sort((a, b) => tsMs(b.approvedAt) - tsMs(a.approvedAt)).slice(0, 30);
+  const roleTxt = d => approverRole(d) === "sv" ? "담당 SV" : approverRole(d) === "master" ? "마스터" : "";
+
+  shell(`
+    <h1>승인 현황</h1>
+    <div class="seg" role="group" aria-label="점검 구분">
+      <button type="button" data-who="store" class="${isStoreTab ? "on" : ""}" aria-pressed="${isStoreTab}">매장 자체점검 (담당 SV·마스터 승인)</button>
+      <button type="button" data-who="sv" class="${!isStoreTab ? "on" : ""}" aria-pressed="${!isStoreTab}">SV 점검 (마스터 승인)</button>
+    </div>
+    <div class="row" style="margin-bottom:12px;max-width:520px">
+      <div><label class="f" for="fm" style="margin-top:0">월</label><input class="in" id="fm" type="month" value="${ym}"></div>
+      ${basisSel()}
+    </div>
+    <div class="stats">
+      <div class="stat"><b class="num">${pend.length}</b><span>지금 승인 대기 (전체 기간)</span></div>
+      <div class="stat"><b class="num" ${pend.filter(d => waitMs(d) >= OLD).length ? 'style="color:var(--no)"' : ""}>${pend.filter(d => waitMs(d) >= OLD).length}</b><span>3일 넘게 대기</span></div>
+      <div class="stat"><b class="num">${rows.length}</b><span>${mon}월 제출</span></div>
+      <div class="stat"><b class="num">${appr.length}</b><span>${mon}월 승인 완료${isStoreTab ? ` (담당 SV ${bySvN} · 마스터 ${byMaN})` : ""}</span></div>
+      <div class="stat"><b class="num">${fmtDur(avg(appr))}</b><span>평균 승인 소요 (제출→승인)</span></div>
+      <div class="stat"><b class="num">${returnedOf(rows)}</b><span>${mon}월 반려(수정 요청) 이력</span></div>
+    </div>
+    <h2>${isStoreTab ? "담당 SV별" : "작성자별"}</h2>
+    ${groups.length ? `<div class="tbl-wrap"><table>
+      <thead><tr><th>${isStoreTab ? "담당 SV" : "작성자"}</th>${isStoreTab ? `<th class="r">담당 매장</th>` : ""}<th class="r">${mon}월 제출</th><th class="r">승인 완료</th>
+        ${isStoreTab ? `<th class="r">SV 승인</th><th class="r">마스터 승인</th>` : ""}<th class="r">지금 대기</th><th class="r">3일+ 대기</th><th class="r">평균 소요</th><th class="r">반려</th></tr></thead>
+      <tbody>${groups.map(g => `<tr><td>${esc(g.name)}</td>${isStoreTab ? `<td class="r num">${g.stores}</td>` : ""}<td class="r num">${g.sub}</td><td class="r num">${g.appr}</td>
+        ${isStoreTab ? `<td class="r num">${g.sv}</td><td class="r num">${g.ma}</td>` : ""}<td class="r num">${g.wait || "-"}</td>
+        <td class="r num" ${g.old ? 'style="color:var(--no);font-weight:700"' : ""}>${g.old || "-"}</td><td class="r num">${fmtDur(g.avg)}</td><td class="r num">${g.ret || "-"}</td></tr>`).join("")}</tbody></table></div>`
+      : `<div class="empty">${mon}월 자료가 없습니다.</div>`}
+    <h2>승인 대기 목록 <span class="muted small">(오래된 순, 전체 기간)</span></h2>
+    ${pend.length ? `<div class="tbl-wrap"><table>
+      <thead><tr><th>제출</th><th class="r">대기</th><th>종류</th><th>매장</th><th>작성자</th><th>승인할 사람</th></tr></thead>
+      <tbody>${pend.map(d => `<tr class="click" data-open="${esc(d.id)}" tabindex="0">
+        <td class="num">${esc(fmtTs(d.submittedAt) || subDateOf(d))}</td>
+        <td class="r num">${waitMs(d) >= OLD ? `<span class="chip back">${fmtDur(waitMs(d))}</span>` : fmtDur(waitMs(d))}</td>
+        <td>${kindChip(d)}</td><td>${esc(d.storeName)}</td><td>${esc(d.svName || "")}${d.authorPosition ? ` <span class="muted small">${esc(d.authorPosition)}</span>` : ""}</td>
+        <td>${isStoreSelf(d) ? `${esc(memberName(d.storeSvUid) || "담당 미지정")} · 마스터` : "마스터"}</td></tr>`).join("")}</tbody></table></div>`
+      : `<div class="empty">지금 승인 대기 중인 점검이 없습니다.</div>`}
+    <h2>${mon}월 승인 내역 <span class="muted small">(최근 30건)</span></h2>
+    ${recent.length ? `<div class="tbl-wrap"><table>
+      <thead><tr><th>승인 시각</th><th>종류</th><th>매장</th><th>작성자</th><th>승인자</th><th class="r">소요</th></tr></thead>
+      <tbody>${recent.map(d => `<tr class="click" data-open="${esc(d.id)}" tabindex="0">
+        <td class="num">${esc(fmtTs(d.approvedAt))}</td><td>${kindChip(d)}</td><td>${esc(d.storeName)}</td><td>${esc(d.svName || "")}</td>
+        <td>${esc(d.approvedBy || "")}${roleTxt(d) ? ` <span class="muted small">${roleTxt(d)}</span>` : ""}</td><td class="r num">${fmtDur(lead(d))}</td></tr>`).join("")}</tbody></table></div>`
+      : `<div class="empty">${mon}월 승인 내역이 없습니다.</div>`}
+  `, { active: "#/admin/approvals" });
+  $("#fm").addEventListener("change", () => { adminFilter.month = $("#fm").value || thisMonth(); viewAdminApprovals(); });
+  $$("[data-who]").forEach(b => b.addEventListener("click", () => { apprFilter.who = b.dataset.who; viewAdminApprovals(); }));
+  wireBasis(viewAdminApprovals);
   wireRowOpen();
 }
 
@@ -2605,7 +2813,10 @@ async function viewAdminUsers() {
       if (me.role === "store" && !storeIdsOf(me).length) return viewNoAccess("매장이 연결되지 않은 매장 계정입니다. 관리자에게 문의하세요.");
       S.me = me;
       if (me.mustChangePw === true) return viewForcePw();
-      if (isMaster()) { await loadMembers(); backfillAllOnce(); }
+      if (isMaster()) {
+        await loadMembers();
+        backfillAllOnce().then(k => { if (k && !leaveGuard && /^#\/admin/.test(location.hash || "#/admin")) router(); });
+      }
       lastHash = location.hash;
       router();
     } catch (e) {
