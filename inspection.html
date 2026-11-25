@@ -101,6 +101,11 @@ textarea.in{min-height:72px;resize:vertical;line-height:1.5}
 .chip.kind{background:#E8EEF9;color:#1E3A72}
 .chip.kind.store{background:#EFE8F8;color:#55307F}
 .picks{display:grid;gap:8px;margin-top:6px}
+.seg{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
+.seg button{min-height:36px;padding:0 14px;border-radius:999px;border:1.5px solid var(--line);background:#fff;font:inherit;font-size:14px;font-weight:600;color:var(--ink-2);cursor:pointer}
+.seg button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.acct-stores{max-height:190px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:6px 10px;background:#fff}
+.acct-stores label{display:flex;gap:8px;align-items:center;padding:4px 0;font-size:14px}
 .pick{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:#fff;cursor:pointer}
 .pick input{margin-top:3px;flex:0 0 auto;width:18px;height:18px;accent-color:var(--ink)}
 .pick>span{display:flex;flex-direction:column;gap:2px}
@@ -212,6 +217,7 @@ td.r,th.r{text-align:right}
 .zoom .btn{background:transparent;color:#fff;border-color:rgba(255,255,255,.4)}
 .uid{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;background:#F8F9FB;border:1px solid var(--line);border-radius:8px;padding:8px 10px;word-break:break-all}
 .split{display:grid;grid-template-columns:1fr;gap:16px}
+.split>*{min-width:0}
 @media (min-width:900px){.split{grid-template-columns:1.2fr 1fr}}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto !important;transition:none !important}}
 @media (min-width:720px){html{scroll-behavior:smooth}}
@@ -523,6 +529,14 @@ const blobToBase64 = blob => new Promise((res, rej) => {
   fr.readAsDataURL(blob);
 });
 
+/* 매장 계정 문서: 매장 여러 곳(storeIds), 직급·사번, 첫 로그인 비밀번호 변경 요구 */
+function storeMemberDoc(r, extra = {}) {
+  const ids = r.storeIds?.length ? r.storeIds : [r.storeId];
+  const names = r.storeNames?.length ? r.storeNames : [r.storeName];
+  return { name: r.name, email: r.email, loginId: r.loginId, role: "store",
+    storeId: ids[0], storeIds: ids, storeName: names[0] || "", storeNames: names,
+    position: r.position || "", empNo: r.empNo || "", mustChangePw: true, active: true, ...extra };
+}
 function friendlyError(e) {
   const code = e?.code || "";
   const map = {
@@ -582,6 +596,8 @@ async function createFirebaseApi() {
     async login(email, pw) { await AU.signInWithEmailAndPassword(auth, email, pw); },
     async logout() { await AU.signOut(auth); },
     async changePassword(pw) { await AU.updatePassword(auth.currentUser, pw); },
+    // 첫 로그인 비밀번호 변경을 마쳤다고 표시 (보안 규칙: 본인은 이 값만 true→false로 바꿀 수 있음)
+    async clearMustChangePw(uid) { await FS.updateDoc(FS.doc(db, "members", uid), { mustChangePw: false }); },
 
     async getMember(uid) {
       const s = await FS.getDoc(FS.doc(db, "members", uid));
@@ -612,10 +628,7 @@ async function createFirebaseApi() {
             const cred = await AU.createUserWithEmailAndPassword(secAuth, r.email, r.password);
             const uid = cred.user.uid;
             await AU.signOut(secAuth);
-            await FS.setDoc(FS.doc(db, "members", uid), {
-              name: r.name, email: r.email, loginId: r.loginId, role: "store",
-              storeId: r.storeId, storeName: r.storeName, active: true, createdAt: ts()
-            });
+            await FS.setDoc(FS.doc(db, "members", uid), storeMemberDoc(r, { createdAt: ts() }));
             await onEach(r, { ok: true, uid });
           } catch (e) { await onEach(r, { ok: false, error: e }); }
         }
@@ -686,10 +699,11 @@ function createDemoApi() {
   db.members["demo-master"] = { name: "마스터 예시", email: "master@example.com", role: "master", active: true };
   const uidByName = n => Object.keys(db.members).find(k => db.members[k].name === n) || "";
   STORE_SEED.forEach(([code, name, sv]) => { db.stores[code] = { code, name, svName: sv, svUid: uidByName(sv), active: true }; });
-  [["demo-st1", "BSC0007"], ["demo-st2", "BSC0008"]].forEach(([uid, code]) => {
-    const st = db.stores[code];
-    db.members[uid] = { name: `${st.name} 점장`, email: `${code.toLowerCase()}@${STORE_LOGIN_DOMAIN}`, loginId: code.toLowerCase(), role: "store", storeId: code, storeName: st.name, active: true };
+  [["demo-st1", ["BSC0007", "BSC0023"], "정민혜", "HL1", "2607101"], ["demo-st2", ["BSC0008"], "강동윤", "HL1", "2607091"]].forEach(([uid, codes, name, position, empNo]) => {
+    db.members[uid] = { name, email: `${empNo}@${STORE_LOGIN_DOMAIN}`, loginId: empNo, role: "store", position, empNo,
+      storeId: codes[0], storeIds: codes, storeName: db.stores[codes[0]].name, storeNames: codes.map(c => db.stores[c].name), active: true };
   });
+  db.members["demo-st2"].mustChangePw = true;   // 첫 로그인 비밀번호 변경 화면 미리보기용
 
   const now = new Date();
   const base = (code, d, author, kind, status) => {
@@ -697,7 +711,7 @@ function createDemoApi() {
     const cl = CHECKLISTS[kind];
     return {
       kind, storeId: code, storeCode: code, storeName: st.name, storeSvUid: st.svUid, svUid: author, svName: db.members[author].name,
-      authorRole: db.members[author].role, visitDate: ymd(d), visitMonth: ymd(d).slice(0, 7), status, returned: false,
+      authorRole: db.members[author].role, authorPosition: db.members[author].position || "", visitDate: ymd(d), visitMonth: ymd(d).slice(0, 7), status, returned: false,
       special: { note: "", photos: [] }, checklistVersion: cl.version, createdAt: d.getTime(), updatedAt: d.getTime(),
       ...(status !== "draft" ? { submittedAt: d.getTime(), history: [{ at: d.getTime(), by: db.members[author].name, action: "제출" }] } : { history: [] })
     };
@@ -753,6 +767,7 @@ function createDemoApi() {
     async login(uid) { await wait(); current = { uid, email: db.members[uid].email }; cb(current); },
     async logout() { current = null; cb(null); },
     async changePassword() { await wait(); },
+    async clearMustChangePw(uid) { await wait(); db.members[uid].mustChangePw = false; },
     async getMember(uid) { await wait(); return db.members[uid] ? { uid, ...clone(db.members[uid]) } : null; },
     async listMembers() { await wait(); return Object.entries(db.members).map(([uid, m]) => ({ uid, ...clone(m) })); },
     async createMember({ name, email, role }) { await wait(); const uid = nid("u"); db.members[uid] = { name, email, role, active: true }; return uid; },
@@ -761,7 +776,7 @@ function createDemoApi() {
         await sleep(60);
         if (Object.values(db.members).some(m => m.email === r.email && !m.__deletedAuth)) { await onEach(r, { ok: false, error: { code: "auth/email-already-in-use" } }); continue; }
         const uid = nid("u");
-        db.members[uid] = { name: r.name, email: r.email, loginId: r.loginId, role: "store", storeId: r.storeId, storeName: r.storeName, active: true };
+        db.members[uid] = storeMemberDoc(r);
         await onEach(r, { ok: true, uid });
       }
     },
@@ -795,7 +810,7 @@ function createDemoApi() {
    5. 앱 상태·화면 전환
    역할: master(마스터) / sv(SV: QSC·매장용 점검, 담당 매장 조회) / store(점장·매니저: 매장용 점검)
    ===================================================================== */
-const S = { user: null, me: null, stores: [], members: [] };
+const S = { user: null, me: null, stores: [], members: [], curStore: "" };
 const ROLE_LABEL = { master: "마스터", sv: "SV", store: "매장" };
 const myRole = () => S.me?.role || "sv";
 const isMaster = () => myRole() === "master";
@@ -803,7 +818,7 @@ const isSV = () => myRole() === "sv";
 const isStoreUser = () => myRole() === "store";
 const roleLabel = (m = S.me) => ROLE_LABEL[m?.role] || "SV";
 /* 이 점검을 내가 작성·수정할 수 있는 사람인가: 작성자 본인, 또는 같은 매장 계정(매장 계정이 쓴 매장용 점검) */
-const ownsDoc = d => !!S.me && (d.svUid === S.me.uid || (isStoreUser() && isStoreSelf(d) && d.storeId === S.me.storeId));
+const ownsDoc = d => !!S.me && (d.svUid === S.me.uid || (isStoreUser() && isStoreSelf(d) && storeIdsOf(S.me).includes(d.storeId)));
 const app = $("#app");
 let leaveGuard = null;   // 점검 작성 중 이탈 방지 { nav, unload, flush }
 
@@ -858,7 +873,7 @@ async function goHome(e) {
 async function accountMenu() {
   const bg = document.createElement("div");
   bg.className = "modal-bg";
-  const idLine = isStoreUser() ? `아이디 ${esc(loginIdOf(S.me) || S.user.email || "")} · ${esc(S.me.storeName || "")}` : esc(S.user.email || "");
+  const idLine = isStoreUser() ? `아이디 ${esc(loginIdOf(S.me) || S.user.email || "")}${S.me.position ? ` · ${esc(S.me.position)}` : ""} · ${esc(storeNamesOf(S.me).join(", "))}` : esc(S.user.email || "");
   bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-label="계정">
     <h3>${esc(S.me.name)}</h3><p class="muted small">${idLine} · ${roleLabel()}</p>
     <div class="list" style="margin-top:12px">
@@ -908,6 +923,7 @@ window.addEventListener("beforeunload", e => { if (leaveGuard && leaveGuard.unlo
 let lastHash = location.hash;
 async function router() {
   if (!S.me) return;
+  if (S.me.mustChangePw === true) return viewForcePw();   // 첫 로그인 비밀번호 변경 전에는 다른 화면으로 가지 않음
   if (leaveGuard && location.hash !== lastHash) {
     const go = await confirmLeave();
     if (!go) { history.replaceState(null, "", lastHash); return; }
@@ -949,6 +965,20 @@ const svNameOf = s => memberName(s.svUid) || s.svName || "";
 const isMyStore = s => s.svUid ? s.svUid === S.me.uid : (!!s.svName && s.svName === S.me.name);
 const byName = arr => [...arr].sort((a, b) => a.name.localeCompare(b.name, "ko"));
 const storeById = id => S.stores.find(s => s.id === id);
+/* 매장 계정은 매장 여러 곳에 연결될 수 있습니다(storeIds, 첫 번째가 기본 매장). 예전 계정은 storeId 하나만 있습니다. */
+const storeIdsOf = m => (Array.isArray(m?.storeIds) && m.storeIds.length ? m.storeIds : (m?.storeId ? [m.storeId] : []));
+const storeNamesOf = m => storeIdsOf(m).map((id, i) => storeById(id)?.name || (m.storeNames || [])[i] || (id === m.storeId ? m.storeName : "") || id);
+const CUR_STORE_KEY = "benson_inspect_curstore:";
+function curStoreId() {
+  const ids = storeIdsOf(S.me);
+  if (!ids.includes(S.curStore)) {
+    let saved = ""; try { saved = localStorage.getItem(CUR_STORE_KEY + S.me.uid) || ""; } catch (_) {}
+    S.curStore = ids.includes(saved) ? saved : (ids[0] || "");
+  }
+  return S.curStore;
+}
+function setCurStore(id) { S.curStore = id; try { localStorage.setItem(CUR_STORE_KEY + S.me.uid, id); } catch (_) {} }
+const POSITION_HINTS = ["HL1", "HL2", "일급제", "점장", "매니저"];
 
 /* 담당 SV가 바뀌면, 그 매장의 지난 점검도 새 SV가 볼 수 있게 표시를 옮깁니다. */
 async function syncStoreSv(storeId, uid) {
@@ -1001,7 +1031,8 @@ function viewLogin() {
   if (api.mode === "demo") {
     app.innerHTML = `<div class="login"><h1>매장 점검</h1><p class="muted">어떤 화면을 볼지 고르세요.</p>
       <div class="panel list">
-        <button class="btn primary block" data-u="demo-st1">매장 화면 보기 (스타필드수원 점장)</button>
+        <button class="btn primary block" data-u="demo-st1">매장 화면 보기 (정민혜 HL1 · 매장 2곳)</button>
+        <button class="btn block" data-u="demo-st2">매장 계정 첫 로그인 화면 보기</button>
         <button class="btn block" data-u="demo-sv1">SV 화면 보기 (${esc(STORE_SEED[0][2])})</button>
         <button class="btn block" data-u="demo-master">마스터 화면 보기</button>
       </div></div>`;
@@ -1022,6 +1053,37 @@ function viewLogin() {
     const btn = $("#lf button"); btn.disabled = true; $("#le").textContent = "";
     try { await api.login(toLoginEmail($("#em").value), $("#pw").value); }
     catch (err) { $("#le").textContent = friendlyError(err); btn.disabled = false; }
+  });
+}
+
+/* 첫 로그인: 받은 임시 비밀번호를 본인만 아는 비밀번호로 바꿔야 시작할 수 있습니다. */
+function viewForcePw() {
+  setHeader();
+  app.innerHTML = `<div class="login"><h1>비밀번호를 바꿔 주세요</h1>
+    <p class="muted">${esc(S.me.name || "")}님, 처음 로그인하셨습니다. 받은 임시 비밀번호는 여러 사람이 알 수 있어서, 본인만 아는 비밀번호로 바꿔야 점검을 시작할 수 있습니다.</p>
+    <div class="panel">
+      <label class="f" for="fp1" style="margin-top:0">새 비밀번호 (8자 이상, 영문과 숫자 포함)</label><input class="in" id="fp1" type="password" autocomplete="new-password">
+      <label class="f" for="fp2">새 비밀번호 확인</label><input class="in" id="fp2" type="password" autocomplete="new-password">
+      <div class="err" id="fpe"></div>
+      <button class="btn primary block" id="fpg" style="margin-top:6px">변경하고 시작하기</button>
+      <button class="btn block ghost" id="fpo" style="margin-top:8px">로그아웃</button>
+    </div></div>`;
+  $("#fp1").focus();
+  $("#fpo").addEventListener("click", () => api.logout());
+  $("#fpg").addEventListener("click", async () => {
+    const p1 = $("#fp1").value, p2 = $("#fp2").value, err = t => { $("#fpe").textContent = t; };
+    if (p1.length < 8) return err("비밀번호는 8자 이상이어야 합니다.");
+    if (!/[A-Za-z]/.test(p1) || !/\d/.test(p1)) return err("영문과 숫자를 함께 넣어 주세요.");
+    if (loginIdOf(S.me) && p1.toLowerCase().includes(String(loginIdOf(S.me)).toLowerCase())) return err("비밀번호에 아이디(사번)를 넣지 마세요.");
+    if (p1 !== p2) return err("두 비밀번호가 다릅니다.");
+    $("#fpg").disabled = true; $("#fpg").textContent = "변경 중…";
+    try { await api.changePassword(p1); }
+    catch (e) { $("#fpg").disabled = false; $("#fpg").textContent = "변경하고 시작하기"; return err(friendlyError(e)); }
+    S.me.mustChangePw = false;
+    try { await api.clearMustChangePw(S.me.uid); toast("비밀번호를 바꿨습니다."); }
+    catch (_) { toast("비밀번호는 바뀌었습니다. 다음 로그인 때 한 번 더 안내가 나올 수 있습니다.", 4000); }
+    lastHash = location.hash;
+    router();
   });
 }
 
@@ -1130,7 +1192,7 @@ function createInspectionFor(st, vd, kind) {
   const cl = CHECKLISTS[kind];
   return api.createInspection({
     kind, storeId: st.id, storeCode: st.code || st.id, storeName: st.name, storeSvUid: st.svUid || "",
-    svUid: S.me.uid, svName: S.me.name || S.user.email || "", authorRole: myRole(),
+    svUid: S.me.uid, svName: S.me.name || S.user.email || "", authorRole: myRole(), authorPosition: S.me.position || "",
     visitDate: vd, visitMonth: vd.slice(0, 7), status: "draft", returned: false,
     items: emptyItems(cl), special: { note: "", photos: [] }, summary: summarize({}, cl), checklistVersion: cl.version
   });
@@ -1140,13 +1202,15 @@ function createInspectionFor(st, vd, kind) {
    8. 점장·매니저: 매장용 점검 홈
    ===================================================================== */
 const storeFilter = { month: thisMonth() };
-const myStoreDoc = () => storeById(S.me?.storeId);
+const myStoreDoc = () => storeById(curStoreId());
 
 async function viewStoreHome() {
   loading("#/");
   await loadStores();
+  const mySts = storeIdsOf(S.me).map(storeById).filter(Boolean);
+  if (!mySts.length) { shell(`<div class="empty">이 계정에 연결된 매장을 찾을 수 없습니다. 본사(마스터)에 문의하세요.</div>`, { narrow: true }); return; }
+  if (!mySts.some(x => x.id === curStoreId())) setCurStore(mySts[0].id);
   const st = myStoreDoc();
-  if (!st) { shell(`<div class="empty">이 계정에 연결된 매장을 찾을 수 없습니다. 본사(마스터)에 문의하세요.</div>`, { narrow: true }); return; }
   const ym = storeFilter.month;
   const [rowsM, rowsNow, drafts] = await Promise.all([
     api.listStoreMonth(st.id, ym),
@@ -1156,7 +1220,7 @@ async function viewStoreHome() {
   const nowRows = rowsNow || rowsM;
   const todayDoc = nowRows.filter(d => d.visitDate === today()).sort(byDateDesc)[0];
   const list = [...rowsM].sort(byDateDesc);
-  const otherDrafts = drafts.filter(d => kindOf(d) === "store" && d.visitMonth !== ym && d.id !== todayDoc?.id);
+  const otherDrafts = drafts.filter(d => kindOf(d) === "store" && d.storeId === st.id && d.visitMonth !== ym && d.id !== todayDoc?.id);
   const sub = list.filter(isSubmitted);
   const days = new Set(sub.map(d => d.visitDate)).size;
   const elapsed = daysElapsed(ym);
@@ -1175,8 +1239,9 @@ async function viewStoreHome() {
       <button class="btn primary block big" id="startToday">오늘 점검 시작</button>`;
   }
   shell(`
+    ${mySts.length > 1 ? `<div class="seg" role="group" aria-label="매장 선택">${mySts.map(x => `<button type="button" data-cs="${esc(x.id)}" class="${x.id === st.id ? "on" : ""}" aria-pressed="${x.id === st.id}">${esc(x.name)}</button>`).join("")}</div>` : ""}
     <h1>${esc(st.name)}</h1>
-    <p class="muted" style="margin-top:-8px">매장용 점검 · ${esc(S.me.name || "")}</p>
+    <p class="muted" style="margin-top:-8px">매장용 점검 · ${esc(S.me.name || "")}${S.me.position ? ` (${esc(S.me.position)})` : ""}</p>
     <div class="panel today">${todayCard}
       <a class="small muted" href="#/new" style="display:inline-block;margin-top:10px">다른 날짜로 작성</a></div>
     ${otherDrafts.length ? `<h2>작성 중인 다른 날짜</h2><div class="list">${otherDrafts.sort(byDateDesc).map(d => inspRow(d, { showStore: false, showAuthor: true })).join("")}</div>` : ""}
@@ -1193,6 +1258,7 @@ async function viewStoreHome() {
       : `<div class="empty">${monNum(ym)}월 점검 기록이 없습니다.</div>`}
   `, { active: "#/", narrow: true });
   $("#fm").addEventListener("change", e => { storeFilter.month = e.target.value || thisMonth(); viewStoreHome(); });
+  $$("[data-cs]").forEach(b => b.addEventListener("click", () => { if (b.dataset.cs !== st.id) { setCurStore(b.dataset.cs); viewStoreHome(); } }));
   $("#startToday")?.addEventListener("click", async e => {
     e.target.disabled = true;
     try { const id = await createInspectionFor(st, today(), "store"); location.hash = "#/i/" + id; }
@@ -1422,7 +1488,7 @@ async function viewInspection(id, editReq = false) {
   shell(`
     <p style="margin:0 0 6px"><a class="small muted" href="${backHref}">${masterEdit ? "보기 화면으로" : "목록으로"}</a></p>
     <div class="ins-head"><h1>${esc(doc.storeName)}</h1>${kindChip(doc)}${statusChip(doc)}${ownDraftActs}</div>
-    <div class="ins-meta">${esc(cl.label)} · ${fmtDate(doc.visitDate)} · 작성 ${esc(doc.svName || "")}${kindOf(doc) === "store" && !isStoreSelf(doc) ? ` (${esc(ROLE_LABEL[doc.authorRole] || "SV")})` : ""}${doc.submittedAt && isSubmitted(doc) ? ` · 제출 ${fmtTs(doc.submittedAt)}` : ""}</div>
+    <div class="ins-meta">${esc(cl.label)} · ${fmtDate(doc.visitDate)} · 작성 ${esc(doc.svName || "")}${kindOf(doc) === "store" && !isStoreSelf(doc) ? ` (${esc(ROLE_LABEL[doc.authorRole] || "SV")})` : doc.authorPosition ? ` (${esc(doc.authorPosition)})` : ""}${doc.submittedAt && isSubmitted(doc) ? ` · 제출 ${fmtTs(doc.submittedAt)}` : ""}</div>
     ${!canEdit ? `<div class="notice info">${summaryLine}</div>` : ""}
     ${stateNotice}
     ${doc.returned && doc.status === "draft" ? `<div class="notice back"><b>수정 요청</b>${doc.returnNote ? `: ${esc(doc.returnNote)}` : ""}</div>` : ""}
@@ -1703,7 +1769,7 @@ async function viewAdminList() {
         const sm = sumOf(d);
         return `<tr class="click" data-open="${esc(d.id)}" tabindex="0">
           <td>${d.status === "submitted" ? `<input type="checkbox" data-pick="${esc(d.id)}" aria-label="${esc(d.storeName)} 승인 선택">` : ""}</td>
-          <td class="num">${esc(d.visitDate)}</td><td>${kindChip(d)}</td><td>${esc(d.storeName)}</td><td>${esc(d.svName || memberName(d.svUid))}${kindOf(d) === "store" && !isStoreSelf(d) ? ` <span class="muted small">${esc(ROLE_LABEL[d.authorRole] || "SV")}</span>` : ""}</td>
+          <td class="num">${esc(d.visitDate)}</td><td>${kindChip(d)}</td><td>${esc(d.storeName)}</td><td>${esc(d.svName || memberName(d.svUid))}${kindOf(d) === "store" && !isStoreSelf(d) ? ` <span class="muted small">${esc(ROLE_LABEL[d.authorRole] || "SV")}</span>` : d.authorPosition ? ` <span class="muted small">${esc(d.authorPosition)}</span>` : ""}</td>
           <td class="r num">${isSubmitted(d) ? (sm.yn ? `${sm.y}/${sm.yn}` : "-") : `${sm.done}/${sm.total} 완료`}</td><td class="wrap">${esc(nTitles(d).join(", ") || "-")}</td>
           <td class="r num">${photoCount(d)}</td><td>${statusChip(d)}</td></tr>`;
       }).join("")}</tbody></table></div>` : `<div class="empty">이 조건에 맞는 점검이 없습니다.</div>`}
@@ -1748,7 +1814,7 @@ function exportExcel(rows, month) {
   for (const cl of Object.values(CHECKLISTS)) {
     const list = rows.filter(d => kindOf(d) === cl.key);
     if (!list.length) continue;
-    const head = ["날짜", "매장코드", "매장", "작성자", "작성 구분", "상태", cl.yWord, cl.nWord, `${cl.rateWord}(%)`];
+    const head = ["날짜", "매장코드", "매장", "작성자", "작성 구분", "직급", "상태", cl.yWord, cl.nWord, `${cl.rateWord}(%)`];
     cl.items.forEach(c => isYN(c)
       ? head.push(`${c.no}.${shortOf(c)} 결과`, `${c.no}.${shortOf(c)} 비고`, `${c.no}.${shortOf(c)} 사진`)
       : head.push(`${c.no}.${shortOf(c)} 내용`, `${c.no}.${shortOf(c)} 사진`));
@@ -1756,7 +1822,7 @@ function exportExcel(rows, month) {
     head.push("제출 일시", "승인자", "승인 일시", "점검 문항 버전");
     const data = list.map(d => {
       const sm = sumOf(d);
-      const r = [d.visitDate, d.storeCode || d.storeId, d.storeName, d.svName || memberName(d.svUid), ROLE_LABEL[d.authorRole] || (kindOf(d) === "store" ? "매장" : "SV"), statusLabel(d), sm.y, sm.n, sm.rate ?? ""];
+      const r = [d.visitDate, d.storeCode || d.storeId, d.storeName, d.svName || memberName(d.svUid), ROLE_LABEL[d.authorRole] || (kindOf(d) === "store" ? "매장" : "SV"), d.authorPosition || "", statusLabel(d), sm.y, sm.n, sm.rate ?? ""];
       cl.items.forEach(c => {
         const it = d.items?.[c.no] || {};
         const photos = (it.photos || []).map(p => p.url).join("\n");
@@ -1774,7 +1840,7 @@ function exportExcel(rows, month) {
     const wb = XLSX.utils.book_new();
     sheets.forEach(sh => {
       const ws = XLSX.utils.aoa_to_sheet([sh.head, ...sh.data]);
-      ws["!cols"] = sh.head.map((h, i) => ({ wch: i < 5 ? 14 : /비고|내용|특이사항/.test(h) ? 30 : 10 }));
+      ws["!cols"] = sh.head.map((h, i) => ({ wch: i < 6 ? 14 : /비고|내용|특이사항/.test(h) ? 30 : 10 }));
       XLSX.utils.book_append_sheet(wb, ws, sh.name);
     });
     XLSX.writeFile(wb, name + ".xlsx");
@@ -1878,7 +1944,7 @@ async function viewAdminStores() {
   await Promise.all([loadStores(), loadMembers()]);
   const svs = byName(S.members.filter(m => m.active !== false && m.role !== "store"));
   const missingSeed = S.stores.length ? [] : STORE_SEED;   // 기본 매장 목록은 매장이 하나도 없을 때만 (삭제한 매장이 다시 뜨지 않게)
-  const acctsOf = id => S.members.filter(m => m.role === "store" && m.storeId === id && m.active !== false);
+  const acctsOf = id => S.members.filter(m => m.role === "store" && storeIdsOf(m).includes(id) && m.active !== false);
   const svOpts = st => {
     const cur = st ? svUidOf(st) : "";
     const pending = st && !cur && st.svName ? `<option value="__pending" selected>${esc(st.svName)} (계정 없음)</option>` : "";
@@ -2011,8 +2077,9 @@ async function viewAdminStores() {
       try {
         await api.updateStore(st.id, patch);
         const moved = svChanged ? await syncStoreSv(st.id, sv) : 0;
-        if (patch.name) for (const m of S.members.filter(m => m.role === "store" && m.storeId === st.id)) {
-          try { await api.updateMember(m.uid, { storeName: name }); } catch (_) {}
+        if (patch.name) for (const m of S.members.filter(m => m.role === "store" && storeIdsOf(m).includes(st.id))) {
+          const ids = storeIdsOf(m), names = ids.map((id, i) => id === st.id ? name : storeNamesOf(m)[i]);
+          try { await api.updateMember(m.uid, { storeNames: names, storeName: names[0] }); } catch (_) {}
         }
         monthCache = {};
         close();
@@ -2026,15 +2093,21 @@ async function viewAdminStores() {
     let recs = 0;
     try { recs = (await api.listByStore(st.id)).length; } catch (e) { return toast(friendlyError(e)); }
     const accts = acctsOf(st.id);
+    const only = accts.filter(m => storeIdsOf(m).length === 1), multi = accts.filter(m => storeIdsOf(m).length > 1);
     const body = recs || accts.length
       ? `이 매장에는 점검 기록 ${recs}건${accts.length ? `, 매장 계정 ${accts.length}개` : ""}가 있습니다.\n` +
         `삭제해도 점검 기록은 '점검 내역'과 엑셀에 남지만, 매장 목록·매장 필터·현황에서는 빠집니다.` +
-        `${accts.length ? "\n이 매장의 매장 계정은 사용 중지됩니다." : ""}\n폐점·휴점이라면 삭제 대신 '사용'을 끄는 것을 권합니다.`
+        `${only.length ? `\n이 매장에만 연결된 매장 계정 ${only.length}개는 사용 중지됩니다.` : ""}` +
+        `${multi.length ? `\n다른 매장에도 연결된 계정 ${multi.length}개는 이 매장만 빠집니다.` : ""}\n폐점·휴점이라면 삭제 대신 '사용'을 끄는 것을 권합니다.`
       : "점검 기록과 매장 계정이 없는 매장입니다. 삭제하면 되돌릴 수 없습니다.";
     if (!await modal({ title: `${st.name} 매장을 삭제할까요?`, body: esc(body), ok: "삭제", danger: true })) return;
     try {
       await api.deleteStore(st.id);
-      for (const m of accts) { try { await api.updateMember(m.uid, { active: false }); } catch (_) {} }
+      for (const m of only) { try { await api.updateMember(m.uid, { active: false }); } catch (_) {} }
+      for (const m of multi) {
+        const ids = storeIdsOf(m), names = storeNamesOf(m), keep = ids.map((id, i) => [id, names[i]]).filter(([id]) => id !== st.id);
+        try { await api.updateMember(m.uid, { storeIds: keep.map(x => x[0]), storeNames: keep.map(x => x[1]), storeId: keep[0][0], storeName: keep[0][1] }); } catch (_) {}
+      }
       monthCache = {};
       toast(`${st.name} 매장을 삭제했습니다.`); viewAdminStores();
     } catch (e) { toast(friendlyError(e)); }
@@ -2044,44 +2117,82 @@ async function viewAdminStores() {
 /* =====================================================================
    14. 마스터: 사용자 관리 (본사·SV 계정 / 매장 계정 일괄 등록)
    ===================================================================== */
-const bulk = { rows: null, results: null, includeExisting: false };
+const bulk = { rows: null, results: null, includeExisting: false, onlyIssues: false };
+const acctFilter = { store: "", q: "" };
 
-/* 엑셀 표(2차원 배열) → 매장 계정 행. 머리글이 있으면 열 이름으로, 없으면 양식 순서로 읽습니다. */
-function parseBulk(matrix) {
-  const norm = v => String(v ?? "").trim();
-  let rows = matrix.map(r => (r || []).map(norm)).filter(r => r.some(Boolean));
-  if (!rows.length) return [];
-  const h = rows[0].map(x => x.replace(/\s/g, ""));
-  const find = (...keys) => h.findIndex(x => keys.some(k => x.includes(k)));
-  let idx = { code: 0, name: 2, id: 3, pw: 4 };
-  if (find("매장코드") >= 0) {
-    idx = { code: find("매장코드"), name: find("이름"), id: find("아이디", "이메일"), pw: find("비밀번호") };
-    rows = rows.slice(1);
-  } else if (rows[0].length === 4) idx = { code: 0, name: 1, id: 2, pw: 3 };
-  const at = (r, i) => (i >= 0 ? r[i] || "" : "");
-  return rows.map(r => ({ code: at(r, idx.code), name: at(r, idx.name), id: at(r, idx.id), pw: at(r, idx.pw), gen: genPassword() }));
+/* 엑셀 머리글 행 찾기: '이름'과 'ID(아이디)' 또는 '사번'이 있는 줄 (양식은 4번째 줄) */
+function findBulkHeader(matrix) {
+  for (let i = 0; i < Math.min(matrix.length, 15); i++) {
+    const h = (matrix[i] || []).map(v => String(v ?? "").replace(/\s/g, "").toUpperCase());
+    const col = (...k) => h.findIndex(x => k.includes(x));
+    const colIn = (...k) => h.findIndex(x => k.some(y => x.includes(y)));
+    const name = col("이름", "성명", "직원명");
+    let id = col("ID", "아이디", "로그인ID", "로그인아이디");
+    if (id < 0) id = colIn("아이디");
+    const emp = col("사번", "사원번호");
+    if (name < 0 || (id < 0 && emp < 0)) continue;
+    return { row: i, idx: { store: col("매장", "매장명", "점포", "점포명"), code: colIn("매장코드"), no: col("번호", "NO", "NO."),
+      name, emp, id, pos: col("직급", "직책", "직위"), pw: colIn("PW", "비밀번호", "패스워드") } };
+  }
+  return null;
 }
+/* 엑셀 표(2차원 배열) → 계정 행. 머리글을 찾지 못하면 null */
+function parseBulk(matrix) {
+  const hd = findBulkHeader(matrix);
+  if (!hd) return null;
+  const at = (r, i) => (i >= 0 ? String((r || [])[i] ?? "").trim() : "");
+  const x = hd.idx;
+  return matrix.slice(hd.row + 1).map((r, k) => ({
+    line: hd.row + 2 + k, store: at(r, x.code) || at(r, x.store), no: at(r, x.no), name: at(r, x.name), empNo: at(r, x.emp),
+    position: at(r, x.pos), id: at(r, x.id), pw: at(r, x.pw), gen: genPassword()
+  })).filter(r => r.name || r.id || r.empNo);   // 매장명만 있는 빈 줄은 건너뜀
+}
+/* 매장 찾기: 매장코드 → 이름(띄어쓰기·끝의 '점' 무시) → 이름 일부가 한 곳만 맞을 때 (예: 명품관 → 갤러리아명품관) */
+const storeKey = v => String(v || "").replace(/\s+/g, "").replace(/점$/, "").toLowerCase();
+function matchStore(text) {
+  const t = String(text || "").trim();
+  if (!t) return null;
+  const up = t.toUpperCase();
+  const byCode = S.stores.find(s => s.id.toUpperCase() === up || String(s.code || "").toUpperCase() === up);
+  if (byCode) return { st: byCode, how: "code" };
+  const k = storeKey(t);
+  const same = S.stores.filter(s => storeKey(s.name) === k);
+  if (same.length === 1) return { st: same[0], how: "name" };
+  if (same.length > 1 || k.length < 2) return null;
+  const part = S.stores.filter(s => { const n = storeKey(s.name); return n.length >= 2 && (n.includes(k) || k.includes(n)); });
+  return part.length === 1 ? { st: part[0], how: "part" } : null;
+}
+/* 행 검사. 같은 아이디가 여러 매장에 있으면 계정 하나에 매장 여러 곳을 연결합니다(첫 줄이 기본 매장). */
 function validateBulk(raw) {
-  const byCode = new Map(S.stores.map(s => [String(s.code || s.id).toUpperCase(), s]));
-  const existing = new Set(S.members.filter(m => m.active !== false).map(m => String(m.email || "").toLowerCase()));
-  const seen = new Set();
+  const existing = new Map(S.members.filter(m => m.active !== false).map(m => [String(m.email || "").toLowerCase(), m]));
+  const groups = new Map();
   return raw.map(r => {
-    const st = byCode.get(r.code.toUpperCase());
-    const out = { ...r, storeName: st?.name || "" };
-    if (!st) return { ...out, err: "매장코드를 찾을 수 없습니다" };
-    let id = (r.id || st.code || st.id).trim();
-    let email;
-    if (id.includes("@")) { email = id.toLowerCase(); }
+    const mt = matchStore(r.store), st = mt?.st;
+    const out = { ...r, storeName: st?.name || "", storeId: st?.id || "", renamed: mt?.how === "part" };
+    if (!r.store) return { ...out, err: "매장이 비어 있습니다" };
+    if (!st) return { ...out, err: "등록되지 않은 매장 · 매장 관리에서 먼저 추가" };
+    if (!r.name) return { ...out, err: "이름이 비어 있습니다" };
+    let id = (r.id || r.empNo || st.code || st.id).trim(), email;
+    if (id.includes("@")) email = id.toLowerCase();
     else {
       id = id.toLowerCase();
-      if (!/^[a-z0-9][a-z0-9._-]{2,39}$/.test(id)) return { ...out, err: "아이디는 영문·숫자·. _ - 로 3자 이상" };
+      if (!/^[a-z0-9][a-z0-9._-]{2,39}$/.test(id)) return { ...out, loginId: id, err: "아이디는 영문·숫자·. _ - 로 3자 이상" };
       email = `${id}@${STORE_LOGIN_DOMAIN}`;
     }
-    if (seen.has(email)) return { ...out, err: "같은 아이디가 표에 두 번 있습니다" };
-    seen.add(email);
-    if (r.pw && r.pw.length < 6) return { ...out, err: "비밀번호는 6자 이상" };
-    return { ...out, loginId: id, email, password: r.pw || r.gen || genPassword(), autoPw: !r.pw, name: r.name || `${st.name} 매장`,
-      storeId: st.id, exists: existing.has(email) };
+    const g = groups.get(email);
+    if (g) {
+      if (g.name.replace(/\s/g, "") !== r.name.replace(/\s/g, "")) return { ...out, loginId: id, err: `같은 아이디가 다른 이름(${g.name})으로 있습니다` };
+      if (g.storeIds.includes(st.id)) return { ...out, loginId: id, err: "같은 매장에 같은 아이디가 두 번 있습니다" };
+      g.storeIds.push(st.id); g.storeNames.push(st.name);
+      return { ...out, loginId: id, email, group: g, password: g.password, autoPw: g.autoPw };
+    }
+    if (r.pw && r.pw.length < 6) return { ...out, loginId: id, err: "비밀번호는 6자 이상" };
+    const ex = existing.get(email);
+    const row = { ...out, loginId: id, email, password: r.pw || r.gen || genPassword(), autoPw: !r.pw,
+      storeIds: [st.id], storeNames: [st.name], exists: !!ex, existing: ex || null };
+    row.group = row;
+    groups.set(email, row);
+    return row;
   });
 }
 
@@ -2090,26 +2201,56 @@ async function viewAdminUsers() {
   await Promise.all([loadMembers(), loadStores()]);
   const staff = S.members.filter(m => m.role !== "store");
   const activeStores = S.stores.filter(s => s.active !== false);
-  // 매장 계정 목록 — 일괄 등록 뒤 이 부분만 다시 그림
+  const positions = [...new Set([...POSITION_HINTS, ...S.members.map(m => m.position).filter(Boolean)])];
+
+  /* 매장 계정 목록 — 매장·검색으로 거르기, 계정별 수정 */
   const storeAcctsHtml = () => {
-    const storeAccts = S.members.filter(m => m.role === "store")
-      .sort((a, b) => (a.storeName || "").localeCompare(b.storeName || "", "ko") || (a.name || "").localeCompare(b.name || "", "ko"));
-    const noAcct = activeStores.filter(s => !storeAccts.some(m => m.storeId === s.id && m.active !== false));
-    return `<h2>매장 계정 <span class="muted small">(${storeAccts.filter(m => m.active !== false).length}개 사용 중)</span></h2>
-        ${noAcct.length ? `<div class="notice back">계정이 없는 매장 ${noAcct.length}곳: ${esc(noAcct.map(s => s.name).join(", "))}</div>` : `<div class="notice done">등록된 매장 모두 계정이 있습니다.</div>`}
-        ${storeAccts.length ? `<div class="tbl-wrap"><table>
-          <thead><tr><th>매장</th><th>이름</th><th>아이디</th><th>사용</th></tr></thead>
-          <tbody>${storeAccts.map(m => `<tr><td>${esc(m.storeName || storeById(m.storeId)?.name || "")}</td><td>${esc(m.name)}</td>
-            <td class="num">${esc(loginIdOf(m))}</td>
-            <td><label><input type="checkbox" data-on="${esc(m.uid)}" ${m.active !== false ? "checked" : ""}> 사용</label></td></tr>`).join("")}</tbody></table></div>`
-          : `<div class="empty">아직 매장 계정이 없습니다. '매장 계정 만들기' 또는 엑셀 일괄 등록으로 만드세요.</div>`}`;
+    const all = S.members.filter(m => m.role === "store");
+    const act = all.filter(m => m.active !== false);
+    const noAcct = activeStores.filter(s => !act.some(m => storeIdsOf(m).includes(s.id)));
+    const cnt = id => act.filter(m => storeIdsOf(m).includes(id)).length;
+    const rows = all.map(m => ({ m, names: storeNamesOf(m) }))
+      .sort((a, b) => (a.names[0] || "").localeCompare(b.names[0] || "", "ko") || (a.m.name || "").localeCompare(b.m.name || "", "ko"));
+    return `<h2>매장 계정 <span class="muted small">(${act.length}개 사용 중)</span></h2>
+      ${noAcct.length ? `<div class="notice back">계정이 없는 매장 ${noAcct.length}곳: ${esc(noAcct.map(s => s.name).join(", "))}</div>` : activeStores.length ? `<div class="notice done">등록된 매장 모두 계정이 있습니다.</div>` : ""}
+      ${all.length ? `<div class="row" style="margin:0 0 6px">
+          <div><select class="in" id="af_st" aria-label="매장으로 거르기"><option value="">전체 매장</option>${byName(S.stores).map(s => `<option value="${esc(s.id)}" ${acctFilter.store === s.id ? "selected" : ""}>${esc(s.name)} (${cnt(s.id)}명)</option>`).join("")}</select></div>
+          <div><input class="in" id="af_q" value="${esc(acctFilter.q)}" placeholder="이름·아이디·직급 검색" aria-label="매장 계정 검색" autocomplete="off"></div>
+        </div>
+        <p class="muted small" id="af_n" style="margin:0 0 6px"></p>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>매장</th><th>이름</th><th>직급</th><th>아이디</th><th>사용</th><th></th></tr></thead>
+          <tbody>${rows.map(({ m, names }) => `<tr data-st="${esc(storeIdsOf(m).join(" "))}" data-q="${esc([m.name, loginIdOf(m), m.empNo, m.position, ...names].join(" ").toLowerCase())}">
+            <td>${esc(names.join(", "))}</td>
+            <td>${esc(m.name)}${m.mustChangePw ? ' <span class="chip wait" title="첫 로그인 비밀번호 변경 전">첫 로그인 전</span>' : ""}</td>
+            <td>${esc(m.position || "-")}</td><td class="num">${esc(loginIdOf(m))}</td>
+            <td><label><input type="checkbox" data-on="${esc(m.uid)}" ${m.active !== false ? "checked" : ""}> 사용</label></td>
+            <td><button class="btn sm" data-ea="${esc(m.uid)}" aria-label="${esc(m.name)} 계정 수정">수정</button></td></tr>`).join("")}</tbody></table></div>`
+        : `<div class="empty">아직 매장 계정이 없습니다. '매장 계정 만들기' 또는 엑셀 일괄 등록으로 만드세요.</div>`}`;
   };
   const wireActive = root => $$("[data-on]", root).forEach(cb => cb.addEventListener("change", async () => {
-    try { await api.updateMember(cb.dataset.on, { active: cb.checked }); toast(cb.checked ? "사용으로 바꿨습니다." : "사용 중지했습니다."); } catch (e) { toast(friendlyError(e)); }
+    try { await api.updateMember(cb.dataset.on, { active: cb.checked }); const m = S.members.find(x => x.uid === cb.dataset.on); if (m) m.active = cb.checked; toast(cb.checked ? "사용으로 바꿨습니다." : "사용 중지했습니다."); } catch (e) { toast(friendlyError(e)); }
   }));
+  function renderSacc() {
+    $("#sacc").innerHTML = storeAcctsHtml();
+    wireActive($("#sacc"));
+    const apply = () => {
+      const q = acctFilter.q.trim().toLowerCase(); let n = 0;
+      $$("#sacc tbody tr").forEach(tr => {
+        const ok = (!acctFilter.store || tr.dataset.st.split(" ").includes(acctFilter.store)) && (!q || tr.dataset.q.includes(q));
+        tr.hidden = !ok; if (ok) n++;
+      });
+      const el = $("#af_n"); if (el) el.textContent = acctFilter.store || q ? `${n}명 표시` : "";
+    };
+    $("#af_st")?.addEventListener("change", e => { acctFilter.store = e.target.value; apply(); });
+    $("#af_q")?.addEventListener("input", e => { acctFilter.q = e.target.value; apply(); });
+    $$("[data-ea]", $("#sacc")).forEach(b => b.addEventListener("click", () => editAcct(S.members.find(m => m.uid === b.dataset.ea))));
+    apply();
+  }
 
   shell(`
     <h1>사용자 관리</h1>
+    <datalist id="poslist">${positions.map(p => `<option value="${esc(p)}">`).join("")}</datalist>
     <div class="split">
       <div>
         <h2 style="margin-top:0">본사·SV 계정</h2>
@@ -2122,19 +2263,25 @@ async function viewAdminUsers() {
             <option value="sv" ${m.role !== "master" ? "selected" : ""}>SV</option><option value="master" ${m.role === "master" ? "selected" : ""}>마스터</option></select></td>
           <td><label><input type="checkbox" data-on="${esc(m.uid)}" ${m.active !== false ? "checked" : ""} ${self ? "disabled" : ""}> 사용</label></td></tr>`;
         }).join("")}</tbody></table></div>
-        <p class="muted small" style="margin-top:8px">마스터는 모든 점검을, SV는 본인 점검과 담당 매장의 점검을, 매장 계정은 자기 매장에서 매장 계정이 쓴 매장용 점검만 봅니다. 퇴사·전보 시 '사용'을 끄면 바로 막힙니다.</p>
+        <p class="muted small" style="margin-top:8px">마스터는 모든 점검을, SV는 본인 점검과 담당 매장의 점검을, 매장 계정은 연결된 매장에서 매장 계정이 쓴 매장용 점검만 봅니다. 퇴사·전보 시 '사용'을 끄면 바로 막힙니다.</p>
 
-        <div id="sacc">${storeAcctsHtml()}</div>
-        <p class="muted small" style="margin-top:8px">매장 계정 비밀번호를 잊었을 때: Firebase 콘솔 → Authentication에서 그 아이디를 삭제한 뒤, '매장 계정 만들기'에서 같은 아이디로 다시 만드세요('다시 만들기' 체크). 점검 기록은 매장 기준으로 저장돼 그대로 남습니다.</p>
+        <div id="sacc"></div>
+        <p class="muted small" style="margin-top:8px">매장 계정은 첫 로그인 때 본인 비밀번호로 바꿔야 점검을 시작할 수 있습니다('첫 로그인 전' 표시). 비밀번호를 잊었을 때: Firebase 콘솔 → Authentication에서 그 아이디(예: 2607085@${esc(STORE_LOGIN_DOMAIN)})를 삭제한 뒤, '매장 계정 만들기'에서 같은 아이디로 '다시 만들기'를 체크해 만드세요. 연결 매장·직급은 그대로 이어받고, 점검 기록도 그대로 남습니다.</p>
       </div>
       <div>
         <div class="panel">
           <h2 style="margin-top:0">매장 계정 만들기</h2>
-          <p class="muted small" style="margin-top:0">한 매장씩 바로 만들 때 씁니다. 여러 매장을 한 번에 만들 때는 아래 엑셀 일괄 등록이 편합니다.</p>
+          <p class="muted small" style="margin-top:0">한 명씩 바로 만들 때 씁니다. 여러 명은 아래 엑셀 일괄 등록이 편합니다. 한 매장에 계정을 몇 개든 만들 수 있습니다.</p>
           <label class="f" for="sa_st">매장</label>
           <select class="in" id="sa_st"><option value="">매장을 고르세요</option>${byName(activeStores).map(s => `<option value="${esc(s.id)}">${esc(s.name)}${s.code ? ` (${esc(s.code)})` : ""}</option>`).join("")}</select>
-          <label class="f" for="sa_nm">이름</label><input class="in" id="sa_nm" autocomplete="off" placeholder="예: 스타필드수원 점장">
-          <label class="f" for="sa_id">아이디 (로그인용)</label><input class="in" id="sa_id" autocomplete="off" autocapitalize="off" placeholder="비우면 매장코드 (예: bsc0007)">
+          <div class="row">
+            <div><label class="f" for="sa_nm">이름</label><input class="in" id="sa_nm" autocomplete="off" placeholder="예: 홍길동"></div>
+            <div><label class="f" for="sa_pos">직급</label><input class="in" id="sa_pos" list="poslist" autocomplete="off" placeholder="예: HL1"></div>
+          </div>
+          <div class="row">
+            <div><label class="f" for="sa_emp">사번</label><input class="in" id="sa_emp" autocomplete="off" inputmode="numeric" placeholder="예: 2607085"></div>
+            <div><label class="f" for="sa_id">아이디 (로그인용)</label><input class="in" id="sa_id" autocomplete="off" autocapitalize="off" placeholder="비우면 사번"></div>
+          </div>
           <label class="f" for="sa_pw">임시 비밀번호 (6자 이상)</label><input class="in" id="sa_pw" type="text" autocomplete="off" placeholder="비우면 8자리 자동 생성">
           <label class="small" style="display:flex;gap:6px;align-items:center;margin-top:8px"><input type="checkbox" id="sa_x"> 이미 등록된 아이디도 다시 만들기 (콘솔에서 삭제한 경우)</label>
           <div class="err" id="sa_e"></div>
@@ -2144,15 +2291,15 @@ async function viewAdminUsers() {
         <div class="panel" style="margin-top:12px">
           <h2 style="margin-top:0">매장 계정 일괄 등록 (엑셀)</h2>
           <ol class="steps small">
-            <li><b>양식 내려받기</b>: 등록된 매장 ${activeStores.length}곳이 미리 채워진 엑셀입니다.</li>
-            <li>이름·아이디·임시 비밀번호를 고칩니다. <span class="muted">아이디를 비우면 매장코드(예: bsc0007), 비밀번호를 비우면 8자리로 자동 생성합니다. 한 매장에 계정을 여러 개 만들려면 줄을 복사해 아이디만 다르게 쓰세요.</span></li>
-            <li>파일을 올리거나 엑셀 표를 복사해 붙여넣고 <b>확인하기</b>를 누릅니다.</li>
+            <li><b>양식 내려받기</b>: 머리글이 <b>매장 · 번호 · 이름 · 사번 · 직급 · ID · PW</b>인 직원 명단 양식입니다. 쓰시던 직원 명단 파일을 그대로 올려도 됩니다.</li>
+            <li>직원마다 한 줄씩 씁니다. <span class="muted">매장은 매장명이나 매장코드, ID를 비우면 사번, PW를 비우면 8자리 자동입니다. 두 매장 이상 근무하면 매장마다 한 줄씩 <b>같은 ID</b>로 쓰면 계정 하나에 매장이 함께 연결됩니다.</span></li>
+            <li>파일을 올리거나 표를 머리글까지 복사해 붙여넣고 <b>확인하기</b>를 누릅니다.</li>
           </ol>
           <div class="row" style="margin-top:8px">
             <button class="btn" id="tpl" ${activeStores.length ? "" : "disabled"}>양식 내려받기</button>
             <label class="btn" style="flex:0 0 auto">파일 올리기<input type="file" id="bf" accept=".xlsx,.xls,.csv" hidden></label>
           </div>
-          <textarea class="in" id="bp" rows="4" style="margin-top:10px" placeholder="또는 엑셀에서 머리글(매장코드·매장명·이름·아이디·임시 비밀번호)까지 복사해 붙여넣기"></textarea>
+          <textarea class="in" id="bp" rows="4" style="margin-top:10px" placeholder="또는 엑셀에서 머리글(매장·번호·이름·사번·직급·ID·PW)까지 복사해 붙여넣기"></textarea>
           <label class="small" style="display:flex;gap:6px;align-items:center;margin-top:8px"><input type="checkbox" id="bx" ${bulk.includeExisting ? "checked" : ""}> 이미 등록된 아이디도 다시 만들기 (콘솔에서 삭제한 경우)</label>
           <div class="err" id="be"></div>
           <button class="btn primary block" id="bcheck">확인하기</button>
@@ -2185,8 +2332,55 @@ async function viewAdminUsers() {
     try { await api.updateMember(sel.dataset.role, { role: sel.value }); toast("역할을 바꿨습니다."); } catch (e) { toast(friendlyError(e)); }
   }));
   wireActive(document);
+  renderSacc();
 
-  /* --- 매장 계정 1개씩 만들기 --- */
+  /* --- 매장 계정 수정: 이름·직급·사번·연결 매장(여러 곳) --- */
+  function editAcct(m) {
+    if (!m) return;
+    const ids = storeIdsOf(m);
+    const order = [...ids.map(storeById).filter(Boolean), ...byName(S.stores.filter(s => !ids.includes(s.id)))];
+    const bg = document.createElement("div");
+    bg.className = "modal-bg";
+    bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-label="매장 계정 수정">
+      <h3>매장 계정 수정</h3>
+      <p class="muted small" style="margin:0">아이디 <b class="num">${esc(loginIdOf(m))}</b> · 아이디는 바꿀 수 없습니다.</p>
+      <label class="f" for="xn">이름</label><input class="in" id="xn" autocomplete="off" value="${esc(m.name || "")}">
+      <div class="row">
+        <div><label class="f" for="xp">직급</label><input class="in" id="xp" list="poslist" autocomplete="off" value="${esc(m.position || "")}"></div>
+        <div><label class="f" for="xe">사번</label><input class="in" id="xe" autocomplete="off" value="${esc(m.empNo || "")}"></div>
+      </div>
+      <div class="f">연결 매장 <span class="muted">(여러 곳 가능 · 맨 위 체크가 기본 매장)</span></div>
+      <div class="acct-stores">${order.map(s => `<label><input type="checkbox" value="${esc(s.id)}" ${ids.includes(s.id) ? "checked" : ""}> ${esc(s.name)} <span class="muted small">${esc(s.code || "")}</span></label>`).join("")}</div>
+      <label class="small" style="display:flex;gap:6px;align-items:center;margin-top:10px"><input type="checkbox" id="xa" ${m.active !== false ? "checked" : ""}> 사용</label>
+      <label class="small" style="display:flex;gap:6px;align-items:center;margin-top:6px"><input type="checkbox" id="xm" ${m.mustChangePw ? "checked" : ""}> 다음 로그인 때 비밀번호 변경 요구</label>
+      <div class="err" id="xer"></div>
+      <div class="acts"><button class="btn" data-a="no">취소</button><button class="btn primary" data-a="ok">저장</button></div></div>`;
+    document.body.appendChild(bg);
+    $("#xn", bg).focus();
+    const close = () => bg.remove();
+    bg.addEventListener("keydown", e => { if (e.key === "Escape") close(); });
+    bg.addEventListener("click", async e => {
+      const a = e.target.closest("[data-a]")?.dataset.a;
+      if (a === "no" || e.target === bg) return close();
+      if (a !== "ok") return;
+      const name = $("#xn", bg).value.trim();
+      const checked = $$(".acct-stores input:checked", bg).map(x => x.value);
+      const newIds = [...ids.filter(id => checked.includes(id)), ...checked.filter(id => !ids.includes(id))];
+      if (!name) return $("#xer", bg).textContent = "이름을 입력해 주세요.";
+      if (!newIds.length) return $("#xer", bg).textContent = "매장을 한 곳 이상 골라 주세요.";
+      const names = newIds.map(id => storeById(id)?.name || "");
+      const patch = { name, position: $("#xp", bg).value.trim(), empNo: $("#xe", bg).value.trim(), storeIds: newIds, storeId: newIds[0],
+        storeNames: names, storeName: names[0], active: $("#xa", bg).checked, mustChangePw: $("#xm", bg).checked };
+      const okBtn = $("[data-a=ok]", bg); okBtn.disabled = true;
+      try {
+        await api.updateMember(m.uid, patch);
+        Object.assign(m, patch);
+        close(); renderSacc(); toast(`${name} 계정을 수정했습니다.`);
+      } catch (e2) { $("#xer", bg).textContent = friendlyError(e2); okBtn.disabled = false; }
+    });
+  }
+
+  /* --- 매장 계정 1명씩 만들기 --- */
   const acctErrMsg = e => { const c = e?.code; return c === "auth/email-already-in-use" ? "이미 있는 아이디입니다(콘솔에 계정이 남아 있음). 다른 아이디를 쓰거나 콘솔에서 지운 뒤 다시 만드세요." : c === "auth/too-many-requests" ? "요청 한도를 넘었습니다. 1시간 뒤 다시 시도하세요." : friendlyError(e); };
   const deactivateOld = async (email, uid) => {
     // 같은 아이디의 예전 계정 기록(콘솔에서 삭제한 계정)은 사용 중지
@@ -2194,32 +2388,36 @@ async function viewAdminUsers() {
       try { await api.updateMember(m.uid, { active: false }); } catch (_) {}
     }
   };
-  $("#sa_st").addEventListener("change", () => {
-    const st = storeById($("#sa_st").value);
-    $("#sa_nm").placeholder = st ? `${st.name} 점장` : "예: 스타필드수원 점장";
-    $("#sa_id").placeholder = st ? `비우면 ${String(st.code || st.id).toLowerCase()}` : "비우면 매장코드 (예: bsc0007)";
-  });
   $("#sa_go").addEventListener("click", async () => {
     $("#sa_e").textContent = ""; $("#sa_res").innerHTML = "";
     const st = storeById($("#sa_st").value);
     if (!st) return $("#sa_e").textContent = "매장을 골라 주세요.";
-    const [r] = validateBulk([{ code: String(st.code || st.id), name: $("#sa_nm").value.trim() || `${st.name} 점장`,
-      id: $("#sa_id").value.trim(), pw: $("#sa_pw").value.trim(), gen: genPassword() }]);
+    const [r] = validateBulk([{ store: String(st.code || st.id), name: $("#sa_nm").value.trim(), position: $("#sa_pos").value.trim(),
+      empNo: $("#sa_emp").value.trim(), id: $("#sa_id").value.trim(), pw: $("#sa_pw").value.trim(), gen: genPassword() }]);
     if (r.err) return $("#sa_e").textContent = r.err;
-    if (r.exists && !$("#sa_x").checked) return $("#sa_e").textContent = `이미 등록된 아이디입니다 (${r.loginId}). 비밀번호를 잊은 경우 Firebase 콘솔에서 이 아이디를 삭제한 뒤 '다시 만들기'를 체크하세요.`;
+    if (r.exists) {
+      const ex = r.existing;
+      if (!$("#sa_x").checked) return $("#sa_e").textContent = `이미 있는 계정입니다: ${ex.name}${ex.role === "store" ? ` (${storeNamesOf(ex).join(", ")})` : ""}. 다른 매장에서도 쓰게 하려면 왼쪽 매장 계정 목록에서 '수정'을 눌러 매장을 추가하세요. 비밀번호를 잊은 경우에는 Firebase 콘솔에서 이 아이디를 삭제한 뒤 '다시 만들기'를 체크하세요.`;
+      if (ex.role === "store") {   // 다시 만들 때 연결 매장·직급·사번을 이어받음
+        const ids = [...new Set([...storeIdsOf(ex), st.id])];
+        r.storeIds = ids; r.storeNames = ids.map(id => storeById(id)?.name || "");
+        r.position = r.position || ex.position || ""; r.empNo = r.empNo || ex.empNo || "";
+      }
+    }
     $("#sa_go").disabled = true; $("#sa_go").textContent = "만드는 중…";
     let res = null;
     await api.createMembersBulk([r], async (_, out) => { res = out; if (out.ok) await deactivateOld(r.email, out.uid); });
     $("#sa_go").disabled = false; $("#sa_go").textContent = "매장 계정 만들기";
     if (!res?.ok) return $("#sa_e").textContent = acctErrMsg(res?.error);
     await loadMembers();
-    $("#sacc").innerHTML = storeAcctsHtml(); wireActive($("#sacc"));
-    ["#sa_nm", "#sa_id", "#sa_pw"].forEach(k => { $(k).value = ""; }); $("#sa_x").checked = false;
-    const msg = `[벤슨 매장 점검] ${r.storeName}\n아이디: ${r.loginId}\n임시 비밀번호: ${r.password}\n첫 로그인 후 '계정 > 비밀번호 변경'으로 바꿔 주세요.`;
-    $("#sa_res").innerHTML = `<div class="notice done" style="margin-top:12px"><b>${esc(r.storeName)} 계정을 만들었습니다.</b><br>
-        이름 ${esc(r.name)} · 아이디 <b class="num">${esc(r.loginId)}</b> · 임시 비밀번호 <b class="num">${esc(r.password)}</b></div>
+    renderSacc();
+    ["#sa_nm", "#sa_pos", "#sa_emp", "#sa_id", "#sa_pw"].forEach(k => { $(k).value = ""; }); $("#sa_x").checked = false;
+    const where = r.storeNames.join(", ");
+    const msg = `[벤슨 매장 점검] ${r.name}님 (${where})\n아이디: ${r.loginId}\n임시 비밀번호: ${r.password}\n첫 로그인 때 본인만 아는 비밀번호로 바꾸라는 안내가 나옵니다.`;
+    $("#sa_res").innerHTML = `<div class="notice done" style="margin-top:12px"><b>${esc(r.name)} 계정을 만들었습니다.</b><br>
+        ${esc(where)}${r.position ? ` · ${esc(r.position)}` : ""} · 아이디 <b class="num">${esc(r.loginId)}</b> · 임시 비밀번호 <b class="num">${esc(r.password)}</b></div>
       <button class="btn block" id="sa_cp" style="margin-top:8px">전달용 문구 복사</button>
-      <p class="muted small" style="margin-top:6px">이 화면을 벗어나면 비밀번호를 다시 볼 수 없습니다. 매장에 전달한 뒤 지워 주세요.</p>`;
+      <p class="muted small" style="margin-top:6px">이 화면을 벗어나면 비밀번호를 다시 볼 수 없습니다. 본인에게 전달한 뒤 지워 주세요.</p>`;
     $("#sa_cp").addEventListener("click", async () => {
       try { await navigator.clipboard.writeText(msg); toast("복사했습니다. 카톡·문자에 붙여넣으세요."); }
       catch (_) { toast("복사가 막혀 있습니다. 화면의 아이디·비밀번호를 직접 전달해 주세요.", 3500); }
@@ -2231,34 +2429,51 @@ async function viewAdminUsers() {
   $("#bx").addEventListener("change", e => { bulk.includeExisting = e.target.checked; if (bulk.rows) renderPreview(); });
   $("#tpl").addEventListener("click", () => {
     if (!window.XLSX) return toast("엑셀 기능을 불러오는 중입니다. 잠시 뒤 다시 눌러 주세요.");
-    const aoa = [["매장코드", "매장명", "이름", "아이디", "임시 비밀번호"],
-      ...activeStores.map(s => [s.code || s.id, s.name, `${s.name} 점장`, String(s.code || s.id).toLowerCase(), ""])];
+    const aoa = [["벤슨 매장별 직원 명단 · 매장 점검 계정 일괄 등록"],
+      ["매장: 매장 관리에 등록된 매장명 또는 매장코드 · ID를 비우면 사번 · PW를 비우면 8자리 자동 생성 · 두 매장 이상 근무하면 매장마다 한 줄씩 같은 ID로"],
+      [], ["매장", "번호", "이름", "사번", "직급", "ID", "PW"],
+      ...byName(activeStores).map(s => [s.name, 1, "", "", "", "", ""])];
     const ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws["!cols"] = [{ wch: 12 }, { wch: 16 }, { wch: 20 }, { wch: 16 }, { wch: 16 }];
-    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "매장 계정");
+    ws["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }, { s: { r: 1, c: 0 }, e: { r: 1, c: 6 } }];
+    ws["!cols"] = [{ wch: 18 }, { wch: 7 }, { wch: 14 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, { wch: 12 }];
+    const act = S.members.filter(m => m.role === "store" && m.active !== false);
+    const ws2 = XLSX.utils.aoa_to_sheet([["매장코드", "매장명", "담당 SV", "사용 중 계정 수"],
+      ...S.stores.map(s => [s.code || s.id, s.name, svNameOf(s), act.filter(m => storeIdsOf(m).includes(s.id)).length])]);
+    ws2["!cols"] = [{ wch: 12 }, { wch: 18 }, { wch: 10 }, { wch: 14 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "직원명단"); XLSX.utils.book_append_sheet(wb, ws2, "매장 목록");
     XLSX.writeFile(wb, "벤슨_매장계정_양식.xlsx");
   });
+  const NO_HEADER = "머리글 줄(매장·이름·사번 또는 ID)을 찾지 못했습니다. 양식의 머리글 줄을 지우지 말고 올리거나, 머리글까지 함께 복사해 주세요.";
   $("#bf").addEventListener("change", async e => {
     const f = e.target.files?.[0]; e.target.value = "";
     if (!f) return;
     $("#be").textContent = "";
     try {
-      let matrix;
+      let rows = null;
       if (/\.csv$/i.test(f.name)) {
         const text = (await f.text()).replace(/^﻿/, "");
-        matrix = text.split(/\r?\n/).map(l => l.split(/,|\t/));
+        rows = parseBulk(text.split(/\r?\n/).map(l => l.split(/,|\t/)));
       } else {
         if (!window.XLSX) throw new Error("엑셀 기능을 불러오는 중입니다. 잠시 뒤 다시 올려 주세요.");
         const wb = XLSX.read(await f.arrayBuffer(), { type: "array" });
-        matrix = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: false, defval: "" });
+        for (const n of wb.SheetNames) {   // 머리글이 있는 첫 시트 (예: '직원명단')
+          rows = parseBulk(XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: false, defval: "" }));
+          if (rows) break;
+        }
       }
-      bulk.rows = parseBulk(matrix); bulk.results = null; renderPreview();
+      if (!rows) throw new Error(NO_HEADER);
+      bulk.rows = rows; bulk.results = null; bulk.onlyIssues = false; renderPreview();
     } catch (err) { $("#be").textContent = friendlyError(err); }
   });
   $("#bcheck").addEventListener("click", () => {
     $("#be").textContent = "";
     const text = $("#bp").value.trim();
-    if (text) { bulk.rows = parseBulk(text.split(/\r?\n/).map(l => l.split("\t"))); bulk.results = null; }
+    if (text) {
+      const rows = parseBulk(text.split(/\r?\n/).map(l => l.split("\t")));
+      if (!rows) return $("#be").textContent = NO_HEADER;
+      bulk.rows = rows; bulk.results = null; bulk.onlyIssues = false;
+    }
     if (!bulk.rows?.length) return $("#be").textContent = "파일을 올리거나 표를 붙여넣어 주세요.";
     renderPreview();
   });
@@ -2266,55 +2481,71 @@ async function viewAdminUsers() {
 
   function renderPreview() {
     const list = validateBulk(bulk.rows);
-    const targets = list.filter(r => !r.err && (!r.exists || bulk.includeExisting));
+    const prim = list.filter(r => !r.err && r.group === r);
+    const cand = prim.filter(r => !r.exists || bulk.includeExisting);
+    const now = cand.slice(0, BULK_LIMIT), later = new Set(cand.slice(BULK_LIMIT).map(r => r.email));
     const res = bulk.results;
-    const state = r => {
+    const nErr = list.filter(r => r.err).length;
+    const nSkip = prim.filter(r => r.exists && !bulk.includeExisting).length;
+    const nMulti = cand.filter(r => r.storeIds.length > 1).length;
+    const statusOf = r => {
+      if (r.err) return { t: r.err, c: "back", issue: true };
       const k = res?.[r.email];
-      if (k) return k.ok ? `<span class="chip done">만듦</span>` : `<span class="chip back">${esc(k.msg)}</span>`;
-      if (r.err) return `<span class="chip back">${esc(r.err)}</span>`;
-      if (r.exists && !bulk.includeExisting) return `<span class="chip">이미 등록됨 · 건너뜀</span>`;
-      return `<span class="chip wait">만들 예정</span>`;
+      if (k) return k.ok ? { t: "만듦", c: "done" } : { t: k.msg, c: "back", issue: true };
+      if (r.group.exists && !bulk.includeExisting) return { t: "이미 등록됨 · 건너뜀", c: "" };
+      if (res || later.has(r.email)) return { t: "다음 차례 · 1시간 뒤 같은 파일로 다시", c: "" };
+      return { t: `만들 예정${r.group.storeIds.length > 1 ? ` · 매장 ${r.group.storeIds.length}곳 한 계정` : ""}`, c: "wait" };
     };
+    const shown = bulk.onlyIssues ? list.filter(r => statusOf(r).issue) : list;
     const okN = res ? Object.values(res).filter(x => x.ok).length : 0;
+    const left = res ? cand.filter(r => !res[r.email]).length : later.size;
     $("#bres").innerHTML = `
-      <div class="tbl-wrap"><table>
-        <thead><tr><th>매장</th><th>이름</th><th>아이디</th><th>비밀번호</th><th>상태</th></tr></thead>
-        <tbody>${list.map(r => `<tr><td>${esc(r.storeName || r.code)}</td><td>${esc(r.name || "")}</td><td class="num">${esc(r.loginId || r.id || "")}</td>
-          <td class="num">${r.password ? esc(r.password) + (r.autoPw ? ' <span class="muted small">자동</span>' : "") : ""}</td><td>${state(r)}</td></tr>`).join("")}</tbody>
+      <p class="small" style="margin:0 0 8px">${list.length}줄 · ${res ? `만듦 <b>${okN}</b>개${left ? ` · 남은 ${left}개` : ""}` : `만들 계정 <b>${cand.length}</b>개${nMulti ? ` (두 매장 이상 근무 ${nMulti}명은 계정 하나)` : ""}${nSkip ? ` · 이미 등록 ${nSkip}개` : ""}`}${nErr ? ` · <b style="color:var(--no)">확인 필요 ${nErr}줄</b>` : ""}</p>
+      ${!res && later.size ? `<div class="notice back">Firebase 제한(같은 인터넷 주소에서 시간당 새 계정 100개) 때문에 이번에 ${now.length}개를 만들고, 나머지 ${later.size}개는 1시간 뒤 같은 파일을 다시 올려 만드세요. 이미 만든 계정은 자동으로 건너뜁니다.</div>` : ""}
+      <label class="small" style="display:flex;gap:6px;align-items:center;margin:0 0 8px"><input type="checkbox" id="bonly" ${bulk.onlyIssues ? "checked" : ""}> 확인이 필요한 줄만 보기</label>
+      <div class="tbl-wrap" style="max-height:440px;overflow:auto"><table>
+        <thead><tr><th class="r">행</th><th>매장</th><th>이름</th><th>직급</th><th>아이디</th><th>비밀번호</th><th>상태</th></tr></thead>
+        <tbody>${shown.map(r => { const s2 = statusOf(r); return `<tr><td class="r num muted">${r.line || ""}</td>
+          <td>${esc(r.storeName || r.store)}${r.renamed ? `<br><span class="muted small">입력: ${esc(r.store)}</span>` : ""}</td>
+          <td>${esc(r.name)}</td><td>${esc(r.position || "")}</td><td class="num">${esc(r.loginId || r.id || r.empNo || "")}</td>
+          <td class="num">${r.password && !r.err ? esc(r.password) + (r.autoPw ? ' <span class="muted small">자동</span>' : "") : ""}</td>
+          <td><span class="chip ${s2.c}">${esc(s2.t)}</span></td></tr>`; }).join("") || `<tr><td colspan="7" class="muted">확인이 필요한 줄이 없습니다.</td></tr>`}</tbody>
       </table></div>
-      ${res ? `<p class="small" style="margin:10px 0">${okN}개를 만들었습니다. 아이디와 비밀번호를 매장에 전달한 뒤, 내려받은 파일은 지워 주세요.</p>
+      ${res ? `<p class="small" style="margin:10px 0">${okN}개를 만들었습니다.${left ? ` 남은 ${left}개는 1시간 뒤 같은 파일을 다시 올려 만드세요.` : ""} 아이디와 비밀번호를 본인에게 전달한 뒤, 내려받은 파일은 지워 주세요.</p>
           <button class="btn block" id="bdl">결과 내려받기 (아이디·비밀번호)</button>`
-        : targets.length > BULK_LIMIT ? `<div class="notice back">한 번에 ${BULK_LIMIT}개까지 만들 수 있습니다 (Firebase 제한: 같은 인터넷 주소에서 시간당 새 계정 100개). 표를 나눠서 올려 주세요.</div>`
-        : `<button class="btn primary block" id="bgo" style="margin-top:10px" ${targets.length ? "" : "disabled"}>${targets.length}개 계정 만들기</button>`}`;
+        : `<button class="btn primary block" id="bgo" style="margin-top:10px" ${now.length ? "" : "disabled"}>${now.length}개 계정 만들기</button>`}`;
+    $("#bonly").addEventListener("change", e => { bulk.onlyIssues = e.target.checked; renderPreview(); });
     $("#bgo")?.addEventListener("click", async () => {
-      if (!await modal({ title: `매장 계정 ${targets.length}개를 만들까요?`, body: "만드는 동안 이 화면을 닫지 마세요. 끝나면 아이디·비밀번호를 엑셀로 내려받을 수 있습니다.", ok: "만들기" })) return;
+      if (!await modal({ title: `매장 계정 ${now.length}개를 만들까요?`, body: "만드는 동안 이 화면을 닫지 마세요. 끝나면 아이디·비밀번호를 엑셀로 내려받을 수 있습니다.", ok: "만들기" })) return;
       $("#bgo").disabled = true;
       bulk.results = {};
       let i = 0;
-      await api.createMembersBulk(targets, async (r, out) => {
-        i++; $("#bgo").textContent = `만드는 중… ${i}/${targets.length}`;
-        if (out.ok) {
-          bulk.results[r.email] = { ok: true };
-          await deactivateOld(r.email, out.uid);
-        } else {
+      await api.createMembersBulk(now, async (r, out) => {
+        i++; $("#bgo").textContent = `만드는 중… ${i}/${now.length}`;
+        if (out.ok) { bulk.results[r.email] = { ok: true }; await deactivateOld(r.email, out.uid); }
+        else {
           const c = out.error?.code;
-          bulk.results[r.email] = { ok: false, msg: c === "auth/email-already-in-use" ? "이미 있는 아이디(콘솔에 계정 있음)" : c === "auth/too-many-requests" ? "요청 한도 초과, 1시간 뒤 다시" : friendlyError(out.error) };
+          bulk.results[r.email] = { ok: false, msg: c === "auth/email-already-in-use" ? "이미 있는 아이디(콘솔에 계정 있음)" : c === "auth/too-many-requests" ? "요청 한도 초과 · 1시간 뒤 다시" : friendlyError(out.error) };
         }
       });
+      bulk.resultList = list;
       await loadMembers();
-      $("#sacc").innerHTML = storeAcctsHtml(); wireActive($("#sacc"));
-      bulk.resultRows = targets;
+      renderSacc();
       renderPreview();
       toast(`${Object.values(bulk.results).filter(x => x.ok).length}개 계정을 만들었습니다.`);
     });
     $("#bdl")?.addEventListener("click", () => {
-      const out = (bulk.resultRows || []).map(r => [r.code, r.storeName, r.name, r.loginId, bulk.results[r.email]?.ok ? r.password : "", bulk.results[r.email]?.ok ? "만듦" : bulk.results[r.email]?.msg || ""]);
-      const aoa = [["매장코드", "매장명", "이름", "아이디", "임시 비밀번호", "결과"], ...out];
-      if (window.XLSX) {
-        const ws = XLSX.utils.aoa_to_sheet(aoa); ws["!cols"] = [{ wch: 12 }, { wch: 16 }, { wch: 20 }, { wch: 16 }, { wch: 16 }, { wch: 28 }];
-        const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "매장 계정");
-        XLSX.writeFile(wb, `벤슨_매장계정_발급결과_${today()}.xlsx`);
-      }
+      if (!window.XLSX) return toast("엑셀 기능을 불러오는 중입니다. 잠시 뒤 다시 눌러 주세요.");
+      const src = bulk.resultList || list;
+      const aoa = [["매장", "번호", "이름", "사번", "직급", "ID", "PW", "결과"], ...src.map(r => {
+        const k = !r.err && bulk.results?.[r.email];
+        return [r.storeName || r.store, r.no, r.name, r.empNo, r.position, r.loginId || r.id || "", k?.ok ? r.password : "",
+          r.err || (k ? (k.ok ? "만듦" : k.msg) : r.group?.exists && !bulk.includeExisting ? "이미 등록됨" : "다음 차례")];
+      })];
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws["!cols"] = [{ wch: 16 }, { wch: 6 }, { wch: 12 }, { wch: 12 }, { wch: 9 }, { wch: 12 }, { wch: 12 }, { wch: 30 }];
+      const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "발급 결과");
+      XLSX.writeFile(wb, `벤슨_매장계정_발급결과_${today()}.xlsx`);
     });
   }
 
@@ -2371,8 +2602,9 @@ async function viewAdminUsers() {
       const me = await api.getMember(user.uid);
       if (!me) return viewNoAccess("등록되지 않은 계정입니다. 관리자에게 아래 사용자 ID를 전달해 등록을 요청하세요.");
       if (me.active === false) return viewNoAccess("사용이 중지된 계정입니다. 관리자에게 문의하세요.");
-      if (me.role === "store" && !me.storeId) return viewNoAccess("매장이 연결되지 않은 매장 계정입니다. 관리자에게 문의하세요.");
+      if (me.role === "store" && !storeIdsOf(me).length) return viewNoAccess("매장이 연결되지 않은 매장 계정입니다. 관리자에게 문의하세요.");
       S.me = me;
+      if (me.mustChangePw === true) return viewForcePw();
       if (isMaster()) { await loadMembers(); backfillAllOnce(); }
       lastHash = location.hash;
       router();
