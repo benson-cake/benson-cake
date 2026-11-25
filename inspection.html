@@ -636,6 +636,7 @@ async function createFirebaseApi() {
     },
     async updateStore(id, patch) { await FS.updateDoc(FS.doc(db, "stores", id), patch); },
     async setStore(id, data) { await FS.setDoc(FS.doc(db, "stores", id), { ...data, createdAt: ts() }, { merge: true }); },
+    async deleteStore(id) { await FS.deleteDoc(FS.doc(db, "stores", id)); },
 
     /* 조회는 역할별로 보안 규칙이 허용하는 조건(같음 조건만)으로만 합니다. */
     listMyInspections: uid => run(FS.where("svUid", "==", uid)),
@@ -770,6 +771,7 @@ function createDemoApi() {
     async addStore(data) { await wait(); const id = nid("st"); db.stores[id] = { ...data, active: true }; return id; },
     async setStore(id, data) { await wait(); db.stores[id] = { ...(db.stores[id] || {}), ...clone(data) }; },
     async updateStore(id, patch) { await wait(); Object.assign(db.stores[id], patch); },
+    async deleteStore(id) { await wait(); delete db.stores[id]; },
     listMyInspections: uid => where(d => d.svUid === uid),
     listMyDrafts: uid => where(d => d.svUid === uid && d.status === "draft"),
     listStoreMonth: (storeId, ym) => where(d => d.storeId === storeId && d.kind === "store" && d.authorRole === "store" && d.visitMonth === ym),
@@ -1874,46 +1876,50 @@ async function viewAdminStats() {
 async function viewAdminStores() {
   loading("#/admin/stores", false);
   await Promise.all([loadStores(), loadMembers()]);
-  const svs = S.members.filter(m => m.active !== false && m.role !== "store");
-  const have = new Set(S.stores.flatMap(x => [x.id, x.code]).filter(Boolean));
-  const missingSeed = STORE_SEED.filter(([code]) => !have.has(code));
-  const acctCount = id => S.members.filter(m => m.role === "store" && m.storeId === id && m.active !== false).length;
+  const svs = byName(S.members.filter(m => m.active !== false && m.role !== "store"));
+  const missingSeed = S.stores.length ? [] : STORE_SEED;   // 기본 매장 목록은 매장이 하나도 없을 때만 (삭제한 매장이 다시 뜨지 않게)
+  const acctsOf = id => S.members.filter(m => m.role === "store" && m.storeId === id && m.active !== false);
   const svOpts = st => {
     const cur = st ? svUidOf(st) : "";
     const pending = st && !cur && st.svName ? `<option value="__pending" selected>${esc(st.svName)} (계정 없음)</option>` : "";
     return pending + `<option value="" ${!cur && !pending ? "selected" : ""}>미지정</option>` +
       svs.map(m => `<option value="${esc(m.uid)}" ${m.uid === cur ? "selected" : ""}>${esc(m.name)}</option>`).join("");
   };
+  const normCode = v => String(v || "").trim().toUpperCase();
+  const codeOk = c => /^[A-Z0-9_-]{2,30}$/.test(c);
+  const codeTaken = (c, exceptId = "") => S.stores.some(x => x.id !== exceptId && (x.id.toUpperCase() === c || normCode(x.code) === c));
+  const nameTaken = (n, exceptId = "") => S.stores.some(x => x.id !== exceptId && x.name.trim() === n);
   const unlinked = S.stores.filter(x => x.active !== false && !svUidOf(x) && x.svName);
   shell(`
     <h1>매장 관리</h1>
     ${missingSeed.length ? `<div class="panel" style="margin-bottom:12px">
       <h2 style="margin-top:0">기본 매장 목록 등록</h2>
-      <p class="muted small">매장코드·담당 SV가 포함된 벤슨 매장 ${STORE_SEED.length}곳 중 ${missingSeed.length}곳이 아직 등록되지 않았습니다.</p>
+      <p class="muted small">매장코드·담당 SV가 포함된 벤슨 매장 ${STORE_SEED.length}곳을 한 번에 등록합니다.</p>
       <div class="err" id="sde"></div>
       <button class="btn primary" id="seed">${missingSeed.length}곳 한 번에 등록</button></div>` : ""}
     ${unlinked.length ? `<div class="notice info">담당 SV 계정이 아직 없는 매장이 ${unlinked.length}곳 있습니다 (${esc([...new Set(unlinked.map(x => x.svName))].join(", "))}). '사용자 관리'에서 같은 이름으로 SV 계정을 만들면 자동으로 연결됩니다.</div>` : ""}
     <div class="split">
       <div>
         ${S.stores.length ? `<div class="tbl-wrap"><table>
-          <thead><tr><th>코드</th><th>매장</th><th>담당 SV</th><th class="r">매장 계정</th><th>사용</th></tr></thead>
+          <thead><tr><th>코드</th><th>매장</th><th>담당 SV</th><th class="r">매장 계정</th><th>사용</th><th></th></tr></thead>
           <tbody>${S.stores.map(x => `<tr>
             <td class="num">${esc(x.code || "-")}</td><td>${esc(x.name)}</td>
             <td><select class="in" style="min-height:36px;padding:4px 8px" data-sv="${esc(x.id)}" aria-label="${esc(x.name)} 담당 SV">${svOpts(x)}</select></td>
-            <td class="r num">${acctCount(x.id) || "-"}</td>
-            <td><label><input type="checkbox" data-act="${esc(x.id)}" ${x.active !== false ? "checked" : ""}> 사용</label></td></tr>`).join("")}
+            <td class="r num">${acctsOf(x.id).length || "-"}</td>
+            <td><label><input type="checkbox" data-act="${esc(x.id)}" ${x.active !== false ? "checked" : ""}> 사용</label></td>
+            <td><button class="btn sm" data-edit="${esc(x.id)}" aria-label="${esc(x.name)} 수정·삭제">수정</button></td></tr>`).join("")}
           </tbody></table></div>
-          <p class="muted small" style="margin-top:8px">담당 SV를 바꾸면 그 매장의 지난 점검도 새 SV가 볼 수 있게 함께 옮겨집니다. '사용'을 끄면 새 점검의 매장 목록에서 빠지고, 지난 기록은 남습니다.</p>`
+          <p class="muted small" style="margin-top:8px">'수정'에서 매장코드·매장명·담당 SV를 고치거나 매장을 삭제할 수 있습니다. 담당 SV를 바꾸면 그 매장의 지난 점검도 새 SV가 볼 수 있게 함께 옮겨집니다. 폐점·휴점은 삭제보다 '사용'을 끄는 것을 권합니다(지난 기록·현황이 그대로 남음).</p>`
         : `<div class="empty">아직 매장이 없습니다. 위의 '한 번에 등록'을 누르거나 오른쪽에서 매장을 추가하세요.</div>`}
       </div>
-      <div class="panel">
+      <div class="panel" style="align-self:start">
         <h2 style="margin-top:0">매장 추가</h2>
-        <label class="f" for="nm">한 줄에 한 매장씩 입력하세요</label>
-        <textarea class="in" id="nm" rows="5" placeholder="BSC0030	신규점	담당자이름&#10;또는 매장명만"></textarea>
-        <p class="muted small" style="margin-top:6px">엑셀에서 '매장코드, 매장명, 담당 SV' 세 칸을 그대로 복사해 붙여넣어도 됩니다.</p>
-        <label class="f" for="nsv">담당 SV (줄에 담당자가 없을 때)</label><select class="in" id="nsv">${svOpts(null)}</select>
+        <label class="f" for="nc">매장코드</label><input class="in" id="nc" autocomplete="off" autocapitalize="characters" placeholder="예: BSC0030">
+        <label class="f" for="nn">매장명</label><input class="in" id="nn" autocomplete="off" placeholder="예: 신규점">
+        <label class="f" for="nsv">담당 SV</label><select class="in" id="nsv">${svOpts(null)}</select>
         <div class="err" id="se"></div>
         <button class="btn primary block" id="add">매장 추가</button>
+        <p class="muted small" style="margin-top:10px">매장코드는 매장 계정 아이디의 기본값(예: bsc0030)으로도 쓰입니다. 담당 SV 목록에 없는 사람은 '사용자 관리'에서 SV 계정을 먼저 만드세요.</p>
       </div>
     </div>`, { active: "#/admin/stores" });
 
@@ -1941,27 +1947,98 @@ async function viewAdminStores() {
   $$("[data-act]").forEach(cb => cb.addEventListener("change", async () => {
     try { await api.updateStore(cb.dataset.act, { active: cb.checked }); toast(cb.checked ? "사용으로 바꿨습니다." : "사용 중지했습니다."); } catch (e) { toast(friendlyError(e)); }
   }));
+  $$("[data-edit]").forEach(b => b.addEventListener("click", () => editStore(storeById(b.dataset.edit))));
+
+  /* 매장 추가: 코드·매장명·담당 SV를 하나씩 입력 */
+  $("#nc").addEventListener("blur", e => { e.target.value = normCode(e.target.value); });
   $("#add").addEventListener("click", async () => {
-    const pick = $("#nsv").value;
-    const defSv = pick && pick !== "__pending" ? memberName(pick) : "";
-    const rows = $("#nm").value.split(/\n/).map(t => t.trim()).filter(Boolean).map(line => {
-      const parts = line.split(/\t|\s{2,}/).map(t => t.trim()).filter(Boolean);
-      if (parts.length >= 2 && /^[A-Za-z]{2,}\d{2,}$/.test(parts[0])) return { code: parts[0].toUpperCase(), name: parts[1], sv: parts[2] || defSv };
-      return { code: "", name: line, sv: defSv };
-    });
-    if (!rows.length) return $("#se").textContent = "매장을 입력해 주세요.";
-    const names = new Set(S.stores.map(x => x.name));
-    const fresh = rows.filter(r => !(r.code && have.has(r.code)) && !names.has(r.name));
-    if (!fresh.length) return $("#se").textContent = "이미 등록된 매장입니다.";
+    const code = normCode($("#nc").value), name = $("#nn").value.trim(), sv = $("#nsv").value;
+    $("#se").textContent = "";
+    if (!code) return $("#se").textContent = "매장코드를 입력해 주세요.";
+    if (!codeOk(code)) return $("#se").textContent = "매장코드는 영문·숫자로 입력해 주세요 (예: BSC0030).";
+    if (codeTaken(code)) return $("#se").textContent = `${code}는 이미 등록된 매장코드입니다.`;
+    if (!name) return $("#se").textContent = "매장명을 입력해 주세요.";
+    if (nameTaken(name)) return $("#se").textContent = `'${name}' 이름의 매장이 이미 있습니다.`;
     $("#add").disabled = true;
     try {
-      for (const r of fresh) {
-        const data = { code: r.code, name: r.name, svName: r.sv, svUid: svs.find(m => m.name === r.sv)?.uid || "", active: true };
-        if (r.code) await api.setStore(r.code, data); else await api.addStore(data);
-      }
-      toast(`매장 ${fresh.length}곳을 추가했습니다.`); viewAdminStores();
+      const uid = sv && sv !== "__pending" ? sv : "";
+      await api.setStore(code, { code, name, svName: uid ? memberName(uid) : "", svUid: uid, active: true });
+      toast(`${name} 매장을 추가했습니다.`); viewAdminStores();
     } catch (e) { $("#se").textContent = friendlyError(e); $("#add").disabled = false; }
   });
+
+  /* 매장 수정·삭제 */
+  function editStore(st) {
+    if (!st) return;
+    const bg = document.createElement("div");
+    bg.className = "modal-bg";
+    bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-label="매장 수정">
+      <h3>매장 수정</h3>
+      <label class="f" for="ec">매장코드</label><input class="in" id="ec" autocomplete="off" value="${esc(st.code || "")}">
+      <label class="f" for="en">매장명</label><input class="in" id="en" autocomplete="off" value="${esc(st.name)}">
+      <label class="f" for="es">담당 SV</label><select class="in" id="es">${svOpts(st)}</select>
+      <label class="small" style="display:flex;gap:6px;align-items:center;margin-top:12px"><input type="checkbox" id="ea" ${st.active !== false ? "checked" : ""}> 사용 (끄면 새 점검의 매장 목록에서 빠집니다)</label>
+      <p class="muted small" style="margin:10px 0 0">지난 점검 기록에는 저장할 때의 매장명·코드가 그대로 남습니다.</p>
+      <div class="err" id="ee"></div>
+      <div class="acts" style="justify-content:space-between">
+        <button class="btn danger" data-a="del">매장 삭제</button>
+        <span style="display:flex;gap:8px"><button class="btn" data-a="no">취소</button><button class="btn primary" data-a="ok">저장</button></span>
+      </div></div>`;
+    document.body.appendChild(bg);
+    $("#en", bg).focus();
+    const close = () => bg.remove();
+    bg.addEventListener("keydown", e => { if (e.key === "Escape") close(); });
+    bg.addEventListener("click", async e => {
+      const a = e.target.closest("[data-a]")?.dataset.a;
+      if (a === "no" || e.target === bg) return close();
+      if (a === "del") { close(); return deleteStore(st); }
+      if (a !== "ok") return;
+      const err = t => { $("#ee", bg).textContent = t; };
+      const code = normCode($("#ec", bg).value), name = $("#en", bg).value.trim(), sv = $("#es", bg).value, active = $("#ea", bg).checked;
+      if (!code) return err("매장코드를 입력해 주세요.");
+      if (!codeOk(code)) return err("매장코드는 영문·숫자로 입력해 주세요 (예: BSC0030).");
+      if (codeTaken(code, st.id)) return err(`${code}는 다른 매장이 쓰고 있는 코드입니다.`);
+      if (!name) return err("매장명을 입력해 주세요.");
+      if (nameTaken(name, st.id)) return err(`'${name}' 이름의 매장이 이미 있습니다.`);
+      const patch = {};
+      if (code !== normCode(st.code)) patch.code = code;
+      if (name !== st.name) patch.name = name;
+      if (active !== (st.active !== false)) patch.active = active;
+      const svChanged = sv !== "__pending" && sv !== svUidOf(st);
+      if (svChanged) { patch.svUid = sv; patch.svName = sv ? memberName(sv) : ""; }
+      if (!Object.keys(patch).length) return close();
+      const okBtn = $("[data-a=ok]", bg); okBtn.disabled = true; okBtn.textContent = "저장 중…";
+      try {
+        await api.updateStore(st.id, patch);
+        const moved = svChanged ? await syncStoreSv(st.id, sv) : 0;
+        if (patch.name) for (const m of S.members.filter(m => m.role === "store" && m.storeId === st.id)) {
+          try { await api.updateMember(m.uid, { storeName: name }); } catch (_) {}
+        }
+        monthCache = {};
+        close();
+        toast(`매장을 수정했습니다.${moved ? ` 지난 점검 ${moved}건도 새 담당 SV에게 옮겼습니다.` : ""}`, 3000);
+        viewAdminStores();
+      } catch (e2) { err(friendlyError(e2)); okBtn.disabled = false; okBtn.textContent = "저장"; }
+    });
+  }
+
+  async function deleteStore(st) {
+    let recs = 0;
+    try { recs = (await api.listByStore(st.id)).length; } catch (e) { return toast(friendlyError(e)); }
+    const accts = acctsOf(st.id);
+    const body = recs || accts.length
+      ? `이 매장에는 점검 기록 ${recs}건${accts.length ? `, 매장 계정 ${accts.length}개` : ""}가 있습니다.\n` +
+        `삭제해도 점검 기록은 '점검 내역'과 엑셀에 남지만, 매장 목록·매장 필터·현황에서는 빠집니다.` +
+        `${accts.length ? "\n이 매장의 매장 계정은 사용 중지됩니다." : ""}\n폐점·휴점이라면 삭제 대신 '사용'을 끄는 것을 권합니다.`
+      : "점검 기록과 매장 계정이 없는 매장입니다. 삭제하면 되돌릴 수 없습니다.";
+    if (!await modal({ title: `${st.name} 매장을 삭제할까요?`, body: esc(body), ok: "삭제", danger: true })) return;
+    try {
+      await api.deleteStore(st.id);
+      for (const m of accts) { try { await api.updateMember(m.uid, { active: false }); } catch (_) {} }
+      monthCache = {};
+      toast(`${st.name} 매장을 삭제했습니다.`); viewAdminStores();
+    } catch (e) { toast(friendlyError(e)); }
+  }
 }
 
 /* =====================================================================
